@@ -1,3 +1,9 @@
+// Polyfill for uuid (React Native has no crypto.getRandomValues)
+import 'react-native-get-random-values';
+// Buffer polyfill for @asanrom/dilithium (React Native has no global Buffer)
+import { Buffer } from 'buffer';
+global.Buffer = Buffer;
+
 import { registerRootComponent } from 'expo';
 
 import App from './App';
