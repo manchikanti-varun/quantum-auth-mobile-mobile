@@ -4,6 +4,16 @@ You can build an **APK** and send it to users. They install it directly on their
 
 ---
 
+## 0. Backend URL (Railway)
+
+The app is set to use a Railway backend. If your Railway URL is different:
+
+1. In [Railway](https://railway.app) → your project → your backend service → **Settings** → **Networking** → copy the **Public URL** (e.g. `https://xxxx.up.railway.app`).
+2. In `qsafe-mobile/constants/config.js`, set `API_BASE_URL` to that URL (replace the default), **or** when running the build set the env var: `EXPO_PUBLIC_API_URL=https://your-url.up.railway.app`.
+3. Then build the APK (step 1 below).
+
+---
+
 ## 1. Build the APK
 
 ```bash

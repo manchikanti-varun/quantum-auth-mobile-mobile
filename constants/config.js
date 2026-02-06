@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'http://192.168.1.21:4000';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://quantum-auth-mobile-backend-production.up.railway.app';
 export const ACCOUNTS_KEY = 'QSAFE_TOTP_ACCOUNTS';
 export const DEVICE_KEY = 'QSAFE_DEVICE_ID';
 export const PQC_KEYPAIR_KEY = 'QSAFE_PQC_KEYPAIR';

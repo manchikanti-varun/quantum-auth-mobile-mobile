@@ -33,7 +33,10 @@
               "pathPrefix": "/"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -41,9 +44,16 @@
       "icon": "./assets/icon.png",
       "color": "#2563eb"
     },
-    "plugins": ["expo-notifications"],
+    "plugins": [
+      "expo-notifications"
+    ],
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "fb80301d-6a40-498f-bd48-3780d67115d2"
+      }
     }
   }
 }

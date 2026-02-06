@@ -108,8 +108,10 @@ export const useAuth = (deviceId, onSuccess) => {
       onSuccess?.();
       return response.data;
     } catch (err) {
-      const message =
-        err?.response?.data?.message || 'Something went wrong. Please try again.';
+      const msg = err?.response?.data?.message;
+      const status = err?.response?.status;
+      const networkMsg = !err?.response ? 'Cannot reach server. Check internet and backend URL (Railway).' : null;
+      const message = msg || networkMsg || `Something went wrong${status ? ` (${status})` : ''}. Try again.`;
       Alert.alert('Error', message);
       throw err;
     } finally {
