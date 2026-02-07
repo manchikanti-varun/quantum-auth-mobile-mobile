@@ -1,12 +1,15 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useLayout } from '../hooks/useLayout';
 import { theme } from '../constants/theme';
 
 export const FloatingActionButton = ({ onPress }) => {
+  const { horizontalPadding, safeBottom } = useLayout();
+  const bottom = Math.max(24, safeBottom) + 24;
   return (
     <TouchableOpacity
-      style={styles.wrapper}
+      style={[styles.wrapper, { right: horizontalPadding, bottom }]}
       onPress={onPress}
       activeOpacity={0.9}
     >
@@ -25,8 +28,6 @@ export const FloatingActionButton = ({ onPress }) => {
 const styles = StyleSheet.create({
   wrapper: {
     position: 'absolute',
-    right: theme.spacing.lg,
-    bottom: 40,
     ...Platform.select({
       ios: {
         shadowColor: theme.colors.accent,

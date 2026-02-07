@@ -44,7 +44,18 @@ export const storage = {
 
   async getPqcKeypair() {
     try {
-      const raw = await SecureStore.getItemAsync(PQC_KEYPAIR_KEY);
+      // Try single key first (backward compat)
+      let raw = await SecureStore.getItemAsync(PQC_KEYPAIR_KEY);
+      if (!raw) {
+        // Chunked format (over 2048 bytes)
+        const chunks = [];
+        for (let i = 0; ; i++) {
+          const part = await SecureStore.getItemAsync(`${PQC_KEYPAIR_KEY}_${i}`);
+          if (!part) break;
+          chunks.push(part);
+        }
+        raw = chunks.length ? chunks.join('') : null;
+      }
       return raw ? JSON.parse(raw) : null;
     } catch (e) {
       return null;
@@ -52,6 +63,30 @@ export const storage = {
   },
 
   async savePqcKeypair(keypair) {
-    await SecureStore.setItemAsync(PQC_KEYPAIR_KEY, JSON.stringify(keypair));
+    const data = JSON.stringify(keypair);
+    const CHUNK_SIZE = 2000; // SecureStore limit 2048
+    if (data.length <= CHUNK_SIZE) {
+      await SecureStore.setItemAsync(PQC_KEYPAIR_KEY, data);
+      for (let i = 0; ; i++) {
+        const key = `${PQC_KEYPAIR_KEY}_${i}`;
+        const v = await SecureStore.getItemAsync(key);
+        if (v == null) break;
+        await SecureStore.deleteItemAsync(key);
+      }
+      return;
+    }
+    for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+      await SecureStore.setItemAsync(
+        `${PQC_KEYPAIR_KEY}_${i / CHUNK_SIZE}`,
+        data.slice(i, i + CHUNK_SIZE),
+      );
+    }
+    await SecureStore.deleteItemAsync(PQC_KEYPAIR_KEY);
+    const numChunks = Math.ceil(data.length / CHUNK_SIZE);
+    for (let i = numChunks; ; i++) {
+      const key = `${PQC_KEYPAIR_KEY}_${i}`;
+      if ((await SecureStore.getItemAsync(key)) == null) break;
+      await SecureStore.deleteItemAsync(key);
+    }
   },
 };

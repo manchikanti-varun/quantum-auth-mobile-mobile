@@ -5,16 +5,21 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AppLogo } from './AppLogo';
+import { useLayout } from '../hooks/useLayout';
 import { theme } from '../constants/theme';
 
 export const BiometricGate = ({ onUnlock, loading }) => {
+  const { horizontalPadding, contentMaxWidth } = useLayout();
+
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
+    <View style={[styles.container, { paddingHorizontal: horizontalPadding }]}>
+      <View style={[styles.content, { maxWidth: contentMaxWidth }]}>
         <View style={styles.iconWrap}>
-          <Text style={styles.icon}>Q</Text>
+          <AppLogo size="lg" />
         </View>
         <Text style={styles.title}>QSafe</Text>
         <Text style={styles.subtitle}>
@@ -50,28 +55,21 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: theme.spacing.xl,
   },
   content: {
     alignItems: 'center',
     width: '100%',
-    maxWidth: 280,
   },
   iconWrap: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderWidth: 2,
+    borderColor: theme.colors.borderBright,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: theme.spacing.lg,
-  },
-  icon: {
-    fontSize: 40,
-    fontWeight: '800',
-    color: theme.colors.accent,
   },
   title: {
     ...theme.typography.h1,
@@ -88,6 +86,10 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: theme.radii.md,
     overflow: 'hidden',
+    ...Platform.select({
+      ios: theme.shadow.glowSubtle,
+      android: { elevation: 4 },
+    }),
   },
   button: {
     paddingVertical: theme.spacing.lg,

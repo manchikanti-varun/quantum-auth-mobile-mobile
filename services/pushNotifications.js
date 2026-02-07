@@ -1,38 +1,39 @@
 /**
  * Expo Push Notifications – get token for MFA login alerts.
- * Used when registering device so the backend can send "Approve or Deny" pushes.
+ * Push is not supported in Expo Go (SDK 53+); use dev/production build for push.
  */
-import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 
-// Optional: show notifications when app is in foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
-
 /**
  * Request permission and return Expo push token, or null if unavailable.
- * Returns null in Expo Go on Android (push not supported), simulator, or when user denies.
+ * Returns null in Expo Go (push removed in SDK 53), simulator, or when user denies.
  */
 export async function getExpoPushTokenAsync() {
   if (!Device.isDevice) return null;
+  // Skip in Expo Go to avoid "removed from Expo Go" error; push works in dev/production build
+  if (Constants.appOwnership === 'expo') return null;
 
   try {
-    const { status: existing } = await Notifications.getPermissionsAsync();
+    const mod = await import('expo-notifications');
+    const Notif = mod.default || mod;
+    Notif.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      }),
+    });
+    const { status: existing } = await Notif.getPermissionsAsync();
     let final = existing;
     if (existing !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
+      const { status } = await Notif.requestPermissionsAsync();
       final = status;
     }
     if (final !== 'granted') return null;
 
     const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-    const token = await Notifications.getExpoPushTokenAsync(
+    const token = await Notif.getExpoPushTokenAsync(
       projectId ? { projectId } : undefined,
     );
     return token?.data ?? null;

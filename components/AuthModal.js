@@ -9,17 +9,38 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
+  StatusBar,
+  Keyboard,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AppLogo } from './AppLogo';
+import { useLayout } from '../hooks/useLayout';
 import { theme } from '../constants/theme';
 
+const KEYBOARD_VERTICAL_OFFSET_ANDROID = Platform.OS === 'android' ? (StatusBar?.currentHeight ?? 0) : 0;
+
 export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pendingMfa, onCancelPendingMfa, onLoginWithOtp }) => {
+  const { horizontalPadding, safeBottom } = useLayout();
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [otpCode, setOtpCode] = useState('');
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const show = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (pendingMfa) {
@@ -47,15 +68,20 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
       animationType="slide"
       transparent={true}
       onRequestClose={onClose}
+      statusBarTranslucent
     >
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, Platform.OS === 'android' && keyboardHeight > 0 && { paddingBottom: keyboardHeight }]}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
           style={styles.keyboardView}
+          keyboardVerticalOffset={KEYBOARD_VERTICAL_OFFSET_ANDROID}
         >
-          <View style={styles.content}>
+          <View style={[styles.content, { paddingHorizontal: horizontalPadding, paddingBottom: Math.max(safeBottom, 24) + 24 }]}>
             <View style={styles.header}>
-              <Text style={styles.title}>QSafe</Text>
+              <View style={styles.headerLeft}>
+                <AppLogo size="sm" />
+                <Text style={styles.title}>QSafe</Text>
+              </View>
               {!showWaiting && (
                 <TouchableOpacity
                   onPress={onClose}
@@ -67,179 +93,186 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
               )}
             </View>
 
-            {showWaiting ? (
-              <View style={styles.waitingBlock}>
-                {!showOtpInput ? (
-                  <>
-                    <ActivityIndicator size="large" color={theme.colors.accent} style={styles.waitingSpinner} />
-                    <Text style={styles.waitingTitle}>Waiting for approval</Text>
-                    <Text style={styles.waitingSubtitle}>
-                      Open QSafe on your other device and tap Approve or Deny. If it’s offline, use the 6-digit backup code below.
-                    </Text>
+            <ScrollView
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {showWaiting ? (
+                <View style={styles.waitingBlock}>
+                  {!showOtpInput ? (
+                    <>
+                      <ActivityIndicator size="large" color={theme.colors.accent} style={styles.waitingSpinner} />
+                      <Text style={styles.waitingTitle}>Waiting for approval</Text>
+                      <Text style={styles.waitingSubtitle}>
+                        Open QSafe on your other device and tap Approve or Deny. If it’s offline, use the 6-digit backup code below.
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.useOtpButton}
+                        onPress={() => setShowOtpInput(true)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.useOtpButtonText}>Use 6-digit code instead</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.cancelWaitingButton}
+                        onPress={onCancelPendingMfa}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.cancelWaitingText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.waitingTitle}>Backup code</Text>
+                      <Text style={styles.waitingSubtitle}>
+                        Enter the 6-digit code from your authenticator app (the one you saved when you registered).
+                      </Text>
+                      <TextInput
+                        style={styles.otpInput}
+                        placeholder="000000"
+                        placeholderTextColor={theme.colors.textMuted}
+                        value={otpCode}
+                        onChangeText={(t) => setOtpCode(t.replace(/\D/g, '').slice(0, 6))}
+                        keyboardType="number-pad"
+                        maxLength={6}
+                      />
+                      <TouchableOpacity
+                        style={styles.submitOtpButton}
+                        onPress={() => onLoginWithOtp?.(pendingMfa.challengeId, pendingMfa.deviceId, otpCode)}
+                        disabled={loading || otpCode.length !== 6}
+                        activeOpacity={0.85}
+                      >
+                        <LinearGradient
+                          colors={theme.gradients.accent}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={styles.submitOtpButtonInner}
+                        >
+                          {loading ? (
+                            <ActivityIndicator color={theme.colors.bg} />
+                          ) : (
+                            <Text style={styles.primaryButtonText}>Submit code</Text>
+                          )}
+                        </LinearGradient>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.cancelWaitingButton}
+                        onPress={() => { setShowOtpInput(false); setOtpCode(''); }}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.cancelWaitingText}>Back</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              ) : (
+                <>
+                  <View style={styles.switchRow}>
                     <TouchableOpacity
-                      style={styles.useOtpButton}
-                      onPress={() => setShowOtpInput(true)}
+                      style={styles.switchButton}
+                      onPress={() => setMode('login')}
                       activeOpacity={0.8}
                     >
-                      <Text style={styles.useOtpButtonText}>Use 6-digit code instead</Text>
+                      {mode === 'login' ? (
+                        <LinearGradient
+                          colors={theme.gradients.accent}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={styles.switchButtonInner}
+                        >
+                          <Text style={styles.switchButtonTextActive}>Login</Text>
+                        </LinearGradient>
+                      ) : (
+                        <View style={styles.switchButtonInner}>
+                          <Text style={styles.switchButtonText}>Login</Text>
+                        </View>
+                      )}
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={styles.cancelWaitingButton}
-                      onPress={onCancelPendingMfa}
+                      style={styles.switchButton}
+                      onPress={() => setMode('register')}
                       activeOpacity={0.8}
                     >
-                      <Text style={styles.cancelWaitingText}>Cancel</Text>
+                      {mode === 'register' ? (
+                        <LinearGradient
+                          colors={theme.gradients.accent}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={styles.switchButtonInner}
+                        >
+                          <Text style={styles.switchButtonTextActive}>Register</Text>
+                        </LinearGradient>
+                      ) : (
+                        <View style={styles.switchButtonInner}>
+                          <Text style={styles.switchButtonText}>Register</Text>
+                        </View>
+                      )}
                     </TouchableOpacity>
-                  </>
-                ) : (
-                  <>
-                    <Text style={styles.waitingTitle}>Backup code</Text>
-                    <Text style={styles.waitingSubtitle}>
-                      Enter the 6-digit code from your authenticator app (the one you saved when you registered).
-                    </Text>
+                  </View>
+
+                  <View style={styles.form}>
+                    {mode === 'register' && (
+                      <>
+                        <Text style={styles.label}>Display name</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Your name"
+                          placeholderTextColor={theme.colors.textMuted}
+                          autoCapitalize="words"
+                          value={displayName}
+                          onChangeText={setDisplayName}
+                        />
+                      </>
+                    )}
+
+                    <Text style={styles.label}>Email</Text>
                     <TextInput
-                      style={styles.otpInput}
-                      placeholder="000000"
+                      style={styles.input}
+                      placeholder="you@example.com"
                       placeholderTextColor={theme.colors.textMuted}
-                      value={otpCode}
-                      onChangeText={(t) => setOtpCode(t.replace(/\D/g, '').slice(0, 6))}
-                      keyboardType="number-pad"
-                      maxLength={6}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                      value={email}
+                      onChangeText={setEmail}
                     />
+
+                    <Text style={styles.label}>Password</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="••••••••"
+                      placeholderTextColor={theme.colors.textMuted}
+                      secureTextEntry
+                      value={password}
+                      onChangeText={setPassword}
+                    />
+
                     <TouchableOpacity
-                      style={styles.submitOtpButton}
-                      onPress={() => onLoginWithOtp?.(pendingMfa.challengeId, pendingMfa.deviceId, otpCode)}
-                      disabled={loading || otpCode.length !== 6}
+                      style={styles.primaryButtonWrapper}
+                      onPress={handleSubmit}
+                      disabled={loading}
                       activeOpacity={0.85}
                     >
                       <LinearGradient
                         colors={theme.gradients.accent}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={styles.submitOtpButtonInner}
+                        style={styles.primaryButton}
                       >
                         {loading ? (
                           <ActivityIndicator color={theme.colors.bg} />
                         ) : (
-                          <Text style={styles.primaryButtonText}>Submit code</Text>
+                          <Text style={styles.primaryButtonText}>
+                            {mode === 'register' ? 'Create account' : 'Login'}
+                          </Text>
                         )}
                       </LinearGradient>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.cancelWaitingButton}
-                      onPress={() => { setShowOtpInput(false); setOtpCode(''); }}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.cancelWaitingText}>Back</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
-            ) : (
-              <>
-            <View style={styles.switchRow}>
-              <TouchableOpacity
-                style={styles.switchButton}
-                onPress={() => setMode('login')}
-                activeOpacity={0.8}
-              >
-                {mode === 'login' ? (
-                  <LinearGradient
-                    colors={theme.gradients.accent}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.switchButtonInner}
-                  >
-                    <Text style={styles.switchButtonTextActive}>Login</Text>
-                  </LinearGradient>
-                ) : (
-                  <View style={styles.switchButtonInner}>
-                    <Text style={styles.switchButtonText}>Login</Text>
                   </View>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.switchButton}
-                onPress={() => setMode('register')}
-                activeOpacity={0.8}
-              >
-                {mode === 'register' ? (
-                  <LinearGradient
-                    colors={theme.gradients.accent}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.switchButtonInner}
-                  >
-                    <Text style={styles.switchButtonTextActive}>Register</Text>
-                  </LinearGradient>
-                ) : (
-                  <View style={styles.switchButtonInner}>
-                    <Text style={styles.switchButtonText}>Register</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.form}>
-              {mode === 'register' && (
-                <>
-                  <Text style={styles.label}>Display name</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Your name"
-                    placeholderTextColor={theme.colors.textMuted}
-                    autoCapitalize="words"
-                    value={displayName}
-                    onChangeText={setDisplayName}
-                  />
                 </>
               )}
-
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="you@example.com"
-                placeholderTextColor={theme.colors.textMuted}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                value={email}
-                onChangeText={setEmail}
-              />
-
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="••••••••"
-                placeholderTextColor={theme.colors.textMuted}
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-              />
-
-              <TouchableOpacity
-                style={styles.primaryButtonWrapper}
-                onPress={handleSubmit}
-                disabled={loading}
-                activeOpacity={0.85}
-              >
-                <LinearGradient
-                  colors={theme.gradients.accent}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.primaryButton}
-                >
-                  {loading ? (
-                    <ActivityIndicator color={theme.colors.bg} />
-                  ) : (
-                    <Text style={styles.primaryButtonText}>
-                      {mode === 'register' ? 'Create account' : 'Login'}
-                    </Text>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-              </>
-            )}
+            </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </View>
@@ -250,27 +283,40 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(5, 7, 13, 0.9)',
+    backgroundColor: 'rgba(5, 7, 13, 0.92)',
     justifyContent: 'flex-end',
   },
   keyboardView: {
     width: '100%',
+    maxHeight: '100%',
   },
   content: {
     backgroundColor: theme.colors.bgElevated,
-    borderTopLeftRadius: theme.radii.xl,
-    borderTopRightRadius: theme.radii.xl,
-    padding: theme.spacing.lg,
-    paddingBottom: 48,
+    borderTopLeftRadius: theme.radii.xxl,
+    borderTopRightRadius: theme.radii.xxl,
+    paddingTop: theme.spacing.lg,
     borderWidth: 1,
     borderBottomWidth: 0,
     borderColor: theme.colors.border,
+    maxHeight: '90%',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: theme.spacing.xl,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: theme.spacing.xl,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
   },
   title: {
     ...theme.typography.h1,
@@ -329,7 +375,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.bgCard,
     borderRadius: theme.radii.md,
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
+    paddingVertical: theme.spacing.lg,
     color: theme.colors.text,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -339,6 +385,7 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.xl,
     borderRadius: theme.radii.md,
     overflow: 'hidden',
+    ...theme.shadow.button,
   },
   primaryButton: {
     paddingVertical: theme.spacing.lg,
@@ -389,7 +436,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.bgCard,
     borderRadius: theme.radii.md,
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
+    paddingVertical: theme.spacing.lg,
     color: theme.colors.text,
     borderWidth: 1,
     borderColor: theme.colors.border,

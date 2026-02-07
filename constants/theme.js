@@ -1,6 +1,6 @@
 /**
- * QSafe — Future-Gen Quantum Theme
- * Deep space aesthetic with electric accents
+ * QSafe — Premium Quantum Theme
+ * Deep space aesthetic with electric accents; responsive-friendly tokens
  */
 export const theme = {
   colors: {
@@ -9,6 +9,7 @@ export const theme = {
     bgCard: '#0d1119',
     bgCardHover: '#111720',
     surface: '#131a24',
+    surfaceBright: '#1a2332',
     border: 'rgba(0, 229, 255, 0.12)',
     borderBright: 'rgba(0, 229, 255, 0.25)',
     accent: '#00e5ff',
@@ -17,6 +18,7 @@ export const theme = {
     violet: '#a78bfa',
     violetMuted: '#7c3aed',
     success: '#10b981',
+    successDark: '#059669',
     successGlow: 'rgba(16, 185, 129, 0.3)',
     error: '#f43f5e',
     warning: '#f59e0b',
@@ -39,16 +41,19 @@ export const theme = {
     xxl: 48,
   },
   radii: {
+    xs: 6,
     sm: 8,
     md: 12,
     lg: 16,
     xl: 24,
+    xxl: 32,
     full: 9999,
   },
   typography: {
     display: { fontSize: 40, fontWeight: '800', letterSpacing: -1 },
     h1: { fontSize: 28, fontWeight: '700', letterSpacing: -0.5 },
     h2: { fontSize: 22, fontWeight: '600' },
+    h3: { fontSize: 18, fontWeight: '600' },
     body: { fontSize: 16 },
     bodySm: { fontSize: 14 },
     caption: { fontSize: 12 },
@@ -58,16 +63,37 @@ export const theme = {
     glow: {
       shadowColor: '#00e5ff',
       shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.3,
-      shadowRadius: 12,
-      elevation: 8,
+      shadowOpacity: 0.35,
+      shadowRadius: 16,
+      elevation: 10,
+    },
+    glowSubtle: {
+      shadowColor: '#00e5ff',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 4,
     },
     card: {
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.4,
-      shadowRadius: 12,
-      elevation: 6,
+      shadowOpacity: 0.45,
+      shadowRadius: 16,
+      elevation: 8,
+    },
+    cardSubtle: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    button: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 4,
     },
   },
 };

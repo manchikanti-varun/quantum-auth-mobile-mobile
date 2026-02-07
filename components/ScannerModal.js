@@ -11,6 +11,7 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions, scanFromURLAsync } from 'expo-camera';
@@ -210,7 +211,8 @@ export const ScannerModal = ({ visible, onClose, onScan }) => {
           {mode === 'manual' ? (
             <KeyboardAvoidingView
               style={styles.flex1}
-              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              behavior="padding"
+              keyboardVerticalOffset={Platform.OS === 'android' ? (StatusBar?.currentHeight ?? 0) : 0}
             >
               <ScrollView
                 style={styles.manualScroll}

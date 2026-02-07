@@ -7,6 +7,8 @@ import {
   StyleSheet,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AppLogo } from './AppLogo';
+import { useLayout } from '../hooks/useLayout';
 import { theme } from '../constants/theme';
 
 export const MfaModal = ({
@@ -16,6 +18,7 @@ export const MfaModal = ({
   onApprove,
   onDeny,
 }) => {
+  const { horizontalPadding, contentMaxWidth } = useLayout();
   if (!challenge) return null;
 
   return (
@@ -25,10 +28,10 @@ export const MfaModal = ({
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <View style={styles.content}>
+      <View style={[styles.overlay, { padding: horizontalPadding }]}>
+        <View style={[styles.content, { maxWidth: contentMaxWidth }]}>
           <View style={styles.iconWrap}>
-            <Text style={styles.icon}>◆</Text>
+            <AppLogo size="md" />
           </View>
           <Text style={styles.title}>Login Request</Text>
           <Text style={styles.subtitle}>A login attempt was detected</Text>
@@ -54,7 +57,7 @@ export const MfaModal = ({
               activeOpacity={0.85}
             >
               <LinearGradient
-                colors={[theme.colors.success, '#059669']}
+                colors={[theme.colors.success, theme.colors.successDark]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.buttonApprove}
@@ -79,10 +82,9 @@ const styles = StyleSheet.create({
   },
   content: {
     backgroundColor: theme.colors.bgElevated,
-    borderRadius: theme.radii.xl,
+    borderRadius: theme.radii.xxl,
     padding: theme.spacing.xl,
     width: '100%',
-    maxWidth: 360,
     borderWidth: 1,
     borderColor: theme.colors.border,
     alignItems: 'center',
@@ -97,11 +99,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: theme.spacing.lg,
-  },
-  icon: {
-    fontSize: 24,
-    color: theme.colors.accent,
-    fontWeight: '300',
   },
   title: {
     ...theme.typography.h1,

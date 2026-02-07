@@ -51,6 +51,7 @@ export const AccountCard = ({ account, code, adjacent, secondsRemaining = 0, onR
                   style={styles.removeButton}
                   onPress={handleRemove}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  activeOpacity={0.7}
                 >
                   <Text style={styles.removeButtonText}>×</Text>
                 </TouchableOpacity>
@@ -85,7 +86,7 @@ const styles = StyleSheet.create({
   cardWrapper: {
     ...Platform.select({
       ios: theme.shadow.card,
-      android: { elevation: 6 },
+      android: { elevation: 8 },
     }),
   },
   cardBorder: {
@@ -93,7 +94,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardGradient: {
-    padding: 1.5,
+    padding: 2,
     borderRadius: theme.radii.lg,
   },
   card: {
@@ -125,6 +126,7 @@ const styles = StyleSheet.create({
   },
   info: {
     flex: 1,
+    minWidth: 0,
   },
   issuer: {
     ...theme.typography.body,

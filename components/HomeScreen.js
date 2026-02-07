@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AccountCard } from './AccountCard';
+import { AppLogo } from './AppLogo';
+import { useLayout } from '../hooks/useLayout';
 import { theme } from '../constants/theme';
 
 export const HomeScreen = ({
@@ -21,11 +23,16 @@ export const HomeScreen = ({
   onScanPress,
   onRemoveAccount,
 }) => {
+  const { horizontalPadding, contentMaxWidth, safeBottom } = useLayout();
+  const paddingBottom = 120 + safeBottom;
+
   if (!token) {
     return (
-      <View style={styles.authPrompt}>
+      <View style={[styles.authPrompt, { paddingHorizontal: horizontalPadding }]}>
         <View style={styles.logoContainer}>
-          <Text style={styles.logo}>Q</Text>
+          <View style={styles.logoRing}>
+            <AppLogo size="lg" />
+          </View>
         </View>
         <Text style={styles.authPromptTitle}>QSafe</Text>
         <Text style={styles.authPromptSubtitle}>
@@ -55,7 +62,16 @@ export const HomeScreen = ({
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        {
+          paddingHorizontal: horizontalPadding,
+          paddingBottom,
+          maxWidth: contentMaxWidth + horizontalPadding * 2,
+          alignSelf: 'center',
+          width: '100%',
+        },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
@@ -110,8 +126,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingBottom: 120,
-    paddingHorizontal: theme.spacing.lg,
+    flexGrow: 1,
   },
   header: {
     flexDirection: 'row',
@@ -151,7 +166,7 @@ const styles = StyleSheet.create({
   emptyIconWrap: {
     width: 72,
     height: 72,
-    borderRadius: 36,
+    borderRadius: theme.radii.xl,
     backgroundColor: theme.colors.surface,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -187,11 +202,15 @@ const styles = StyleSheet.create({
   logoContainer: {
     marginBottom: theme.spacing.lg,
   },
-  logo: {
-    fontSize: 64,
-    fontWeight: '800',
-    color: theme.colors.accent,
-    letterSpacing: -2,
+  logoRing: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 2,
+    borderColor: theme.colors.borderBright,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   authPromptTitle: {
     ...theme.typography.display,
@@ -216,7 +235,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Platform.select({
       ios: theme.shadow.glow,
-      android: { elevation: 8 },
+      android: { elevation: 10 },
     }),
   },
   authPromptButton: {

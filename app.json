@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#05070d"
     },
     "ios": {
       "supportsTablet": true
@@ -23,6 +23,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.qsafe.app",
+      "softwareKeyboardLayoutMode": "resize",
       "intentFilters": [
         {
           "action": "VIEW",
@@ -33,20 +34,15 @@
               "pathPrefix": "/"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
     "notification": {
       "icon": "./assets/icon.png",
-      "color": "#2563eb"
+      "color": "#00e5ff"
     },
-    "plugins": [
-      "expo-notifications"
-    ],
+    "plugins": ["expo-notifications"],
     "web": {
       "favicon": "./assets/favicon.png"
     },
