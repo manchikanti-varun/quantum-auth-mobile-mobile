@@ -40,7 +40,7 @@ export const useAuth = (deviceId, onSuccess) => {
           await storage.saveToken(data.token);
           updateApiToken(data.token);
           setUser(data.email ? { email: data.email, displayName: data.displayName ?? null } : null);
-          await registerDevice(data.uid, pendingMfa.deviceId);
+          await registerDevice(data.uid, pendingMfa.deviceId, pendingMfa.rememberDevice ?? true);
           setPendingMfa(null);
           onSuccess?.();
           return;
@@ -58,7 +58,7 @@ export const useAuth = (deviceId, onSuccess) => {
       }
     };
 
-    const interval = setInterval(poll, 300);
+    const interval = setInterval(poll, 150);
     poll();
     return () => clearInterval(interval);
   }, [pendingMfa?.challengeId, pendingMfa?.deviceId]);
@@ -93,7 +93,7 @@ export const useAuth = (deviceId, onSuccess) => {
     setAuthToken(newToken);
   };
 
-  const login = async (email, password) => {
+  const login = async (email, password, rememberDevice = true) => {
     if (!email || !password) {
       Alert.alert('Validation', 'Email and password are required');
       return;
@@ -108,7 +108,7 @@ export const useAuth = (deviceId, onSuccess) => {
       setPendingMfa(null);
       const response = await authApi.login(email, password, deviceId);
       if (response.data.requiresMfa && response.data.challengeId) {
-        setPendingMfa({ challengeId: response.data.challengeId, deviceId });
+        setPendingMfa({ challengeId: response.data.challengeId, deviceId, rememberDevice });
         setLoading(false);
         return;
       }
@@ -117,7 +117,7 @@ export const useAuth = (deviceId, onSuccess) => {
       await storage.saveToken(newToken);
       updateApiToken(newToken);
       setUser(response.data.email ? { email: response.data.email, displayName: response.data.displayName ?? null } : null);
-      await registerDevice(response.data.uid, deviceId);
+      await registerDevice(response.data.uid, deviceId, rememberDevice);
       onSuccess?.();
       return response.data;
     } catch (err) {
@@ -132,7 +132,7 @@ export const useAuth = (deviceId, onSuccess) => {
     }
   };
 
-  const register = async (email, password, displayName) => {
+  const register = async (email, password, displayName, rememberDevice = true) => {
     if (!email || !password) {
       Alert.alert('Validation', 'Email and password are required');
       return;
@@ -146,7 +146,7 @@ export const useAuth = (deviceId, onSuccess) => {
       await storage.saveToken(newToken);
       updateApiToken(newToken);
       setUser(response.data.email ? { email: response.data.email, displayName: response.data.displayName ?? null } : null);
-      await registerDevice(response.data.uid, deviceId);
+      await registerDevice(response.data.uid, deviceId, rememberDevice);
       onSuccess?.();
       return response.data;
     } catch (err) {
@@ -184,7 +184,27 @@ export const useAuth = (deviceId, onSuccess) => {
 
   const cancelPendingMfa = () => setPendingMfa(null);
 
-  const loginWithOtp = async (challengeId, deviceId, code) => {
+  const loginWithGoogle = async (idToken, rememberDevice = true) => {
+    if (!idToken) return;
+    try {
+      setLoading(true);
+      const res = await authApi.googleAuth(idToken);
+      const data = res.data;
+      setToken(data.token);
+      await storage.saveToken(data.token);
+      updateApiToken(data.token);
+      setUser(data.email ? { email: data.email, displayName: data.displayName ?? null } : null);
+      await registerDevice(data.uid, deviceId, rememberDevice);
+      onSuccess?.();
+    } catch (err) {
+      const message = err?.response?.data?.message || 'Google sign-in failed. Try again.';
+      Alert.alert('Error', message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginWithOtp = async (challengeId, deviceId, code, rememberDevice = true) => {
     if (!challengeId || !deviceId || !code) {
       Alert.alert('Validation', 'Enter the 6-digit code');
       return;
@@ -197,7 +217,7 @@ export const useAuth = (deviceId, onSuccess) => {
       await storage.saveToken(data.token);
       updateApiToken(data.token);
       setUser(data.email ? { email: data.email, displayName: data.displayName ?? null } : null);
-      await registerDevice(data.uid, deviceId);
+      await registerDevice(data.uid, deviceId, rememberDevice);
       setPendingMfa(null);
       onSuccess?.();
     } catch (err) {
@@ -215,6 +235,7 @@ export const useAuth = (deviceId, onSuccess) => {
     login,
     register,
     logout,
+    loginWithGoogle,
     pendingMfa,
     cancelPendingMfa,
     loginWithOtp,

@@ -47,6 +47,9 @@ export const authApi = {
   login: (email, password, deviceId) =>
     api.post('/api/auth/login', { email, password, deviceId }),
 
+  googleAuth: (idToken) =>
+    api.post('/api/auth/google', { idToken }),
+
   getLoginStatus: (challengeId, deviceId) =>
     api.get(`/api/auth/login-status?challengeId=${encodeURIComponent(challengeId)}&deviceId=${encodeURIComponent(deviceId)}`),
 
@@ -65,9 +68,8 @@ export const deviceApi = {
 
 export const mfaApi = {
   getPending: (deviceId) => api.get(`/api/mfa/pending?deviceId=${deviceId}`),
-
   resolve: (data) => api.post('/api/mfa/resolve', data),
-
+  generateCode: (challengeId) => api.post('/api/mfa/generate-code', { challengeId }),
   getHistory: () => api.get('/api/mfa/history'),
 };
 

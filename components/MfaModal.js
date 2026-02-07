@@ -1,7 +1,7 @@
 /**
- * MfaModal – Approve/deny login request. Shows IP, device, time. Optional "Mark suspicious".
+ * MfaModal – Approve/deny login request. Generate code for Device 2. Shows IP, device, time.
  */
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   View,
@@ -9,12 +9,14 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AppLogo } from './AppLogo';
 import { useLayout } from '../hooks/useLayout';
 import { themeDark } from '../constants/themes';
+import { mfaApi } from '../services/api';
 
 export const MfaModal = ({
   visible,
@@ -26,10 +28,31 @@ export const MfaModal = ({
   resolving,
 }) => {
   const { horizontalPadding, contentMaxWidth } = useLayout();
+  const [generatingCode, setGeneratingCode] = useState(false);
   if (!challenge) return null;
 
   const disabled = !!resolving;
   const ctx = challenge.context || {};
+
+  const handleGenerateCode = async () => {
+    if (!challenge?.challengeId) return;
+    setGeneratingCode(true);
+    try {
+      const res = await mfaApi.generateCode(challenge.challengeId);
+      const code = res.data?.code;
+      if (code) {
+        Alert.alert(
+          'Login code',
+          `Enter this code on the other device:\n\n${code}\n\nValid for 5 minutes.`,
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (e) {
+      Alert.alert('Error', e?.response?.data?.message || 'Could not generate code');
+    } finally {
+      setGeneratingCode(false);
+    }
+  };
 
   return (
     <Modal
@@ -72,6 +95,23 @@ export const MfaModal = ({
               )}
             </View>
           )}
+
+          <TouchableOpacity
+            style={[styles.generateCodeButton, { borderColor: themeDark.colors.accent }]}
+            onPress={handleGenerateCode}
+            disabled={disabled || generatingCode}
+          >
+            {generatingCode ? (
+              <ActivityIndicator size="small" color={themeDark.colors.accent} />
+            ) : (
+              <>
+                <MaterialCommunityIcons name="numeric" size={20} color={themeDark.colors.accent} style={styles.buttonIcon} />
+                <Text style={[styles.generateCodeText, { color: themeDark.colors.accent }]}>
+                  Generate code for other device
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
 
           <View style={styles.buttonRow}>
             <View style={styles.denyColumn}>
@@ -204,6 +244,21 @@ const styles = StyleSheet.create({
     ...themeDark.typography.body,
     color: themeDark.colors.text,
     ...themeDark.typography.mono,
+  },
+  generateCodeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: themeDark.spacing.md,
+    paddingHorizontal: themeDark.spacing.lg,
+    borderRadius: themeDark.radii.md,
+    borderWidth: 2,
+    marginBottom: themeDark.spacing.lg,
+    width: '100%',
+  },
+  generateCodeText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
   buttonRow: {
     flexDirection: 'row',

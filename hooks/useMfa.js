@@ -14,7 +14,7 @@ export const useMfa = (deviceId, token) => {
     if (!deviceId || !token) return;
 
     checkForPendingChallenges();
-    const interval = setInterval(checkForPendingChallenges, 1500);
+    const interval = setInterval(checkForPendingChallenges, 150);
     return () => clearInterval(interval);
   }, [deviceId, token]);
 
@@ -32,20 +32,17 @@ export const useMfa = (deviceId, token) => {
     if (!deviceId || !token) return;
     try {
       const response = await mfaApi.getPending(deviceId);
-      if (response.data?.challenge) {
-        const challenge = response.data.challenge;
-        if (!pendingChallenge || pendingChallenge.challengeId !== challenge.challengeId) {
-          setPendingChallenge({
-            challengeId: challenge.challengeId,
-            context: challenge.context || {},
-          });
-          // MFA modal will show automatically when pendingChallenge is set
-        }
-      } else if (pendingChallenge) {
+      const challenge = response.data?.challenge;
+      if (challenge?.challengeId) {
+        setPendingChallenge({
+          challengeId: challenge.challengeId,
+          context: challenge.context || {},
+        });
+      } else {
         setPendingChallenge(null);
       }
     } catch (e) {
-      // Silently fail
+      if (__DEV__) console.warn('MFA poll error:', e?.message);
     }
   };
 

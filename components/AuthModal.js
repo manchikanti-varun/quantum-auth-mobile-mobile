@@ -7,6 +7,7 @@ import {
   View,
   Text,
   TextInput,
+  Alert,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
@@ -30,6 +31,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [rememberDevice, setRememberDevice] = useState(true);
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [otpCode, setOtpCode] = useState('');
 
@@ -42,9 +44,9 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
 
   const handleSubmit = async () => {
     if (mode === 'login') {
-      await onLogin(email, password);
+      await onLogin(email, password, rememberDevice);
     } else {
-      await onRegister(email, password, displayName);
+      await onRegister(email, password, displayName, rememberDevice);
     }
     setEmail('');
     setPassword('');
@@ -128,14 +130,14 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                         Open QSafe on your other device and tap Approve or Deny. This usually takes a few seconds.
                       </Text>
                       <Text style={[styles.waitingHint, { color: theme.colors.textMuted }]}>
-                        Other device offline? Use your backup code below.
+                        Other device offline? Get a code from it and enter below.
                       </Text>
                       <TouchableOpacity
                         style={[styles.useOtpButton, { borderColor: theme.colors.accent }]}
                         onPress={() => setShowOtpInput(true)}
                         activeOpacity={0.8}
                       >
-                        <Text style={[styles.useOtpButtonText, { color: theme.colors.accent }]}>Use backup code instead</Text>
+                        <Text style={[styles.useOtpButtonText, { color: theme.colors.accent }]}>Get code from other device</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[styles.cancelWaitingButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
@@ -147,9 +149,9 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                     </>
                   ) : (
                     <>
-                      <Text style={styles.waitingTitle}>Backup code</Text>
+                      <Text style={styles.waitingTitle}>Enter code from Device 1</Text>
                       <Text style={styles.waitingSubtitle}>
-                        Enter the 6-digit code from your authenticator app (the one you saved when you registered).
+                        Open QSafe on your other device. You'll see the login request. Tap "Generate code for other device" and enter the 6-digit code here.
                       </Text>
                       <TextInput
                         style={[styles.otpInput, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
@@ -162,7 +164,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                       />
                       <TouchableOpacity
                         style={[styles.submitOtpButton, { backgroundColor: theme.colors.accent }]}
-                        onPress={() => onLoginWithOtp?.(pendingMfa.challengeId, pendingMfa.deviceId, otpCode)}
+                        onPress={() => onLoginWithOtp?.(pendingMfa.challengeId, pendingMfa.deviceId, otpCode, rememberDevice)}
                         disabled={loading || otpCode.length !== 6}
                         activeOpacity={0.85}
                       >
@@ -220,6 +222,21 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                     />
 
                     <TouchableOpacity
+                      style={[styles.rememberRow, { borderColor: theme.colors.border }]}
+                      onPress={() => setRememberDevice((v) => !v)}
+                      activeOpacity={0.8}
+                    >
+                      <MaterialCommunityIcons
+                        name={rememberDevice ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                        size={24}
+                        color={rememberDevice ? theme.colors.accent : theme.colors.textMuted}
+                      />
+                      <Text style={[styles.rememberText, { color: theme.colors.textSecondary }]}>
+                        Remember this device
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
                       style={[styles.primaryButtonWrapper, { backgroundColor: theme.colors.accent }]}
                       onPress={handleSubmit}
                       disabled={loading}
@@ -232,6 +249,20 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                           {mode === 'register' ? 'Create account' : 'Login'}
                         </Text>
                       )}
+                    </TouchableOpacity>
+
+                    <View style={[styles.dividerRow, { borderColor: theme.colors.border }]}>
+                      <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+                      <Text style={[styles.dividerText, { color: theme.colors.textMuted }]}>or</Text>
+                      <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.socialButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                      onPress={() => Alert.alert('Coming soon', 'Sign in with Google will be available in a future update.')}
+                      activeOpacity={0.8}
+                    >
+                      <MaterialCommunityIcons name="google" size={22} color={theme.colors.text} />
+                      <Text style={[styles.socialButtonText, { color: theme.colors.text }]}>Sign in with Google</Text>
                     </TouchableOpacity>
                   </View>
               )}
@@ -312,6 +343,45 @@ const styles = StyleSheet.create({
   },
   form: {
     marginTop: themeDark.spacing.sm,
+  },
+  rememberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: themeDark.spacing.sm,
+    marginTop: themeDark.spacing.lg,
+    paddingVertical: themeDark.spacing.sm,
+  },
+  rememberText: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: themeDark.spacing.xl,
+    gap: themeDark.spacing.md,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  socialButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: themeDark.spacing.sm,
+    paddingVertical: themeDark.spacing.md,
+    borderRadius: themeDark.radii.lg,
+    borderWidth: 1,
+    marginTop: themeDark.spacing.lg,
+  },
+  socialButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   label: {
     fontSize: 14,

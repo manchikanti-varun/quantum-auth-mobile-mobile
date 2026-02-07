@@ -213,17 +213,17 @@ function AppContent() {
     else Alert.alert('Wrong PIN', 'Please try again.');
   };
 
-  const handleLogin = async (email, password) => {
+  const handleLogin = async (email, password, rememberDevice = true) => {
     try {
-      await login(email, password);
+      await login(email, password, rememberDevice);
     } catch (e) {
       // Error handled in hook
     }
   };
 
-  const handleRegister = async (email, password, displayName) => {
+  const handleRegister = async (email, password, displayName, rememberDevice = true) => {
     try {
-      await register(email, password, displayName);
+      await register(email, password, displayName, rememberDevice);
     } catch (e) {
       // Error handled in hook
     }
