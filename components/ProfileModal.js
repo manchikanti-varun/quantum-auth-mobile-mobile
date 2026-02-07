@@ -33,8 +33,8 @@ export const ProfileModal = ({ visible, user, onClose, onPasswordChanged }) => {
       Alert.alert('Required', 'Fill in all fields');
       return;
     }
-    if (newPassword.length < 6) {
-      Alert.alert('Invalid', 'New password must be at least 6 characters');
+    if (newPassword.length < 8) {
+      Alert.alert('Invalid', 'New password must be at least 8 characters');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -94,7 +94,7 @@ export const ProfileModal = ({ visible, user, onClose, onPasswordChanged }) => {
               />
               <TextInput
                 style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
-                placeholder="New password (min 6 chars)"
+                placeholder="New password (min 8 chars)"
                 placeholderTextColor={theme.colors.textMuted}
                 value={newPassword}
                 onChangeText={setNewPassword}

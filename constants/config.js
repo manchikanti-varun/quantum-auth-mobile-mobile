@@ -1,8 +1,8 @@
 /**
  * App configuration – API URL, storage keys, default folders, auto-lock options.
- * Set EXPO_PUBLIC_API_URL in .env (e.g. https://your-api.example.com).
+ * Set EXPO_PUBLIC_API_URL in .env (see .env.example).
  */
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || '';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
 export const ACCOUNTS_KEY = 'QSAFE_TOTP_ACCOUNTS';
 export const DEVICE_KEY = 'QSAFE_DEVICE_ID';
 export const PQC_KEYPAIR_KEY = 'QSAFE_PQC_KEYPAIR';

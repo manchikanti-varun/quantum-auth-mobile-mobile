@@ -217,10 +217,10 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                       onChangeText={setEmail}
                     />
 
-                    <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Password</Text>
+                    <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Password{mode === 'register' ? ' (min 8 chars)' : ''}</Text>
                     <TextInput
                       style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
-                      placeholder="••••••••"
+                      placeholder={mode === 'register' ? 'Min 8 characters' : '••••••••'}
                       placeholderTextColor={theme.colors.textMuted}
                       secureTextEntry
                       value={password}

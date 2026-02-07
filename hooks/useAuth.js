@@ -137,6 +137,10 @@ export const useAuth = (deviceId, onSuccess) => {
       Alert.alert('Validation', 'Email and password are required');
       return;
     }
+    if (password.length < 8) {
+      Alert.alert('Validation', 'Password must be at least 8 characters');
+      return;
+    }
 
     try {
       setLoading(true);

@@ -1,22 +1,23 @@
-# QSafe Mobile App
+# QSafe Mobile
 
-React Native (Expo) mobile authenticator with TOTP, push MFA, and quantum-safe signatures.
+React Native (Expo) authenticator app with TOTP, push MFA, and quantum-safe signatures.
+
+## Features
+
+- **TOTP**: Add accounts via QR scan or manual entry
+- **MFA**: Approve/deny login requests on another device
+- **PQC**: Dilithium2 quantum-safe signatures for MFA
+- **Backup OTP**: 6-digit code or TOTP for login when other device is offline
+- **App lock**: PIN or biometric
 
 ## Setup
 
 ```bash
 npm install
+cp .env.example .env
 ```
 
-### API URL
-
-Set your backend URL in `.env`:
-
-```bash
-EXPO_PUBLIC_API_URL=https://your-backend.com
-```
-
-Copy `.env.example` to `.env` and fill in your values.
+Edit `.env` and set `EXPO_PUBLIC_API_URL` to your backend URL.
 
 ## Run
 
@@ -26,20 +27,38 @@ npx expo start
 
 Press `a` for Android, `i` for iOS.
 
-## Build APK
+### Local development
 
-1. Copy `.env.example` to `.env` and set `EXPO_PUBLIC_API_URL` to your backend URL
-2. Run: `npx eas build --platform android --profile production`
-3. Download APK from the build link or expo.dev
+When testing against a local backend:
+
+- **Physical device** (same WiFi): `EXPO_PUBLIC_API_URL=http://YOUR_IP:4000` (e.g. `http://192.168.1.21:4000`)
+- **Android emulator**: `EXPO_PUBLIC_API_URL=http://10.0.2.2:4000`
+- **iOS simulator**: `EXPO_PUBLIC_API_URL=http://localhost:4000`
+
+Restart Expo after changing `.env` (`npx expo start --clear`).
+
+## Production build
+
+1. Set `EXPO_PUBLIC_API_URL` in `.env` to your production backend URL.
+2. Build:
+
+   ```bash
+   npx eas build --platform android --profile production
+   ```
+
+3. Download the APK from the build link or expo.dev.
 
 ## Backup OTP (login on new device)
 
 When logging in on a new device:
 
-1. **Preferred**: Open QSafe on your trusted device (Device 1) → you'll see the login request → tap **Approve** or **Generate code for other device**
-2. **Generate code**: On Device 1, tap "Generate code for other device" → enter the 6-digit code on Device 2
-3. **TOTP fallback**: If you added the QSafe backup secret to your authenticator at registration, use that code (not your Google/GitHub TOTP codes)
+1. **Preferred**: Open QSafe on your trusted device → approve or deny the request.
+2. **Generate code**: On the trusted device, tap "Generate code for other device" → enter the 6-digit code on the new device.
+3. **TOTP fallback**: Use the backup secret you added to your authenticator at registration.
 
-## Tech Stack
+## Tech stack
 
-- Expo SDK 54, SecureStore, expo-local-authentication, @asanrom/dilithium
+- Expo SDK 54
+- SecureStore, expo-local-authentication
+- @asanrom/dilithium (PQC signatures)
+- expo-notifications (push)
