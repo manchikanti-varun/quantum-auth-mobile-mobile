@@ -12,14 +12,16 @@ import {
   ScrollView,
   StatusBar,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AppLogo } from './AppLogo';
 import { useLayout } from '../hooks/useLayout';
-import { theme } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+import { themeDark } from '../constants/themes';
 
 const KEYBOARD_VERTICAL_OFFSET_ANDROID = Platform.OS === 'android' ? (StatusBar?.currentHeight ?? 0) : 0;
 
 export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pendingMfa, onCancelPendingMfa, onLoginWithOtp }) => {
+  const { theme } = useTheme();
   const { horizontalPadding, safeBottom, safeTop } = useLayout();
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
@@ -62,66 +64,49 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
           style={styles.keyboardView}
           keyboardVerticalOffset={KEYBOARD_VERTICAL_OFFSET_ANDROID}
         >
-          <View style={[styles.content, { paddingHorizontal: horizontalPadding, paddingTop: Math.max(safeTop, 16) + 16, paddingBottom: Math.max(safeBottom, 24) + 24 }]}>
+          <View style={[styles.content, { paddingHorizontal: horizontalPadding, paddingTop: Math.max(safeTop, 16) + 16, paddingBottom: Math.max(safeBottom, 24) + 24, backgroundColor: theme.colors.bgElevated, borderColor: theme.colors.border }]}>
             <View style={styles.header}>
               <View style={styles.headerLeft}>
                 <AppLogo size="sm" />
-                <Text style={styles.title}>QSafe</Text>
+                <Text style={[styles.title, { color: theme.colors.text }]}>QSafe</Text>
               </View>
               {!showWaiting && (
                 <TouchableOpacity
                   onPress={onClose}
-                  style={styles.closeButton}
+                  style={[styles.closeButton, { backgroundColor: theme.colors.surface }]}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
-                  <Text style={styles.close}>×</Text>
+                  <MaterialCommunityIcons name="close" size={22} color={theme.colors.textSecondary} />
                 </TouchableOpacity>
               )}
             </View>
 
             {!showWaiting && (
-              <View style={styles.switchRow}>
-                <TouchableOpacity
-                  style={styles.switchButton}
-                  onPress={() => setMode('login')}
-                  activeOpacity={0.8}
-                >
-                  {mode === 'login' ? (
-                    <LinearGradient
-                      colors={theme.gradients.accent}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.switchButtonInner}
-                    >
-                      <Text style={styles.switchButtonTextActive}>Login</Text>
-                    </LinearGradient>
-                  ) : (
-                    <View style={styles.switchButtonInner}>
-                      <Text style={styles.switchButtonText}>Login</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.switchButton}
-                  onPress={() => setMode('register')}
-                  activeOpacity={0.8}
-                >
-                  {mode === 'register' ? (
-                    <LinearGradient
-                      colors={theme.gradients.accent}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.switchButtonInner}
-                    >
-                      <Text style={styles.switchButtonTextActive}>Register</Text>
-                    </LinearGradient>
-                  ) : (
-                    <View style={styles.switchButtonInner}>
-                      <Text style={styles.switchButtonText}>Register</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              </View>
+              <>
+                <Text style={[styles.welcomeText, { color: theme.colors.textSecondary }]}>
+                  {mode === 'login' ? 'Welcome back' : 'Create your account'}
+                </Text>
+                <View style={[styles.switchRow, { backgroundColor: theme.colors.surface }]}>
+                  <TouchableOpacity
+                    style={[styles.switchButton, mode === 'login' && { backgroundColor: theme.colors.accent }]}
+                    onPress={() => setMode('login')}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.switchButtonText, mode === 'login' && styles.switchButtonTextActive, { color: mode === 'login' ? theme.colors.bg : theme.colors.textSecondary }]}>
+                      Login
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.switchButton, mode === 'register' && { backgroundColor: theme.colors.accent }]}
+                    onPress={() => setMode('register')}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.switchButtonText, mode === 'register' && styles.switchButtonTextActive, { color: mode === 'register' ? theme.colors.bg : theme.colors.textSecondary }]}>
+                      Register
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
             )}
 
             <ScrollView
@@ -137,21 +122,24 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                       <ActivityIndicator size="large" color={theme.colors.accent} style={styles.waitingSpinner} />
                       <Text style={styles.waitingTitle}>Waiting for approval</Text>
                       <Text style={styles.waitingSubtitle}>
-                        Open QSafe on your other device and tap Approve or Deny. If it’s offline, use the 6-digit backup code below.
+                        Open QSafe on your other device and tap Approve or Deny. This usually takes a few seconds.
+                      </Text>
+                      <Text style={[styles.waitingHint, { color: theme.colors.textMuted }]}>
+                        Other device offline? Use your backup code below.
                       </Text>
                       <TouchableOpacity
-                        style={styles.useOtpButton}
+                        style={[styles.useOtpButton, { borderColor: theme.colors.accent }]}
                         onPress={() => setShowOtpInput(true)}
                         activeOpacity={0.8}
                       >
-                        <Text style={styles.useOtpButtonText}>Use 6-digit code instead</Text>
+                        <Text style={[styles.useOtpButtonText, { color: theme.colors.accent }]}>Use backup code instead</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={styles.cancelWaitingButton}
+                        style={[styles.cancelWaitingButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
                         onPress={onCancelPendingMfa}
                         activeOpacity={0.8}
                       >
-                        <Text style={styles.cancelWaitingText}>Cancel</Text>
+                        <Text style={[styles.cancelWaitingText, { color: theme.colors.textSecondary }]}>Cancel</Text>
                       </TouchableOpacity>
                     </>
                   ) : (
@@ -161,7 +149,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                         Enter the 6-digit code from your authenticator app (the one you saved when you registered).
                       </Text>
                       <TextInput
-                        style={styles.otpInput}
+                        style={[styles.otpInput, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
                         placeholder="000000"
                         placeholderTextColor={theme.colors.textMuted}
                         value={otpCode}
@@ -170,30 +158,23 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                         maxLength={6}
                       />
                       <TouchableOpacity
-                        style={styles.submitOtpButton}
+                        style={[styles.submitOtpButton, { backgroundColor: theme.colors.accent }]}
                         onPress={() => onLoginWithOtp?.(pendingMfa.challengeId, pendingMfa.deviceId, otpCode)}
                         disabled={loading || otpCode.length !== 6}
                         activeOpacity={0.85}
                       >
-                        <LinearGradient
-                          colors={theme.gradients.accent}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={styles.submitOtpButtonInner}
-                        >
-                          {loading ? (
-                            <ActivityIndicator color={theme.colors.bg} />
-                          ) : (
-                            <Text style={styles.primaryButtonText}>Submit code</Text>
-                          )}
-                        </LinearGradient>
+                        {loading ? (
+                          <ActivityIndicator color={theme.colors.bg} />
+                        ) : (
+                          <Text style={[styles.primaryButtonText, { color: theme.colors.bg }]}>Submit code</Text>
+                        )}
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={styles.cancelWaitingButton}
+                        style={[styles.cancelWaitingButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
                         onPress={() => { setShowOtpInput(false); setOtpCode(''); }}
                         activeOpacity={0.8}
                       >
-                        <Text style={styles.cancelWaitingText}>Back</Text>
+                        <Text style={[styles.cancelWaitingText, { color: theme.colors.textSecondary }]}>Back</Text>
                       </TouchableOpacity>
                     </>
                   )}
@@ -202,9 +183,9 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                 <View style={styles.form}>
                     {mode === 'register' && (
                       <>
-                        <Text style={styles.label}>Display name</Text>
+                        <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Display name</Text>
                         <TextInput
-                          style={styles.input}
+                          style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
                           placeholder="Your name"
                           placeholderTextColor={theme.colors.textMuted}
                           autoCapitalize="words"
@@ -214,9 +195,9 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                       </>
                     )}
 
-                    <Text style={styles.label}>Email</Text>
+                    <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Email</Text>
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
                       placeholder="you@example.com"
                       placeholderTextColor={theme.colors.textMuted}
                       autoCapitalize="none"
@@ -225,9 +206,9 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                       onChangeText={setEmail}
                     />
 
-                    <Text style={styles.label}>Password</Text>
+                    <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Password</Text>
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
                       placeholder="••••••••"
                       placeholderTextColor={theme.colors.textMuted}
                       secureTextEntry
@@ -236,25 +217,18 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                     />
 
                     <TouchableOpacity
-                      style={styles.primaryButtonWrapper}
+                      style={[styles.primaryButtonWrapper, { backgroundColor: theme.colors.accent }]}
                       onPress={handleSubmit}
                       disabled={loading}
                       activeOpacity={0.85}
                     >
-                      <LinearGradient
-                        colors={theme.gradients.accent}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.primaryButton}
-                      >
-                        {loading ? (
-                          <ActivityIndicator color={theme.colors.bg} />
-                        ) : (
-                          <Text style={styles.primaryButtonText}>
-                            {mode === 'register' ? 'Create account' : 'Login'}
-                          </Text>
-                        )}
-                      </LinearGradient>
+                      {loading ? (
+                        <ActivityIndicator color={theme.colors.bg} />
+                      ) : (
+                        <Text style={[styles.primaryButtonText, { color: theme.colors.bg }]}>
+                          {mode === 'register' ? 'Create account' : 'Login'}
+                        </Text>
+                      )}
                     </TouchableOpacity>
                   </View>
               )}
@@ -278,12 +252,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    backgroundColor: theme.colors.bgElevated,
-    borderBottomLeftRadius: theme.radii.xxl,
-    borderBottomRightRadius: theme.radii.xxl,
+    borderBottomLeftRadius: themeDark.radii.xxl,
+    borderBottomRightRadius: themeDark.radii.xxl,
     borderWidth: 1,
     borderTopWidth: 0,
-    borderColor: theme.colors.border,
   },
   scrollView: {
     flex: 1,
@@ -291,169 +263,144 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: theme.spacing.xl,
+    paddingBottom: themeDark.spacing.xl,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.xl,
+    marginBottom: themeDark.spacing.lg,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
+    gap: themeDark.spacing.sm,
   },
   title: {
-    ...theme.typography.h1,
-    color: theme.colors.text,
+    ...themeDark.typography.h1,
   },
   closeButton: {
-    padding: theme.spacing.xs,
+    padding: themeDark.spacing.sm,
+    borderRadius: themeDark.radii.sm,
   },
-  close: {
-    fontSize: 28,
-    color: theme.colors.textMuted,
-    fontWeight: '300',
+  welcomeText: {
+    ...themeDark.typography.bodySm,
+    marginBottom: themeDark.spacing.sm,
   },
   switchRow: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.bgCard,
-    borderRadius: theme.radii.md,
+    borderRadius: themeDark.radii.lg,
     padding: 4,
-    marginBottom: theme.spacing.xl,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    marginBottom: themeDark.spacing.lg,
   },
   switchButton: {
     flex: 1,
-    borderRadius: theme.radii.sm,
-    overflow: 'hidden',
-  },
-  switchButtonInner: {
-    paddingVertical: theme.spacing.md,
+    paddingVertical: themeDark.spacing.md,
+    borderRadius: themeDark.radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
   switchButtonText: {
-    color: theme.colors.textMuted,
     fontWeight: '600',
     fontSize: 15,
-    paddingVertical: theme.spacing.md,
-    textAlign: 'center',
   },
   switchButtonTextActive: {
-    color: theme.colors.bg,
     fontWeight: '700',
-    fontSize: 15,
   },
   form: {
-    marginTop: theme.spacing.xs,
+    marginTop: themeDark.spacing.sm,
   },
   label: {
-    color: theme.colors.textSecondary,
     fontSize: 14,
-    marginBottom: theme.spacing.sm,
-    marginTop: theme.spacing.md,
+    marginBottom: themeDark.spacing.sm,
+    marginTop: themeDark.spacing.md,
     fontWeight: '500',
   },
   input: {
-    backgroundColor: theme.colors.bgCard,
-    borderRadius: theme.radii.md,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.lg,
-    color: theme.colors.text,
+    borderRadius: themeDark.radii.md,
+    paddingHorizontal: themeDark.spacing.lg,
+    paddingVertical: themeDark.spacing.md,
     borderWidth: 1,
-    borderColor: theme.colors.border,
     fontSize: 16,
+    minHeight: 48,
   },
   primaryButtonWrapper: {
-    marginTop: theme.spacing.xl,
-    borderRadius: theme.radii.md,
-    overflow: 'hidden',
-    ...theme.shadow.button,
-  },
-  primaryButton: {
-    paddingVertical: theme.spacing.lg,
+    marginTop: themeDark.spacing.xl,
+    paddingVertical: themeDark.spacing.lg,
+    borderRadius: themeDark.radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryButtonText: {
-    color: theme.colors.bg,
     fontSize: 16,
     fontWeight: '700',
-    letterSpacing: 0.5,
   },
   waitingBlock: {
     alignItems: 'center',
-    paddingVertical: theme.spacing.xl,
+    paddingVertical: themeDark.spacing.xl,
   },
   waitingSpinner: {
-    marginBottom: theme.spacing.lg,
+    marginBottom: themeDark.spacing.lg,
   },
   waitingTitle: {
-    ...theme.typography.h2,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
+    ...themeDark.typography.h2,
+    color: themeDark.colors.text,
+    marginBottom: themeDark.spacing.sm,
     textAlign: 'center',
   },
   waitingSubtitle: {
-    ...theme.typography.bodySm,
-    color: theme.colors.textMuted,
+    ...themeDark.typography.bodySm,
+    color: themeDark.colors.textMuted,
     textAlign: 'center',
-    marginBottom: theme.spacing.xl,
-    paddingHorizontal: theme.spacing.md,
+    marginBottom: themeDark.spacing.sm,
+    paddingHorizontal: themeDark.spacing.md,
+  },
+  waitingHint: {
+    ...themeDark.typography.caption,
+    textAlign: 'center',
+    marginBottom: themeDark.spacing.xl,
+    paddingHorizontal: themeDark.spacing.md,
   },
   useOtpButton: {
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.xl,
-    borderRadius: theme.radii.md,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.accent,
-    marginBottom: theme.spacing.sm,
+    paddingVertical: themeDark.spacing.md,
+    paddingHorizontal: themeDark.spacing.xl,
+    borderRadius: themeDark.radii.md,
+    borderWidth: 2,
+    marginBottom: themeDark.spacing.sm,
+    alignItems: 'center',
   },
   useOtpButtonText: {
-    color: theme.colors.accent,
     fontWeight: '600',
     fontSize: 16,
   },
   otpInput: {
-    backgroundColor: theme.colors.bgCard,
-    borderRadius: theme.radii.md,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.lg,
-    color: theme.colors.text,
+    borderRadius: themeDark.radii.md,
+    paddingHorizontal: themeDark.spacing.md,
+    paddingVertical: themeDark.spacing.lg,
     borderWidth: 1,
-    borderColor: theme.colors.border,
     fontSize: 24,
     letterSpacing: 8,
     textAlign: 'center',
-    marginBottom: theme.spacing.md,
+    marginBottom: themeDark.spacing.md,
     minWidth: 160,
   },
   submitOtpButton: {
-    borderRadius: theme.radii.md,
-    overflow: 'hidden',
-    marginBottom: theme.spacing.sm,
+    borderRadius: themeDark.radii.md,
+    paddingVertical: themeDark.spacing.md,
+    paddingHorizontal: themeDark.spacing.xl,
+    marginBottom: themeDark.spacing.sm,
     minWidth: 160,
-  },
-  submitOtpButtonInner: {
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cancelWaitingButton: {
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.xl,
-    borderRadius: theme.radii.md,
-    backgroundColor: theme.colors.surface,
+    paddingVertical: themeDark.spacing.md,
+    paddingHorizontal: themeDark.spacing.xl,
+    borderRadius: themeDark.radii.md,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    alignItems: 'center',
   },
   cancelWaitingText: {
-    color: theme.colors.textSecondary,
     fontWeight: '600',
     fontSize: 16,
   },

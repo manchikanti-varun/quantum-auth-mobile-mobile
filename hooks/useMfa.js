@@ -11,7 +11,7 @@ export const useMfa = (deviceId, token) => {
     if (!deviceId || !token) return;
 
     checkForPendingChallenges();
-    const interval = setInterval(checkForPendingChallenges, 2500);
+    const interval = setInterval(checkForPendingChallenges, 1500);
     return () => clearInterval(interval);
   }, [deviceId, token]);
 

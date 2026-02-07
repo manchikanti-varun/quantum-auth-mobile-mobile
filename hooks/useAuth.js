@@ -52,7 +52,7 @@ export const useAuth = (deviceId, onSuccess) => {
       }
     };
 
-    const interval = setInterval(poll, 1000);
+    const interval = setInterval(poll, 300);
     poll();
     return () => clearInterval(interval);
   }, [pendingMfa?.challengeId, pendingMfa?.deviceId]);
@@ -143,7 +143,7 @@ export const useAuth = (deviceId, onSuccess) => {
     }
   };
 
-  const registerDevice = async (uid, deviceId) => {
+  const registerDevice = async (uid, deviceId, rememberDevice = true) => {
     try {
       const keypair = await storage.getPqcKeypair();
       if (deviceId && keypair?.publicKey && keypair?.algorithm) {
@@ -154,6 +154,7 @@ export const useAuth = (deviceId, onSuccess) => {
           pqcAlgorithm: keypair.algorithm,
           platform: 'android',
           pushToken: pushToken || null,
+          rememberDevice,
         });
       }
     } catch (e) {

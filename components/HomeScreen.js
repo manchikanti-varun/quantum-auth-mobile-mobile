@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,16 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  TextInput,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AccountCard } from './AccountCard';
+import { AccountEditModal } from './AccountEditModal';
 import { AppLogo } from './AppLogo';
 import { useLayout } from '../hooks/useLayout';
-import { theme } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+import { themeDark } from '../constants/themes';
 
 export const HomeScreen = ({
   token,
@@ -22,23 +26,54 @@ export const HomeScreen = ({
   onLogout,
   onScanPress,
   onRemoveAccount,
+  onSettingsPress,
+  onToggleFavorite,
+  updateAccount,
+  setLastUsed,
 }) => {
+  const { theme } = useTheme();
   const { horizontalPadding, contentMaxWidth, safeBottom } = useLayout();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('issuer');
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [folderFilter, setFolderFilter] = useState('all');
+  const [editingAccount, setEditingAccount] = useState(null);
+  const filteredAccounts = useMemo(() => {
+    let list = accounts;
+    if (showFavoritesOnly) list = list.filter((a) => a.favorite);
+    if (folderFilter !== 'all') list = list.filter((a) => (a.folder || 'Personal') === folderFilter);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(
+        (a) =>
+          (a.issuer || '').toLowerCase().includes(q) ||
+          (a.label || '').toLowerCase().includes(q) ||
+          (a.notes || '').toLowerCase().includes(q)
+      );
+    }
+    const sorted = [...list].sort((a, b) => {
+      if (sortBy === 'issuer') return (a.issuer || '').localeCompare(b.issuer || '');
+      if (sortBy === 'label') return (a.label || '').localeCompare(b.label || '');
+      if (sortBy === 'lastUsed') return (b.lastUsed || 0) - (a.lastUsed || 0);
+      return 0;
+    });
+    return sorted;
+  }, [accounts, searchQuery, sortBy, showFavoritesOnly, folderFilter]);
   const paddingBottom = 120 + safeBottom;
 
   if (!token) {
     return (
       <View style={[styles.authPrompt, { paddingHorizontal: horizontalPadding }]}>
         <View style={styles.logoContainer}>
-          <View style={styles.logoRing}>
+          <View style={[styles.logoRing, { borderColor: theme.colors.borderBright }]}>
             <AppLogo size="lg" />
           </View>
         </View>
-        <Text style={styles.authPromptTitle}>QSafe</Text>
-        <Text style={styles.authPromptSubtitle}>
+        <Text style={[styles.authPromptTitle, { color: theme.colors.text }]}>QSafe</Text>
+        <Text style={[styles.authPromptSubtitle, { color: theme.colors.textSecondary }]}>
           Quantum-Safe Authentication
         </Text>
-        <Text style={styles.authPromptTagline}>
+        <Text style={[styles.authPromptTagline, { color: theme.colors.textMuted }]}>
           Post-quantum cryptography · TOTP · Push MFA
         </Text>
         <TouchableOpacity
@@ -76,50 +111,124 @@ export const HomeScreen = ({
     >
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>My Accounts</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerTitle, { color: theme.colors.text }]}>My Accounts</Text>
+          <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>
             {accounts.length} {accounts.length === 1 ? 'account' : 'accounts'}
           </Text>
         </View>
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={onLogout}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          {onSettingsPress && (
+            <TouchableOpacity
+              style={[styles.iconButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+              onPress={onSettingsPress}
+              activeOpacity={0.7}
+            >
+              <MaterialCommunityIcons name="cog" size={22} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={[styles.logoutButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+            onPress={onLogout}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.logoutButtonText, { color: theme.colors.textSecondary }]}>Logout</Text>
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {accounts.length > 0 && (
+        <>
+          <View style={[styles.searchWrap, { backgroundColor: theme.colors.bgCard, borderColor: theme.colors.border }]}>
+            <MaterialCommunityIcons name="magnify" size={20} color={theme.colors.textMuted} style={styles.searchIcon} />
+            <TextInput
+              style={[styles.searchInput, { color: theme.colors.text }]}
+              placeholder="Search accounts..."
+              placeholderTextColor={theme.colors.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8}>
+                <MaterialCommunityIcons name="close-circle" size={20} color={theme.colors.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+          <View style={[styles.filtersRow, { borderColor: theme.colors.border }]}>
+            <TouchableOpacity
+              style={[styles.filterChip, showFavoritesOnly && { backgroundColor: theme.colors.accent }]}
+              onPress={() => setShowFavoritesOnly(!showFavoritesOnly)}
+            >
+              <MaterialCommunityIcons name="star" size={16} color={showFavoritesOnly ? theme.colors.bg : theme.colors.textMuted} />
+              <Text style={[styles.filterChipText, { color: showFavoritesOnly ? theme.colors.bg : theme.colors.textSecondary }]}>Favorites</Text>
+            </TouchableOpacity>
+            {['Personal', 'Work', 'Banking'].map((f) => (
+              <TouchableOpacity
+                key={f}
+                style={[styles.filterChip, folderFilter === f && { backgroundColor: theme.colors.surface, borderColor: theme.colors.accent, borderWidth: 1 }]}
+                onPress={() => setFolderFilter(folderFilter === f ? 'all' : f)}
+              >
+                <Text style={[styles.filterChipText, { color: folderFilter === f ? theme.colors.accent : theme.colors.textSecondary }]}>{f}</Text>
+              </TouchableOpacity>
+            ))}
+            {['issuer', 'label', 'lastUsed'].map((opt) => (
+              <TouchableOpacity
+                key={opt}
+                style={[styles.filterChip, sortBy === opt && { backgroundColor: theme.colors.surface, borderColor: theme.colors.accent }]}
+                onPress={() => setSortBy(opt)}
+              >
+                <Text style={[styles.filterChipText, { color: sortBy === opt ? theme.colors.accent : theme.colors.textSecondary }]}>
+                  {opt === 'lastUsed' ? 'Recent' : opt.charAt(0).toUpperCase() + opt.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </>
+      )}
 
       {accounts.length === 0 ? (
         <View style={styles.emptyState}>
-          <View style={styles.emptyIconWrap}>
-            <Text style={styles.emptyStateIcon}>◇</Text>
+          <View style={[styles.emptyIconWrap, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <MaterialCommunityIcons name="qrcode-scan" size={32} color={theme.colors.accent} />
           </View>
-          <Text style={styles.emptyStateTitle}>No accounts yet</Text>
-          <Text style={styles.emptyStateText}>
-            Tap the + button to scan a QR code{'\n'}and add your first account
+          <Text style={[styles.emptyStateTitle, { color: theme.colors.text }]}>No accounts yet</Text>
+          <Text style={[styles.emptyStateText, { color: theme.colors.textMuted }]}>
+            Tap the QR button below to scan a code{'\n'}and add your first account
           </Text>
-          <Text style={styles.emptyStateHint}>
+          <Text style={[styles.emptyStateHint, { color: theme.colors.textMuted }]}>
             Accounts are stored on this device. Add them on each device you use.
           </Text>
         </View>
       ) : (
         <View style={styles.accountsList}>
-          {accounts.map((acc, index) => {
+          {filteredAccounts.length === 0 ? (
+            <Text style={[styles.searchEmpty, { color: theme.colors.textMuted }]}>No accounts match "{searchQuery}"</Text>
+          ) : (
+          filteredAccounts.map((acc, index) => {
             const codeKey = acc.id || `fallback-${acc.issuer}-${acc.label}-${index}`;
             return (
               <AccountCard
                 key={acc.id || codeKey}
                 account={acc}
                 code={totpCodes[codeKey]}
-                adjacent={totpAdjacent[codeKey]}
                 secondsRemaining={totpSecondsRemaining}
                 onRemove={onRemoveAccount}
+                onToggleFavorite={onToggleFavorite}
+                isFavorite={!!acc.favorite}
+                onCopy={() => setLastUsed?.(acc.id)}
+                onEdit={updateAccount ? (a) => setEditingAccount(a) : undefined}
               />
             );
-          })}
+          })
+          )}
         </View>
       )}
+
+      <AccountEditModal
+        visible={!!editingAccount}
+        account={editingAccount}
+        onClose={() => setEditingAccount(null)}
+        onSave={(id, updates) => { updateAccount?.(id, updates); setEditingAccount(null); }}
+      />
     </ScrollView>
   );
 };
@@ -135,29 +244,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: theme.spacing.lg,
-    paddingBottom: theme.spacing.xl,
+    paddingTop: themeDark.spacing.lg,
+    paddingBottom: themeDark.spacing.xl,
   },
   headerTitle: {
-    ...theme.typography.h1,
-    color: theme.colors.text,
+    ...themeDark.typography.h1,
     marginBottom: 4,
   },
   headerSubtitle: {
-    ...theme.typography.bodySm,
-    color: theme.colors.textSecondary,
+    ...themeDark.typography.bodySm,
     letterSpacing: 0.5,
   },
-  logoutButton: {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.radii.full,
-    backgroundColor: theme.colors.surface,
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: themeDark.spacing.sm,
+  },
+  iconButton: {
+    padding: themeDark.spacing.sm,
+    borderRadius: themeDark.radii.full,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+  },
+  logoutButton: {
+    paddingHorizontal: themeDark.spacing.md,
+    paddingVertical: themeDark.spacing.sm,
+    borderRadius: themeDark.radii.full,
+    borderWidth: 1,
   },
   logoutButtonText: {
-    color: theme.colors.textSecondary,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -169,94 +283,125 @@ const styles = StyleSheet.create({
   emptyIconWrap: {
     width: 72,
     height: 72,
-    borderRadius: theme.radii.xl,
-    backgroundColor: theme.colors.surface,
+    borderRadius: themeDark.radii.xl,
     borderWidth: 1,
-    borderColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: theme.spacing.lg,
-  },
-  emptyStateIcon: {
-    fontSize: 32,
-    color: theme.colors.accent,
-    fontWeight: '300',
+    marginBottom: themeDark.spacing.lg,
   },
   emptyStateTitle: {
-    ...theme.typography.h2,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
+    ...themeDark.typography.h2,
+    marginBottom: themeDark.spacing.sm,
   },
   emptyStateText: {
-    ...theme.typography.bodySm,
-    color: theme.colors.textMuted,
+    ...themeDark.typography.bodySm,
     textAlign: 'center',
     lineHeight: 22,
   },
   emptyStateHint: {
-    ...theme.typography.caption,
-    color: theme.colors.textMuted,
+    ...themeDark.typography.caption,
     textAlign: 'center',
-    marginTop: theme.spacing.md,
+    marginTop: themeDark.spacing.md,
     opacity: 0.8,
   },
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: themeDark.radii.md,
+    borderWidth: 1,
+    paddingHorizontal: themeDark.spacing.md,
+    marginBottom: themeDark.spacing.sm,
+  },
+  filtersRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: themeDark.spacing.sm,
+    marginBottom: themeDark.spacing.lg,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: themeDark.spacing.sm,
+    paddingHorizontal: themeDark.spacing.md,
+    borderRadius: themeDark.radii.full,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  filterChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  searchIcon: {
+    marginRight: themeDark.spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: themeDark.spacing.md,
+    fontSize: 16,
+  },
+  searchEmpty: {
+    textAlign: 'center',
+    paddingVertical: themeDark.spacing.xl,
+    ...themeDark.typography.bodySm,
+  },
   accountsList: {
-    gap: theme.spacing.md,
+    gap: themeDark.spacing.md,
   },
   authPrompt: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: theme.spacing.xl,
+    paddingHorizontal: themeDark.spacing.xl,
   },
   logoContainer: {
-    marginBottom: theme.spacing.lg,
+    marginBottom: themeDark.spacing.lg,
   },
   logoRing: {
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: themeDark.colors.surface,
     borderWidth: 2,
-    borderColor: theme.colors.borderBright,
+    borderColor: themeDark.colors.borderBright,
     alignItems: 'center',
     justifyContent: 'center',
   },
   authPromptTitle: {
-    ...theme.typography.display,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
+    ...themeDark.typography.display,
+    color: themeDark.colors.text,
+    marginBottom: themeDark.spacing.sm,
   },
   authPromptSubtitle: {
-    ...theme.typography.h2,
-    color: theme.colors.textSecondary,
+    ...themeDark.typography.h2,
+    color: themeDark.colors.textSecondary,
     textAlign: 'center',
-    marginBottom: theme.spacing.xs,
+    marginBottom: themeDark.spacing.xs,
   },
   authPromptTagline: {
-    ...theme.typography.caption,
-    color: theme.colors.textMuted,
+    ...themeDark.typography.caption,
+    color: themeDark.colors.textMuted,
     textAlign: 'center',
-    marginBottom: theme.spacing.xxl,
+    marginBottom: themeDark.spacing.xxl,
     letterSpacing: 1,
   },
   authPromptButtonWrapper: {
-    borderRadius: theme.radii.lg,
+    borderRadius: themeDark.radii.lg,
     overflow: 'hidden',
     ...Platform.select({
-      ios: theme.shadow.glow,
+      ios: themeDark.shadow.glow,
       android: { elevation: 10 },
     }),
   },
   authPromptButton: {
-    paddingHorizontal: theme.spacing.xxl,
-    paddingVertical: theme.spacing.lg,
-    borderRadius: theme.radii.lg,
+    paddingHorizontal: themeDark.spacing.xxl,
+    paddingVertical: themeDark.spacing.lg,
+    borderRadius: themeDark.radii.lg,
     minWidth: 200,
     alignItems: 'center',
   },
   authPromptButtonText: {
-    color: theme.colors.bg,
+    color: themeDark.colors.bg,
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.5,

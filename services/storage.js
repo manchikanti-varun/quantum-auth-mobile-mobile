@@ -1,5 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
-import { ACCOUNTS_KEY, DEVICE_KEY, PQC_KEYPAIR_KEY, AUTH_TOKEN_KEY } from '../constants/config';
+import { ACCOUNTS_KEY, DEVICE_KEY, PQC_KEYPAIR_KEY, AUTH_TOKEN_KEY, PREFERENCES_KEY, APP_LOCK_KEY } from '../constants/config';
 
 export const storage = {
   async getToken() {
@@ -87,6 +87,36 @@ export const storage = {
       const key = `${PQC_KEYPAIR_KEY}_${i}`;
       if ((await SecureStore.getItemAsync(key)) == null) break;
       await SecureStore.deleteItemAsync(key);
+    }
+  },
+
+  async getPreferences() {
+    try {
+      const raw = await SecureStore.getItemAsync(PREFERENCES_KEY);
+      return raw ? JSON.parse(raw) : { sortBy: 'issuer', showFavoritesFirst: true };
+    } catch (e) {
+      return { sortBy: 'issuer', showFavoritesFirst: true };
+    }
+  },
+
+  async savePreferences(prefs) {
+    await SecureStore.setItemAsync(PREFERENCES_KEY, JSON.stringify(prefs));
+  },
+
+  async getAppLock() {
+    try {
+      const raw = await SecureStore.getItemAsync(APP_LOCK_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async saveAppLock(config) {
+    if (config) {
+      await SecureStore.setItemAsync(APP_LOCK_KEY, JSON.stringify(config));
+    } else {
+      await SecureStore.deleteItemAsync(APP_LOCK_KEY);
     }
   },
 };

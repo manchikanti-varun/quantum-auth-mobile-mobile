@@ -20,7 +20,7 @@ export const setOnUnauthorized = (callback) => {
 };
 
 api.interceptors.request.use((config) => {
-  if (authToken && !config.url?.includes('/api/auth/')) {
+  if (authToken) {
     config.headers.Authorization = `Bearer ${authToken}`;
   }
   return config;
@@ -49,6 +49,8 @@ export const authApi = {
 
   loginWithOtp: (challengeId, deviceId, code) =>
     api.post('/api/auth/login-with-otp', { challengeId, deviceId, code }),
+
+  getLoginHistory: () => api.get('/api/auth/login-history'),
 };
 
 export const deviceApi = {
@@ -59,6 +61,8 @@ export const mfaApi = {
   getPending: (deviceId) => api.get(`/api/mfa/pending?deviceId=${deviceId}`),
 
   resolve: (data) => api.post('/api/mfa/resolve', data),
+
+  getHistory: () => api.get('/api/mfa/history'),
 };
 
 export default api;

@@ -3,3 +3,7 @@ export const ACCOUNTS_KEY = 'QSAFE_TOTP_ACCOUNTS';
 export const DEVICE_KEY = 'QSAFE_DEVICE_ID';
 export const PQC_KEYPAIR_KEY = 'QSAFE_PQC_KEYPAIR';
 export const AUTH_TOKEN_KEY = 'QSAFE_AUTH_TOKEN';
+export const THEME_PREFERENCE_KEY = 'QSAFE_THEME_PREFERENCE';
+export const PREFERENCES_KEY = 'QSAFE_PREFERENCES';
+export const APP_LOCK_KEY = 'QSAFE_APP_LOCK';
+export const DEFAULT_FOLDERS = ['Personal', 'Work', 'Banking'];

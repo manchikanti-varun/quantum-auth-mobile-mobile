@@ -1,10 +1,13 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
+import { TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLayout } from '../hooks/useLayout';
-import { theme } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+import { themeDark } from '../constants/themes';
 
 export const FloatingActionButton = ({ onPress }) => {
+  const { theme } = useTheme();
   const { horizontalPadding, safeBottom } = useLayout();
   const bottom = Math.max(24, safeBottom) + 24;
   return (
@@ -19,7 +22,7 @@ export const FloatingActionButton = ({ onPress }) => {
         end={{ x: 1, y: 1 }}
         style={styles.fab}
       >
-        <Text style={styles.icon}>+</Text>
+        <MaterialCommunityIcons name="qrcode-scan" size={28} color="#0f172a" />
       </LinearGradient>
     </TouchableOpacity>
   );
@@ -30,7 +33,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     ...Platform.select({
       ios: {
-        shadowColor: theme.colors.accent,
+        shadowColor: themeDark.colors.accent,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.4,
         shadowRadius: 12,
@@ -46,10 +49,5 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  icon: {
-    fontSize: 32,
-    color: theme.colors.bg,
-    fontWeight: '300',
   },
 });

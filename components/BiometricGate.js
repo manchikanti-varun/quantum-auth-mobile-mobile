@@ -10,7 +10,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppLogo } from './AppLogo';
 import { useLayout } from '../hooks/useLayout';
-import { theme } from '../constants/theme';
+import { themeDark } from '../constants/themes';
 
 export const BiometricGate = ({ onUnlock, loading }) => {
   const { horizontalPadding, contentMaxWidth } = useLayout();
@@ -33,13 +33,13 @@ export const BiometricGate = ({ onUnlock, loading }) => {
           activeOpacity={0.85}
         >
           <LinearGradient
-            colors={theme.gradients.accent}
+            colors={themeDark.gradients.accent}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.button}
           >
             {loading ? (
-              <ActivityIndicator color={theme.colors.bg} />
+              <ActivityIndicator color={themeDark.colors.bg} />
             ) : (
               <Text style={styles.buttonText}>Unlock</Text>
             )}
@@ -64,40 +64,40 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: themeDark.colors.surface,
     borderWidth: 2,
-    borderColor: theme.colors.borderBright,
+    borderColor: themeDark.colors.borderBright,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: theme.spacing.lg,
+    marginBottom: themeDark.spacing.lg,
   },
   title: {
-    ...theme.typography.h1,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
+    ...themeDark.typography.h1,
+    color: themeDark.colors.text,
+    marginBottom: themeDark.spacing.sm,
   },
   subtitle: {
-    ...theme.typography.bodySm,
-    color: theme.colors.textMuted,
+    ...themeDark.typography.bodySm,
+    color: themeDark.colors.textMuted,
     textAlign: 'center',
-    marginBottom: theme.spacing.xxl,
+    marginBottom: themeDark.spacing.xxl,
   },
   buttonWrapper: {
     width: '100%',
-    borderRadius: theme.radii.md,
+    borderRadius: themeDark.radii.md,
     overflow: 'hidden',
     ...Platform.select({
-      ios: theme.shadow.glowSubtle,
+      ios: themeDark.shadow.glowSubtle,
       android: { elevation: 4 },
     }),
   },
   button: {
-    paddingVertical: theme.spacing.lg,
+    paddingVertical: themeDark.spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonText: {
-    color: theme.colors.bg,
+    color: themeDark.colors.bg,
     fontSize: 16,
     fontWeight: '700',
   },

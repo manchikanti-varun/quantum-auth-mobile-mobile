@@ -5,11 +5,13 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AppLogo } from './AppLogo';
 import { useLayout } from '../hooks/useLayout';
-import { theme } from '../constants/theme';
+import { themeDark } from '../constants/themes';
 
 export const MfaModal = ({
   visible,
@@ -17,9 +19,12 @@ export const MfaModal = ({
   onClose,
   onApprove,
   onDeny,
+  resolving,
 }) => {
   const { horizontalPadding, contentMaxWidth } = useLayout();
   if (!challenge) return null;
+
+  const disabled = !!resolving;
 
   return (
     <Modal
@@ -34,35 +39,53 @@ export const MfaModal = ({
             <AppLogo size="md" />
           </View>
           <Text style={styles.title}>Login Request</Text>
-          <Text style={styles.subtitle}>A login attempt was detected</Text>
+          <Text style={styles.subtitle}>
+            Someone is trying to sign in. Approve to allow or deny to block.
+          </Text>
 
           {challenge.context?.ip && (
             <View style={styles.info}>
-              <Text style={styles.infoLabel}>IP Address</Text>
+              <Text style={styles.infoLabel}>From</Text>
               <Text style={styles.infoValue}>{challenge.context.ip}</Text>
             </View>
           )}
 
           <View style={styles.buttonRow}>
             <TouchableOpacity
-              style={styles.buttonDeny}
+              style={[styles.buttonDeny, disabled && styles.buttonDisabled]}
               onPress={onDeny}
+              disabled={disabled}
               activeOpacity={0.8}
             >
-              <Text style={styles.buttonText}>Deny</Text>
+              {resolving === 'deny' ? (
+                <ActivityIndicator size="small" color={themeDark.colors.error} />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="close-circle" size={22} color={themeDark.colors.error} style={styles.buttonIcon} />
+                  <Text style={[styles.buttonText, { color: themeDark.colors.error }]}>Deny</Text>
+                </>
+              )}
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.buttonApproveWrapper}
+              style={[styles.buttonApproveWrapper, disabled && styles.buttonDisabled]}
               onPress={onApprove}
+              disabled={disabled}
               activeOpacity={0.85}
             >
               <LinearGradient
-                colors={[theme.colors.success, theme.colors.successDark]}
+                colors={[themeDark.colors.success, themeDark.colors.successDark]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.buttonApprove}
               >
-                <Text style={styles.buttonApproveText}>Approve</Text>
+                {resolving === 'approve' ? (
+                  <ActivityIndicator size="small" color={themeDark.colors.bg} />
+                ) : (
+                  <>
+                    <MaterialCommunityIcons name="check-circle" size={22} color={themeDark.colors.bg} style={styles.buttonIcon} />
+                    <Text style={styles.buttonApproveText}>Approve</Text>
+                  </>
+                )}
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -78,91 +101,98 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(5, 7, 13, 0.92)',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: theme.spacing.lg,
+    padding: themeDark.spacing.lg,
   },
   content: {
-    backgroundColor: theme.colors.bgElevated,
-    borderRadius: theme.radii.xxl,
-    padding: theme.spacing.xl,
+    backgroundColor: themeDark.colors.bgElevated,
+    borderRadius: themeDark.radii.xxl,
+    padding: themeDark.spacing.xl,
     width: '100%',
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: themeDark.colors.border,
     alignItems: 'center',
   },
   iconWrap: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: themeDark.colors.surface,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: themeDark.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: theme.spacing.lg,
+    marginBottom: themeDark.spacing.lg,
   },
   title: {
-    ...theme.typography.h1,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
+    ...themeDark.typography.h1,
+    color: themeDark.colors.text,
+    marginBottom: themeDark.spacing.sm,
     textAlign: 'center',
   },
   subtitle: {
-    ...theme.typography.bodySm,
-    color: theme.colors.textMuted,
+    ...themeDark.typography.bodySm,
+    color: themeDark.colors.textMuted,
     textAlign: 'center',
-    marginBottom: theme.spacing.xl,
+    marginBottom: themeDark.spacing.xl,
   },
   info: {
-    backgroundColor: theme.colors.bgCard,
-    borderRadius: theme.radii.md,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.xl,
+    backgroundColor: themeDark.colors.bgCard,
+    borderRadius: themeDark.radii.md,
+    padding: themeDark.spacing.md,
+    marginBottom: themeDark.spacing.xl,
     width: '100%',
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: themeDark.colors.border,
   },
   infoLabel: {
-    ...theme.typography.caption,
-    color: theme.colors.textMuted,
+    ...themeDark.typography.caption,
+    color: themeDark.colors.textMuted,
     marginBottom: 4,
   },
   infoValue: {
-    ...theme.typography.body,
-    color: theme.colors.text,
-    ...theme.typography.mono,
+    ...themeDark.typography.body,
+    color: themeDark.colors.text,
+    ...themeDark.typography.mono,
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: theme.spacing.md,
+    gap: themeDark.spacing.md,
     width: '100%',
   },
   buttonDeny: {
     flex: 1,
-    paddingVertical: theme.spacing.lg,
-    borderRadius: theme.radii.md,
+    flexDirection: 'row',
+    paddingVertical: themeDark.spacing.lg,
+    borderRadius: themeDark.radii.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    backgroundColor: themeDark.colors.surface,
+    borderWidth: 2,
+    borderColor: themeDark.colors.error,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+  buttonIcon: {
+    marginRight: themeDark.spacing.sm,
   },
   buttonText: {
-    color: theme.colors.textSecondary,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   buttonApproveWrapper: {
     flex: 1,
-    borderRadius: theme.radii.md,
+    borderRadius: themeDark.radii.md,
     overflow: 'hidden',
   },
   buttonApprove: {
-    paddingVertical: theme.spacing.lg,
+    flexDirection: 'row',
+    paddingVertical: themeDark.spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonApproveText: {
-    color: theme.colors.text,
+    color: themeDark.colors.text,
     fontSize: 16,
     fontWeight: '700',
   },

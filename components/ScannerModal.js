@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions, scanFromURLAsync } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { theme } from '../constants/theme';
+import { themeDark } from '../constants/themes';
 
 const useNativeScanner = CameraView?.isModernBarcodeScannerAvailable === true;
 
@@ -225,7 +225,7 @@ export const ScannerModal = ({ visible, onClose, onScan }) => {
                 <TextInput
                   style={[styles.input, styles.inputLarge]}
                   placeholder="Setup key or full otpauth:// link"
-                  placeholderTextColor={theme.colors.textMuted}
+                  placeholderTextColor={themeDark.colors.textMuted}
                   value={manualSecret}
                   onChangeText={setManualSecret}
                   autoCapitalize="none"
@@ -235,7 +235,7 @@ export const ScannerModal = ({ visible, onClose, onScan }) => {
                 <TextInput
                   style={styles.input}
                   placeholder="Your email (e.g. you@gmail.com)"
-                  placeholderTextColor={theme.colors.textMuted}
+                  placeholderTextColor={themeDark.colors.textMuted}
                   value={manualAccount}
                   onChangeText={setManualAccount}
                   autoCapitalize="none"
@@ -244,7 +244,7 @@ export const ScannerModal = ({ visible, onClose, onScan }) => {
                 <TextInput
                   style={styles.input}
                   placeholder="Issuer (e.g. Google)"
-                  placeholderTextColor={theme.colors.textMuted}
+                  placeholderTextColor={themeDark.colors.textMuted}
                   value={manualIssuer}
                   onChangeText={setManualIssuer}
                   autoCapitalize="none"
@@ -257,7 +257,7 @@ export const ScannerModal = ({ visible, onClose, onScan }) => {
                   disabled={!canSubmitManual}
                 >
                   <LinearGradient
-                    colors={theme.gradients.accent}
+                    colors={themeDark.gradients.accent}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.button}
@@ -284,7 +284,7 @@ export const ScannerModal = ({ visible, onClose, onScan }) => {
                 activeOpacity={0.85}
               >
                 <LinearGradient
-                  colors={theme.gradients.accent}
+                  colors={themeDark.gradients.accent}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.button}
@@ -305,13 +305,13 @@ export const ScannerModal = ({ visible, onClose, onScan }) => {
                 activeOpacity={0.85}
               >
                 <LinearGradient
-                  colors={theme.gradients.accent}
+                  colors={themeDark.gradients.accent}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.button}
                 >
                   {scanningPhoto ? (
-                    <ActivityIndicator color={theme.colors.bg} size="small" />
+                    <ActivityIndicator color={themeDark.colors.bg} size="small" />
                   ) : (
                     <Text style={styles.buttonText}>Scan from photo</Text>
                   )}
@@ -325,13 +325,13 @@ export const ScannerModal = ({ visible, onClose, onScan }) => {
                 activeOpacity={0.85}
               >
                 {launchingScanner ? (
-                  <ActivityIndicator color={theme.colors.accent} size="small" />
+                  <ActivityIndicator color={themeDark.colors.accent} size="small" />
                 ) : (
                   <Text style={styles.buttonTextOutline}>Scan with camera</Text>
                 )}
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.manualLink, { position: 'relative', marginTop: theme.spacing.lg }]}
+                style={[styles.manualLink, { position: 'relative', marginTop: themeDark.spacing.lg }]}
                 onPress={() => setMode('manual')}
                 activeOpacity={0.7}
               >
@@ -361,7 +361,7 @@ export const ScannerModal = ({ visible, onClose, onScan }) => {
                   activeOpacity={0.85}
                 >
                   {scanningPhoto ? (
-                    <ActivityIndicator color={theme.colors.accent} size="small" />
+                    <ActivityIndicator color={themeDark.colors.accent} size="small" />
                   ) : (
                     <Text style={styles.scanFromPhotoText}>Scan from photo</Text>
                   )}
@@ -385,7 +385,7 @@ export const ScannerModal = ({ visible, onClose, onScan }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.bg,
+    backgroundColor: themeDark.colors.bg,
   },
   safe: {
     flex: 1,
@@ -394,65 +394,65 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: theme.spacing.lg,
-    backgroundColor: theme.colors.bgElevated,
+    padding: themeDark.spacing.lg,
+    backgroundColor: themeDark.colors.bgElevated,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: themeDark.colors.border,
   },
   title: {
-    ...theme.typography.h2,
-    color: theme.colors.text,
+    ...themeDark.typography.h2,
+    color: themeDark.colors.text,
   },
   closeButton: {
-    padding: theme.spacing.xs,
+    padding: themeDark.spacing.xs,
   },
   close: {
     fontSize: 28,
-    color: theme.colors.textMuted,
+    color: themeDark.colors.textMuted,
     fontWeight: '300',
   },
   placeholder: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: theme.spacing.xl,
+    padding: themeDark.spacing.xl,
   },
   placeholderText: {
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.xl,
+    color: themeDark.colors.textSecondary,
+    marginBottom: themeDark.spacing.xl,
     fontSize: 16,
     textAlign: 'center',
   },
   buttonWrapper: {
-    borderRadius: theme.radii.md,
+    borderRadius: themeDark.radii.md,
     overflow: 'hidden',
   },
   button: {
-    paddingVertical: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.xxl,
+    paddingVertical: themeDark.spacing.lg,
+    paddingHorizontal: themeDark.spacing.xxl,
     alignItems: 'center',
   },
   buttonText: {
-    color: theme.colors.bg,
+    color: themeDark.colors.bg,
     fontSize: 16,
     fontWeight: '700',
   },
   orText: {
-    color: theme.colors.textMuted,
-    marginVertical: theme.spacing.md,
+    color: themeDark.colors.textMuted,
+    marginVertical: themeDark.spacing.md,
     fontSize: 14,
   },
   buttonWrapperOutline: {
-    borderRadius: theme.radii.md,
+    borderRadius: themeDark.radii.md,
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: theme.colors.accent,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.xl,
+    borderColor: themeDark.colors.accent,
+    paddingVertical: themeDark.spacing.md,
+    paddingHorizontal: themeDark.spacing.xl,
     alignItems: 'center',
   },
   buttonTextOutline: {
-    color: theme.colors.accent,
+    color: themeDark.colors.accent,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -470,38 +470,38 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: theme.colors.accentGlow,
+    borderColor: themeDark.colors.accentGlow,
   },
   frame: {
     width: 240,
     height: 240,
     borderWidth: 2,
-    borderColor: theme.colors.accent,
+    borderColor: themeDark.colors.accent,
     borderRadius: 20,
   },
   hint: {
-    ...theme.typography.caption,
-    color: theme.colors.textMuted,
-    marginTop: theme.spacing.xl,
+    ...themeDark.typography.caption,
+    color: themeDark.colors.textMuted,
+    marginTop: themeDark.spacing.xl,
     letterSpacing: 1,
   },
   scanActions: {
     position: 'absolute',
-    bottom: theme.spacing.xl,
+    bottom: themeDark.spacing.xl,
     left: 0,
     right: 0,
     alignItems: 'center',
-    gap: theme.spacing.md,
+    gap: themeDark.spacing.md,
   },
   scanFromPhotoButton: {
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.xl,
-    borderRadius: theme.radii.md,
+    paddingVertical: themeDark.spacing.md,
+    paddingHorizontal: themeDark.spacing.xl,
+    borderRadius: themeDark.radii.md,
     borderWidth: 2,
-    borderColor: theme.colors.accent,
+    borderColor: themeDark.colors.accent,
   },
   scanFromPhotoText: {
-    color: theme.colors.accent,
+    color: themeDark.colors.accent,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -509,31 +509,31 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   manualLinkText: {
-    color: theme.colors.accent,
+    color: themeDark.colors.accent,
     fontSize: 15,
     textDecorationLine: 'underline',
   },
   flex1: { flex: 1 },
   manualScroll: { flex: 1 },
   manualContent: {
-    padding: theme.spacing.lg,
-    paddingBottom: theme.spacing.xxl,
+    padding: themeDark.spacing.lg,
+    paddingBottom: themeDark.spacing.xxl,
   },
   manualHint: {
-    color: theme.colors.textSecondary,
+    color: themeDark.colors.textSecondary,
     fontSize: 14,
-    marginBottom: theme.spacing.lg,
+    marginBottom: themeDark.spacing.lg,
     lineHeight: 20,
   },
   input: {
-    backgroundColor: theme.colors.bgElevated,
+    backgroundColor: themeDark.colors.bgElevated,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radii.md,
-    padding: theme.spacing.md,
-    color: theme.colors.text,
+    borderColor: themeDark.colors.border,
+    borderRadius: themeDark.radii.md,
+    padding: themeDark.spacing.md,
+    color: themeDark.colors.text,
     fontSize: 16,
-    marginBottom: theme.spacing.md,
+    marginBottom: themeDark.spacing.md,
     minHeight: 48,
   },
   inputLarge: {

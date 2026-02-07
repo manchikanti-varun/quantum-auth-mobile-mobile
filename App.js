@@ -4,36 +4,54 @@ import { v4 as uuidv4 } from 'uuid';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { useAuth } from './hooks/useAuth';
 import { useAccounts } from './hooks/useAccounts';
 import { useMfa } from './hooks/useMfa';
 import { deviceService } from './services/device';
 import { qrParser } from './services/qrParser';
+import * as Haptics from 'expo-haptics';
 import { biometricService } from './services/biometric';
 import { HomeScreen } from './components/HomeScreen';
 import { AuthModal } from './components/AuthModal';
 import { ScannerModal } from './components/ScannerModal';
 import { MfaModal } from './components/MfaModal';
+import { SettingsModal } from './components/SettingsModal';
+import { ExportImportModal } from './components/ExportImportModal';
+import { HistoryModal } from './components/HistoryModal';
 import { FloatingActionButton } from './components/FloatingActionButton';
 import { BiometricGate } from './components/BiometricGate';
-import { theme } from './constants/theme';
+import { storage } from './services/storage';
 
-export default function App() {
+function AppContent() {
   const [biometricUnlocked, setBiometricUnlocked] = useState(false);
   const [biometricChecking, setBiometricChecking] = useState(true);
+  const [appLock, setAppLock] = useState(true);
   const [showAuth, setShowAuth] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [exportImportMode, setExportImportMode] = useState(null);
+  const [historyMode, setHistoryMode] = useState(null);
   const [deviceId, setDeviceId] = useState(null);
+  const { theme } = useTheme();
 
   const { token, loading, login, register, logout, pendingMfa, cancelPendingMfa, loginWithOtp } = useAuth(deviceId, () => {
     setShowAuth(false);
   });
 
-  const { accounts, totpCodes, totpAdjacent, totpSecondsRemaining, addAccount, removeAccount } = useAccounts();
+  const [mfaResolving, setMfaResolving] = useState(null); // 'approve' | 'deny' | null
+  const { accounts, totpCodes, totpAdjacent, totpSecondsRemaining, addAccount, removeAccount, toggleFavorite, updateAccount, setLastUsed, reloadAccounts } = useAccounts();
   const { pendingChallenge, resolveChallenge } = useMfa(deviceId, token);
 
   const appState = useRef(AppState.currentState);
   const handleQrScanRef = useRef(null);
+
+  useEffect(() => {
+    (async () => {
+      const lockConfig = await storage.getAppLock();
+      setAppLock(lockConfig?.enabled !== false);
+    })();
+  }, []);
 
   useEffect(() => {
     initializeApp();
@@ -45,6 +63,10 @@ export default function App() {
         appState.current.match(/inactive|background/) &&
         nextState === 'active'
       ) {
+        if (!appLock) {
+          setBiometricUnlocked(true);
+          return;
+        }
         setBiometricUnlocked(false);
         setBiometricChecking(true);
         biometricService
@@ -57,7 +79,7 @@ export default function App() {
       appState.current = nextState;
     });
     return () => subscription?.remove();
-  }, []);
+  }, [appLock]);
 
   const checkBiometric = async () => {
     const { success } = await biometricService.authenticate(
@@ -70,11 +92,51 @@ export default function App() {
     const { deviceId: id } = await deviceService.ensureDeviceIdentity();
     setDeviceId(id);
 
+    const lockConfig = await storage.getAppLock();
+    const useLock = lockConfig?.enabled !== false;
+    setAppLock(useLock);
+
+    if (!useLock) {
+      setBiometricChecking(false);
+      setBiometricUnlocked(true);
+      return;
+    }
+
     const { success } = await biometricService.authenticate(
       'Verify identity to open QSafe',
     );
     setBiometricChecking(false);
     if (success) setBiometricUnlocked(true);
+  };
+
+  const handleAppLockChange = async (enabled) => {
+    setAppLock(enabled);
+    await storage.saveAppLock({ enabled });
+  };
+
+  const handleExport = async () => {
+    const accounts = await storage.getAccounts();
+    return JSON.stringify(accounts, null, 2);
+  };
+
+  const handleImport = async (imported) => {
+    const existing = await storage.getAccounts();
+    const merged = [...existing];
+    for (const a of imported) {
+      const exists = merged.some((x) => x.issuer === a.issuer && x.label === a.label);
+      if (!exists) {
+        merged.push({
+          ...a,
+          id: a.id || uuidv4(),
+          favorite: a.favorite ?? false,
+          folder: a.folder ?? 'Personal',
+          notes: a.notes ?? '',
+          lastUsed: a.lastUsed ?? 0,
+        });
+      }
+    }
+    await storage.saveAccounts(merged);
+    reloadAccounts?.();
   };
 
   const handleUnlock = async () => {
@@ -128,7 +190,7 @@ export default function App() {
       setShowScanner(false);
       Alert.alert(
         'Account added',
-        `${label} added.\n\nFor Google 2FA: turn on "Set time automatically" in device Settings → Date & time, then enter the code on Google when the timer has at least 10 seconds left. If it says wrong, try the "If wrong, try" codes.`,
+        `${label} added.`,
         [{ text: 'OK' }],
       );
     } catch (e) {
@@ -163,28 +225,38 @@ export default function App() {
   }, []);
 
   const handleMfaApprove = async () => {
-    const { success } = await biometricService.authenticate(
-      'Verify identity to approve login',
-    );
-    if (success) resolveChallenge('approved');
-    else Alert.alert('Authentication failed', 'Could not verify identity');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setMfaResolving('approve');
+    try {
+      await resolveChallenge('approved');
+    } catch (e) {
+      // Error shown in useMfa
+    } finally {
+      setMfaResolving(null);
+    }
   };
 
-  const handleMfaDeny = () => {
-    resolveChallenge('denied');
+  const handleMfaDeny = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setMfaResolving('deny');
+    try {
+      await resolveChallenge('denied');
+    } catch (e) {
+      // Error shown in useMfa
+    } finally {
+      setMfaResolving(null);
+    }
   };
 
   return (
-    <SafeAreaProvider>
-      <StatusBar style="light" />
+    <>
+      <StatusBar style={theme.colors.bg === '#05070d' ? 'light' : 'dark'} />
       <LinearGradient
         colors={theme.gradients.hero}
         style={styles.container}
       >
         <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-          {!biometricUnlocked ? (
-            <BiometricGate onUnlock={handleUnlock} loading={biometricChecking} />
-          ) : (
+          {!appLock || biometricUnlocked ? (
             <>
           <HomeScreen
             token={token}
@@ -195,6 +267,10 @@ export default function App() {
             onLogout={logout}
             onScanPress={() => setShowAuth(true)}
             onRemoveAccount={removeAccount}
+            onSettingsPress={() => setShowSettings(true)}
+            onToggleFavorite={toggleFavorite}
+            updateAccount={updateAccount}
+            setLastUsed={setLastUsed}
           />
 
           {token && (
@@ -232,11 +308,52 @@ export default function App() {
             onClose={() => {}}
             onApprove={handleMfaApprove}
             onDeny={handleMfaDeny}
+            resolving={mfaResolving}
+          />
+
+          <SettingsModal
+            visible={showSettings}
+            onClose={() => setShowSettings(false)}
+            appLock={appLock}
+            onAppLockChange={handleAppLockChange}
+            onExportImport={(mode) => {
+              if (mode === 'loginHistory' || mode === 'mfaHistory') {
+                setHistoryMode(mode);
+              } else {
+                setExportImportMode(mode);
+              }
+            }}
+          />
+
+          <ExportImportModal
+            visible={!!exportImportMode}
+            mode={exportImportMode}
+            onClose={() => setExportImportMode(null)}
+            onExport={handleExport}
+            onImport={handleImport}
+          />
+
+          <HistoryModal
+            visible={!!historyMode}
+            mode={historyMode}
+            onClose={() => setHistoryMode(null)}
           />
             </>
+          ) : (
+            <BiometricGate onUnlock={handleUnlock} loading={biometricChecking} />
           )}
         </SafeAreaView>
       </LinearGradient>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

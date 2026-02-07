@@ -48,11 +48,19 @@ export const useAccounts = () => {
 
   const loadAccounts = async () => {
     const loaded = await storage.getAccounts();
-    setAccounts(loaded);
+    const migrated = loaded.map((a) => ({
+      ...a,
+      favorite: a.favorite ?? false,
+      folder: a.folder ?? 'Personal',
+      notes: a.notes ?? '',
+      lastUsed: a.lastUsed ?? 0,
+    }));
+    setAccounts(migrated);
   };
 
   const addAccount = async (account) => {
-    const next = [...accounts, account];
+    const withMeta = { ...account, favorite: false, folder: 'Personal', notes: '', lastUsed: Date.now() };
+    const next = [...accounts, withMeta];
     setAccounts(next);
     try {
       await storage.saveAccounts(next);
@@ -68,6 +76,24 @@ export const useAccounts = () => {
     await storage.saveAccounts(next);
   };
 
+  const toggleFavorite = async (accountId) => {
+    const next = accounts.map((a) => (a.id === accountId ? { ...a, favorite: !a.favorite } : a));
+    setAccounts(next);
+    await storage.saveAccounts(next);
+  };
+
+  const updateAccount = async (accountId, updates) => {
+    const next = accounts.map((a) => (a.id === accountId ? { ...a, ...updates } : a));
+    setAccounts(next);
+    await storage.saveAccounts(next);
+  };
+
+  const setLastUsed = async (accountId) => {
+    const next = accounts.map((a) => (a.id === accountId ? { ...a, lastUsed: Date.now() } : a));
+    setAccounts(next);
+    await storage.saveAccounts(next);
+  };
+
   return {
     accounts,
     totpCodes,
@@ -75,6 +101,9 @@ export const useAccounts = () => {
     totpSecondsRemaining,
     addAccount,
     removeAccount,
+    toggleFavorite,
+    updateAccount,
+    setLastUsed,
     reloadAccounts: loadAccounts,
   };
 };
