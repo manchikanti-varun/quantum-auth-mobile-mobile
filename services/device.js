@@ -53,7 +53,7 @@ export const deviceService = {
 
       return { deviceId, keypair };
     } catch (e) {
-      console.log('Failed to ensure device identity', e);
+      if (__DEV__) console.log('Failed to ensure device identity', e);
       return { deviceId: null, keypair: null };
     }
   },
@@ -70,7 +70,7 @@ export const deviceService = {
       const signature = privateKey.sign(messageBytes);
       return signature.toHex();
     } catch (e) {
-      console.log('Failed to sign message', e);
+      if (__DEV__) console.log('Failed to sign message', e);
       return null;
     }
   },

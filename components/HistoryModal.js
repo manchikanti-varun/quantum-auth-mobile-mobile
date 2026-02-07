@@ -25,6 +25,14 @@ const formatDate = (iso) => {
   }
 };
 
+const maskIp = (ip) => {
+  if (!ip || typeof ip !== 'string') return '—';
+  const parts = ip.trim().split('.');
+  if (parts.length === 4) return `${parts[0]}.***.***.${parts[3]}`;
+  if (ip.includes(':')) return '***'; // IPv6
+  return '***';
+};
+
 export const HistoryModal = ({ visible, mode, onClose }) => {
   const { theme } = useTheme();
   const [items, setItems] = useState([]);
@@ -78,7 +86,7 @@ export const HistoryModal = ({ visible, mode, onClose }) => {
                       {mode === 'loginHistory' ? (item.method || 'login') : item.decision}
                     </Text>
                     <Text style={[styles.rowSecondary, { color: theme.colors.textMuted }]}>
-                      {item.deviceId?.slice(0, 8)}... {item.ip ? `· ${item.ip}` : ''}
+                      {item.ip ? `· ${maskIp(item.ip)}` : '· —'}
                     </Text>
                     <Text style={[styles.rowDate, { color: theme.colors.textMuted }]}>{formatDate(item.timestamp)}</Text>
                   </View>

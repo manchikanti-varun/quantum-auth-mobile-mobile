@@ -130,14 +130,20 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                         Open QSafe on your other device and tap Approve or Deny. This usually takes a few seconds.
                       </Text>
                       <Text style={[styles.waitingHint, { color: theme.colors.textMuted }]}>
-                        Other device offline? Get a code from it and enter below.
+                        Can't approve on other device? Use OTP instead:
+                      </Text>
+                      <Text style={[styles.waitingHintSmall, { color: theme.colors.textMuted }]}>
+                        • One-time code from Device 1 (tap "Generate code" on approve screen)
+                      </Text>
+                      <Text style={[styles.waitingHintSmall, { color: theme.colors.textMuted }]}>
+                        • Or TOTP from backup (QR you added at registration)
                       </Text>
                       <TouchableOpacity
                         style={[styles.useOtpButton, { borderColor: theme.colors.accent }]}
                         onPress={() => setShowOtpInput(true)}
                         activeOpacity={0.8}
                       >
-                        <Text style={[styles.useOtpButtonText, { color: theme.colors.accent }]}>Get code from other device</Text>
+                        <Text style={[styles.useOtpButtonText, { color: theme.colors.accent }]}>Enter OTP code</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[styles.cancelWaitingButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
@@ -149,9 +155,9 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                     </>
                   ) : (
                     <>
-                      <Text style={styles.waitingTitle}>Enter code from Device 1</Text>
+                      <Text style={styles.waitingTitle}>Enter OTP code</Text>
                       <Text style={styles.waitingSubtitle}>
-                        Open QSafe on your other device. You'll see the login request. Tap "Generate code for other device" and enter the 6-digit code here.
+                        Use either: (1) 6-digit code from Device 1 ("Generate code" on approve screen), or (2) TOTP from your backup authenticator (QR added at registration).
                       </Text>
                       <TextInput
                         style={[styles.otpInput, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
@@ -261,8 +267,8 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                       onPress={() => Alert.alert('Coming soon', 'Sign in with Google will be available in a future update.')}
                       activeOpacity={0.8}
                     >
-                      <MaterialCommunityIcons name="google" size={22} color={theme.colors.text} />
-                      <Text style={[styles.socialButtonText, { color: theme.colors.text }]}>Sign in with Google</Text>
+                      <MaterialCommunityIcons name="google" size={22} color={theme.colors.textMuted} />
+                      <Text style={[styles.socialButtonText, { color: theme.colors.textMuted }]}>Sign in with Google — Coming soon</Text>
                     </TouchableOpacity>
                   </View>
               )}
@@ -431,7 +437,13 @@ const styles = StyleSheet.create({
   waitingHint: {
     ...themeDark.typography.caption,
     textAlign: 'center',
-    marginBottom: themeDark.spacing.xl,
+    marginBottom: themeDark.spacing.sm,
+    paddingHorizontal: themeDark.spacing.md,
+  },
+  waitingHintSmall: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginBottom: 4,
     paddingHorizontal: themeDark.spacing.md,
   },
   useOtpButton: {

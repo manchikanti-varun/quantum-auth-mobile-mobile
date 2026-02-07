@@ -16,9 +16,9 @@ import { PinPad } from './PinPad';
 import { useLayout } from '../hooks/useLayout';
 import { themeDark } from '../constants/themes';
 
-export const BiometricGate = ({ onUnlock, onPinUnlock, loading, hasPinFallback }) => {
+export const BiometricGate = ({ onUnlock, onPinUnlock, loading, hasPinFallback, hasBiometric = true }) => {
   const { horizontalPadding, contentMaxWidth } = useLayout();
-  const [showPinPad, setShowPinPad] = useState(false);
+  const [showPinPad, setShowPinPad] = useState(!hasBiometric);
 
   const handleUnlockPress = async () => {
     if (!onUnlock) return;
@@ -38,20 +38,22 @@ export const BiometricGate = ({ onUnlock, onPinUnlock, loading, hasPinFallback }
         </View>
         <Text style={styles.title}>QSafe</Text>
 
-        {showPinPad ? (
+        {showPinPad || !hasBiometric ? (
           <>
             <PinPad
               title="Enter PIN"
               mode="verify"
               onComplete={(pin) => onPinUnlock?.(pin)}
-              onCancel={hasPinFallback ? () => setShowPinPad(false) : undefined}
+              onCancel={hasBiometric && hasPinFallback ? () => setShowPinPad(false) : undefined}
             />
-            <TouchableOpacity
-              onPress={() => setShowPinPad(false)}
-              style={styles.useBiometric}
-            >
-              <Text style={styles.useBiometricText}>Use biometric instead</Text>
-            </TouchableOpacity>
+            {hasBiometric && (
+              <TouchableOpacity
+                onPress={() => setShowPinPad(false)}
+                style={styles.useBiometric}
+              >
+                <Text style={styles.useBiometricText}>Use biometric instead</Text>
+              </TouchableOpacity>
+            )}
           </>
         ) : (
           <>

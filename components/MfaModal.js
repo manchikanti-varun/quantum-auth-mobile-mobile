@@ -1,5 +1,5 @@
 /**
- * MfaModal – Approve/deny login request. Generate code for Device 2. Shows IP, device, time.
+ * MfaModal – Approve/deny login request. Generate code for Device 2. Shows masked location, time.
  */
 import React, { useState } from 'react';
 import {
@@ -17,6 +17,14 @@ import { AppLogo } from './AppLogo';
 import { useLayout } from '../hooks/useLayout';
 import { themeDark } from '../constants/themes';
 import { mfaApi } from '../services/api';
+
+const maskIp = (ip) => {
+  if (!ip || typeof ip !== 'string') return '—';
+  const parts = ip.trim().split('.');
+  if (parts.length === 4) return `${parts[0]}.***.***.${parts[3]}`;
+  if (ip.includes(':')) return '***';
+  return '***';
+};
 
 export const MfaModal = ({
   visible,
@@ -71,18 +79,12 @@ export const MfaModal = ({
             Someone is trying to sign in. Approve to allow or deny to block.
           </Text>
 
-          {(ctx.ip || ctx.userAgent || ctx.timestamp || challenge.createdAt) && (
+          {(ctx.ip || ctx.timestamp || challenge.createdAt) && (
             <View style={styles.info}>
               {ctx.ip && (
                 <>
-                  <Text style={styles.infoLabel}>IP</Text>
-                  <Text style={styles.infoValue}>{ctx.ip}</Text>
-                </>
-              )}
-              {ctx.userAgent && (
-                <>
-                  <Text style={styles.infoLabel}>Device</Text>
-                  <Text style={styles.infoValue} numberOfLines={2}>{ctx.userAgent}</Text>
+                  <Text style={styles.infoLabel}>Location</Text>
+                  <Text style={styles.infoValue}>{maskIp(ctx.ip)}</Text>
                 </>
               )}
               {(ctx.timestamp || challenge.createdAt) && (

@@ -81,7 +81,7 @@ export const useAuth = (deviceId, onSuccess) => {
           }
         }
       } catch (e) {
-        console.log('Failed to restore token', e);
+        if (__DEV__) console.log('Failed to restore token', e);
       } finally {
         setLoading(false);
       }
@@ -174,7 +174,7 @@ export const useAuth = (deviceId, onSuccess) => {
         });
       }
     } catch (e) {
-      console.log('Device registration failed', e);
+      if (__DEV__) console.log('Device registration failed', e);
     }
   };
 
@@ -183,26 +183,6 @@ export const useAuth = (deviceId, onSuccess) => {
   };
 
   const cancelPendingMfa = () => setPendingMfa(null);
-
-  const loginWithGoogle = async (idToken, rememberDevice = true) => {
-    if (!idToken) return;
-    try {
-      setLoading(true);
-      const res = await authApi.googleAuth(idToken);
-      const data = res.data;
-      setToken(data.token);
-      await storage.saveToken(data.token);
-      updateApiToken(data.token);
-      setUser(data.email ? { email: data.email, displayName: data.displayName ?? null } : null);
-      await registerDevice(data.uid, deviceId, rememberDevice);
-      onSuccess?.();
-    } catch (err) {
-      const message = err?.response?.data?.message || 'Google sign-in failed. Try again.';
-      Alert.alert('Error', message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loginWithOtp = async (challengeId, deviceId, code, rememberDevice = true) => {
     if (!challengeId || !deviceId || !code) {
@@ -235,7 +215,6 @@ export const useAuth = (deviceId, onSuccess) => {
     login,
     register,
     logout,
-    loginWithGoogle,
     pendingMfa,
     cancelPendingMfa,
     loginWithOtp,

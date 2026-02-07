@@ -4,6 +4,17 @@
 import * as LocalAuthentication from 'expo-local-authentication';
 
 export const biometricService = {
+  async hasBiometric() {
+    try {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      if (!hasHardware) return false;
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      return !!isEnrolled;
+    } catch (e) {
+      return false;
+    }
+  },
+
   async authenticate(reason = 'Authenticate to continue') {
     try {
       const hasHardware = await LocalAuthentication.hasHardwareAsync();
@@ -23,7 +34,7 @@ export const biometricService = {
         error: result.error,
       };
     } catch (e) {
-      console.log('Biometric auth error', e);
+      if (__DEV__) console.log('Biometric auth error', e);
       return { success: true }; // On error, allow to not block user
     }
   },

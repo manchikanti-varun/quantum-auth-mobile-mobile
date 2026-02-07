@@ -23,7 +23,7 @@ const THEME_OPTIONS = [
   { id: 'system', icon: 'cellphone', label: 'System' },
 ];
 
-export const SettingsModal = ({ visible, onClose, user, appLock, onAppLockChange, onExportImport, appLockConfig, onPinSetup, onAutoLockChange, autoLockMinutes, onProfilePress }) => {
+export const SettingsModal = ({ visible, onClose, user, appLock, onAppLockChange, onExportImport, appLockConfig, onPinSetup, onAutoLockChange, autoLockMinutes, onProfilePress, hasBiometric }) => {
   const { theme, preference, setThemePreference } = useTheme();
   const [showPinSetup, setShowPinSetup] = useState(false);
 
@@ -81,7 +81,9 @@ export const SettingsModal = ({ visible, onClose, user, appLock, onAppLockChange
               <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>App Lock</Text>
               <View style={[styles.optionRow, { backgroundColor: theme.colors.surface }]}>
                 <MaterialCommunityIcons name="fingerprint" size={24} color={theme.colors.textSecondary} />
-                <Text style={[styles.optionRowText, { color: theme.colors.text }]}>Biometric on launch</Text>
+                <Text style={[styles.optionRowText, { color: theme.colors.text }]}>
+                  App lock {hasBiometric ? '(biometric)' : '(PIN)'}
+                </Text>
                 <TouchableOpacity
                   style={[styles.toggle, appLock && { backgroundColor: theme.colors.accent }]}
                   onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onAppLockChange?.(!appLock); }}
@@ -96,7 +98,7 @@ export const SettingsModal = ({ visible, onClose, user, appLock, onAppLockChange
                 >
                   <MaterialCommunityIcons name="numeric" size={24} color={theme.colors.accent} />
                   <Text style={[styles.optionRowText, { color: theme.colors.text }]}>
-                    {appLockConfig?.pinHash ? 'Change PIN' : 'Set PIN fallback'}
+                    {appLockConfig?.pinHash ? 'Change PIN' : 'Set PIN'}
                   </Text>
                   <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.textMuted} />
                 </TouchableOpacity>
@@ -119,7 +121,7 @@ export const SettingsModal = ({ visible, onClose, user, appLock, onAppLockChange
           {showPinSetup && (
             <View style={[styles.pinSetupOverlay, { backgroundColor: theme.colors.bgElevated }]}>
               <PinPad
-                title="Set PIN (6 digits)"
+                title={appLockConfig?.pinHash ? 'Change PIN (6 digits)' : 'Set PIN (6 digits)'}
                 mode="setup"
                 minLength={6}
                 onComplete={async (pin) => {

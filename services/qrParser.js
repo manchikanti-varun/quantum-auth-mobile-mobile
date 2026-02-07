@@ -92,7 +92,7 @@ export const qrParser = {
 
       return { issuer, label, secret: secretClean };
     } catch (e) {
-      console.warn('QR parse error', e);
+      if (__DEV__) console.warn('QR parse error', e);
       Alert.alert('Error', 'Could not process QR. Try manual entry.');
       return null;
     }

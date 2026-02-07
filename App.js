@@ -27,6 +27,7 @@ import { FloatingActionButton } from './components/FloatingActionButton';
 import { BiometricGate } from './components/BiometricGate';
 import { AutoLockModal } from './components/AutoLockModal';
 import { ProfileModal } from './components/ProfileModal';
+import { AppLockPromptModal } from './components/AppLockPromptModal';
 import { storage } from './services/storage';
 import { verifyPin } from './utils/pinHash';
 
@@ -45,6 +46,8 @@ function AppContent() {
   const [exportImportMode, setExportImportMode] = useState(null);
   const [historyMode, setHistoryMode] = useState(null);
   const [deviceId, setDeviceId] = useState(null);
+  const [hasBiometric, setHasBiometric] = useState(false);
+  const [showAppLockPrompt, setShowAppLockPrompt] = useState(false);
   const { theme } = useTheme();
 
   const { token, user, loading, login, register, logout, pendingMfa, cancelPendingMfa, loginWithOtp } = useAuth(deviceId, () => {
@@ -62,7 +65,7 @@ function AppContent() {
     (async () => {
       const lockConfig = await storage.getAppLock();
       setAppLockConfig(lockConfig);
-      setAppLock(lockConfig?.enabled !== false);
+      setAppLock(lockConfig?.enabled === true);
       const mins = await storage.getAutoLockMinutes();
       setAutoLockMinutes(mins);
     })();
@@ -71,6 +74,17 @@ function AppContent() {
   useEffect(() => {
     initializeApp();
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      const hb = await biometricService.hasBiometric();
+      setHasBiometric(hb);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (token && !appLockConfig) setShowAppLockPrompt(true);
+  }, [token, appLockConfig]);
 
   useEffect(() => {
     if (!appLock || biometricUnlocked) {
@@ -133,13 +147,20 @@ function AppContent() {
 
     const lockConfig = await storage.getAppLock();
     setAppLockConfig(lockConfig);
-    const useLock = lockConfig?.enabled !== false;
+    const useLock = lockConfig?.enabled === true;
     setAppLock(useLock);
 
     if (!useLock) {
       setBiometricChecking(false);
       setBiometricUnlocked(true);
       lastActivityRef.current = Date.now();
+      return;
+    }
+
+    const hasBiometric = await biometricService.hasBiometric();
+    if (!hasBiometric && !lockConfig?.pinHash) {
+      setBiometricChecking(false);
+      setBiometricUnlocked(true);
       return;
     }
 
@@ -154,10 +175,29 @@ function AppContent() {
   };
 
   const handleAppLockChange = async (enabled) => {
+    if (enabled && !hasBiometric && !appLockConfig?.pinHash) {
+      Alert.alert('Set PIN required', 'No biometric on this device. Set a PIN to enable app lock.', [{ text: 'OK' }]);
+      return;
+    }
     setAppLock(enabled);
     const config = await storage.getAppLock();
     await storage.saveAppLock({ ...config, enabled });
     setAppLockConfig({ ...config, enabled });
+  };
+
+  const handleAppLockPromptEnable = async (opts) => {
+    const config = { enabled: true, pinHash: opts?.pinHash };
+    await storage.saveAppLock(config);
+    setAppLockConfig(config);
+    setAppLock(true);
+    setShowAppLockPrompt(false);
+  };
+
+  const handleAppLockPromptSkip = async () => {
+    await storage.saveAppLock({ enabled: false });
+    setAppLockConfig({ enabled: false });
+    setAppLock(false);
+    setShowAppLockPrompt(false);
   };
 
   const handlePinSetup = async (pinHash) => {
@@ -262,7 +302,7 @@ function AppContent() {
         [{ text: 'OK' }],
       );
     } catch (e) {
-      console.warn('Add account error', e);
+      if (__DEV__) console.warn('Add account error', e);
       if (e?.message?.includes('SecureStore') || e?.message?.includes('2048')) {
         Alert.alert('Storage full', 'Could not save. Remove an account or clear app data and try again.');
       } else {
@@ -392,6 +432,7 @@ function AppContent() {
             onAppLockChange={handleAppLockChange}
             appLockConfig={appLockConfig}
             onPinSetup={handlePinSetup}
+            hasBiometric={hasBiometric}
             onAutoLockChange={() => setShowAutoLockPicker(true)}
             autoLockMinutes={autoLockMinutes}
             onExportImport={(mode) => {
@@ -416,6 +457,13 @@ function AppContent() {
             onClose={() => setShowProfile(false)}
           />
 
+          <AppLockPromptModal
+            visible={showAppLockPrompt}
+            hasBiometric={hasBiometric}
+            onEnable={handleAppLockPromptEnable}
+            onSkip={handleAppLockPromptSkip}
+          />
+
           <ExportImportModal
             visible={!!exportImportMode}
             mode={exportImportMode}
@@ -436,6 +484,7 @@ function AppContent() {
               onPinUnlock={handlePinUnlock}
               loading={biometricChecking}
               hasPinFallback={!!appLockConfig?.pinHash}
+              hasBiometric={hasBiometric}
             />
           )}
 

@@ -157,7 +157,7 @@ function verifyTotpImplementation() {
   const got = hotp(keyBytes, 1);
   const expected = '287082';
   if (got !== expected) {
-    console.error('TOTP implementation mismatch: got', got, 'expected', expected);
+    if (__DEV__) console.error('TOTP implementation mismatch: got', got, 'expected', expected);
     return false;
   }
   return true;

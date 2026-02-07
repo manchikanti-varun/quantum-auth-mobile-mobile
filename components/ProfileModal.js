@@ -72,13 +72,14 @@ export const ProfileModal = ({ visible, user, onClose, onPasswordChanged }) => {
           </View>
 
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={styles.keyboardAvoid}
           >
             <ScrollView
               keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
+              showsVerticalScrollIndicator={true}
               contentContainerStyle={styles.scrollContent}
+              style={styles.scrollView}
             >
               {/* Change password first – avoids keyboard covering fields */}
               <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Change password</Text>
@@ -139,13 +140,14 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
   },
   content: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     padding: 24,
     paddingBottom: 40,
+    maxHeight: '90%',
   },
   header: {
     flexDirection: 'row',
@@ -170,6 +172,9 @@ const styles = StyleSheet.create({
     marginTop: themeDark.spacing.xl,
   },
   keyboardAvoid: {
+    flex: 1,
+  },
+  scrollView: {
     flex: 1,
   },
   scrollContent: {

@@ -1,8 +1,8 @@
 /**
  * App configuration – API URL, storage keys, default folders, auto-lock options.
- * Google Sign-In: set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID and EXPO_PUBLIC_FIREBASE_* from Firebase Console.
+ * Set EXPO_PUBLIC_API_URL in .env (e.g. https://your-api.example.com).
  */
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://quantum-auth-mobile-backend-production.up.railway.app';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || '';
 export const ACCOUNTS_KEY = 'QSAFE_TOTP_ACCOUNTS';
 export const DEVICE_KEY = 'QSAFE_DEVICE_ID';
 export const PQC_KEYPAIR_KEY = 'QSAFE_PQC_KEYPAIR';

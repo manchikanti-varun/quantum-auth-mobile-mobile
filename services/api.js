@@ -1,11 +1,17 @@
 /**
  * API client – auth, devices, MFA. Auto-attaches JWT, clears on 401.
+ * Set EXPO_PUBLIC_API_URL in .env for production.
  */
 import axios from 'axios';
 import { API_BASE_URL } from '../constants/config';
 
+const baseURL = API_BASE_URL?.trim() || undefined;
+if (!baseURL && __DEV__) {
+  console.warn('EXPO_PUBLIC_API_URL is not set. Add it to .env for API calls.');
+}
+
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: baseURL || '',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -46,9 +52,6 @@ export const authApi = {
 
   login: (email, password, deviceId) =>
     api.post('/api/auth/login', { email, password, deviceId }),
-
-  googleAuth: (idToken) =>
-    api.post('/api/auth/google', { idToken }),
 
   getLoginStatus: (challengeId, deviceId) =>
     api.get(`/api/auth/login-status?challengeId=${encodeURIComponent(challengeId)}&deviceId=${encodeURIComponent(deviceId)}`),

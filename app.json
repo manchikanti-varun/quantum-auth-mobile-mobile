@@ -46,8 +46,7 @@
       "color": "#00e5ff"
     },
     "plugins": [
-      "expo-notifications",
-      "expo-web-browser"
+      "expo-notifications"
     ],
     "web": {
       "favicon": "./assets/favicon.png"

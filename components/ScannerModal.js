@@ -105,7 +105,7 @@ export const ScannerModal = ({ visible, onClose, onScan }) => {
         );
       }
     } catch (e) {
-      console.warn('Scan from photo failed', e);
+      if (__DEV__) console.warn('Scan from photo failed', e);
       Alert.alert(
         'Error',
         'Something went wrong. Use Manual entry and paste the setup key from Google instead.',

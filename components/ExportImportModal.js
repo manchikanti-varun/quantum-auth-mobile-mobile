@@ -89,7 +89,7 @@ export const ExportImportModal = ({ visible, mode, onClose, onExport, onImport }
               </Text>
               <TextInput
                 style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
-                placeholder='[{"issuer":"Google","label":"...","secret":"..."}]'
+                placeholder='Paste your backup JSON here'
                 placeholderTextColor={theme.colors.textMuted}
                 value={importData}
                 onChangeText={setImportData}

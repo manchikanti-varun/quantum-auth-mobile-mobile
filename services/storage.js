@@ -22,7 +22,7 @@ export const storage = {
       const raw = await SecureStore.getItemAsync(ACCOUNTS_KEY);
       return raw ? JSON.parse(raw) : [];
     } catch (e) {
-      console.log('Failed to load accounts', e);
+      if (__DEV__) console.log('Failed to load accounts', e);
       return [];
     }
   },
@@ -33,7 +33,7 @@ export const storage = {
       await SecureStore.setItemAsync(ACCOUNTS_KEY, data);
       return true;
     } catch (e) {
-      console.log('Failed to save accounts', e);
+      if (__DEV__) console.log('Failed to save accounts', e);
       throw e;
     }
   },
