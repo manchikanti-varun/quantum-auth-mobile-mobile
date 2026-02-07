@@ -1,3 +1,7 @@
+/**
+ * Secure storage – token, accounts, PQC keys, preferences, app lock.
+ * Uses expo-secure-store (Keychain / Keystore). PQC keypair chunked when > 2KB.
+ */
 import * as SecureStore from 'expo-secure-store';
 import { ACCOUNTS_KEY, DEVICE_KEY, PQC_KEYPAIR_KEY, AUTH_TOKEN_KEY, PREFERENCES_KEY, APP_LOCK_KEY, CUSTOM_FOLDERS_KEY, AUTO_LOCK_KEY } from '../constants/config';
 

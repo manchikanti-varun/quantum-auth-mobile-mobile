@@ -1,3 +1,6 @@
+/**
+ * Theme context – light/dark/system preference, persisted to SecureStore.
+ */
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useColorScheme } from 'react-native';
 import * as SecureStore from 'expo-secure-store';

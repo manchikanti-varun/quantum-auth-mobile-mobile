@@ -1,3 +1,6 @@
+/**
+ * ExportImportModal – Export accounts as JSON, or paste JSON to import.
+ */
 import React, { useState } from 'react';
 import {
   Modal,

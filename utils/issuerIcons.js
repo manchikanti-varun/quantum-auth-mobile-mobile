@@ -1,3 +1,9 @@
+/**
+ * Issuer icons – map issuer names to MaterialCommunityIcons; fallback: first letter.
+ */
+/**
+ * Issuer icons – map issuer names to MaterialCommunityIcons; fallback: first letter.
+ */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 /**

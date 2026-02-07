@@ -1,3 +1,6 @@
+/**
+ * SettingsModal – Theme, app lock, PIN, auto-lock, profile, backup, history.
+ */
 import React, { useState } from 'react';
 import {
   Modal,

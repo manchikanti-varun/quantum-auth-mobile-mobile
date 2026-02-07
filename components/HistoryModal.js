@@ -1,3 +1,6 @@
+/**
+ * HistoryModal – Login history or MFA history from backend.
+ */
 import React, { useState, useEffect } from 'react';
 import {
   Modal,

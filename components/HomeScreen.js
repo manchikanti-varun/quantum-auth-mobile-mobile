@@ -1,3 +1,6 @@
+/**
+ * HomeScreen – Main view: greeting, account list, search, filters, collapsible folders.
+ */
 import React, { useState, useMemo } from 'react';
 import {
   View,

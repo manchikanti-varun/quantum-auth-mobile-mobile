@@ -1,3 +1,6 @@
+/**
+ * Biometric service – fingerprint/face unlock. Falls back to device passcode.
+ */
 import * as LocalAuthentication from 'expo-local-authentication';
 
 export const biometricService = {

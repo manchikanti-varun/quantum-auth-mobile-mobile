@@ -1,3 +1,6 @@
+/**
+ * AccountEditModal – Edit folder, notes, icon for an account.
+ */
 import React, { useState, useEffect } from 'react';
 import {
   Modal,

@@ -1,3 +1,6 @@
+/**
+ * FloatingActionButton – QR scan FAB (opens scanner on press).
+ */
 import React from 'react';
 import { TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';

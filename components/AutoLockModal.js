@@ -1,3 +1,6 @@
+/**
+ * AutoLockModal – Pick auto-lock timeout (never, 1/5/15/30 min).
+ */
 import React from 'react';
 import {
   Modal,

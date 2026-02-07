@@ -1,3 +1,6 @@
+/**
+ * API client – auth, devices, MFA. Auto-attaches JWT, clears on 401.
+ */
 import axios from 'axios';
 import { API_BASE_URL } from '../constants/config';
 

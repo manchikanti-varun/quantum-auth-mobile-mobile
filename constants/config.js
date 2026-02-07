@@ -1,3 +1,6 @@
+/**
+ * App configuration – API URL, storage keys, default folders, auto-lock options.
+ */
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://quantum-auth-mobile-backend-production.up.railway.app';
 export const ACCOUNTS_KEY = 'QSAFE_TOTP_ACCOUNTS';
 export const DEVICE_KEY = 'QSAFE_DEVICE_ID';

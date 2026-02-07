@@ -1,3 +1,6 @@
+/**
+ * PinPad – Numeric keypad for PIN entry (verify or setup with confirm step).
+ */
 import React, { useState } from 'react';
 import {
   View,

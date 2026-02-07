@@ -1,3 +1,6 @@
+/**
+ * ScannerModal – QR scan or manual secret entry for TOTP enrollment.
+ */
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Modal,

@@ -1,3 +1,6 @@
+/**
+ * QSafe – Main app entry. Handles auth flow, app lock, modals, and routing.
+ */
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Alert, AppState, Linking } from 'react-native';
 import * as ScreenCapture from 'expo-screen-capture';

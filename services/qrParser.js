@@ -1,3 +1,9 @@
+/**
+ * QR parser – parse otpauth:// URIs from QR (secret, issuer, account).
+ */
+/**
+ * QR parser – parse otpauth:// URIs from QR (secret, issuer, account).
+ */
 import { Alert } from 'react-native';
 
 /**

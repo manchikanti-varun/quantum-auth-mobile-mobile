@@ -1,3 +1,9 @@
+/**
+ * PIN hashing – SHA256 with salt for app lock; verify against stored hash.
+ */
+/**
+ * PIN hashing – SHA256 with salt for app lock; verify against stored hash.
+ */
 import * as Crypto from 'expo-crypto';
 
 const SALT = 'QSAFE_PIN_SALT_V1';

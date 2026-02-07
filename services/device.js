@@ -1,3 +1,6 @@
+/**
+ * Device service – device ID, PQC keypair (Dilithium2), sign messages for MFA.
+ */
 import * as Crypto from 'expo-crypto';
 import * as Application from 'expo-application';
 import { v4 as uuidv4 } from 'uuid';

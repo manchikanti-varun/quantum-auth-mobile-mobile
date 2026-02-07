@@ -1,3 +1,6 @@
+/**
+ * AccountCard – TOTP account card with icon, label, code, countdown, favorite/edit/remove.
+ */
 import React from 'react';
 import {
   View,

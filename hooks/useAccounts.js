@@ -1,3 +1,6 @@
+/**
+ * Accounts hook – load/save TOTP accounts, generate codes every 1s, favorites, folders, order.
+ */
 import { useState, useEffect } from 'react';
 import { generateTOTP, generateTOTPWithAdjacent, getTimeRemainingInWindow } from '../services/totp';
 import { storage } from '../services/storage';

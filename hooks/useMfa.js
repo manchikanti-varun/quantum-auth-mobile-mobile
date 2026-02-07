@@ -1,3 +1,6 @@
+/**
+ * MFA hook – polls for pending challenges, resolves with PQC signature (approve/deny).
+ */
 import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { mfaApi } from '../services/api';

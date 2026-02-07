@@ -1,3 +1,6 @@
+/**
+ * Auth hook – login, register, logout, MFA polling, backup OTP. Manages token & user.
+ */
 import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { authApi, deviceApi, setOnUnauthorized } from '../services/api';

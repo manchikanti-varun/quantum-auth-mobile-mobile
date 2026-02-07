@@ -1,3 +1,6 @@
+/**
+ * ProfileModal – Email (read-only), change password form.
+ */
 import React, { useState } from 'react';
 import {
   Modal,

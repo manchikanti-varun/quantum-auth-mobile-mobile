@@ -1,5 +1,5 @@
 /**
- * QSafe — Dark and Light theme variants
+ * QSafe – Dark and Light theme variants. Shared spacing, radii, typography.
  */
 const baseTypo = {
   display: { fontSize: 40, fontWeight: '800', letterSpacing: -1 },

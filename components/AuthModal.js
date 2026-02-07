@@ -1,3 +1,6 @@
+/**
+ * AuthModal – Login / register form. MFA wait state + backup OTP entry.
+ */
 import React, { useState, useEffect } from 'react';
 import {
   Modal,

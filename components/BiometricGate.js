@@ -1,3 +1,6 @@
+/**
+ * BiometricGate – Unlock screen. Biometric or PIN fallback when app is locked.
+ */
 import React, { useState } from 'react';
 import {
   View,

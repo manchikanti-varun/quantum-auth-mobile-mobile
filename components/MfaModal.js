@@ -1,3 +1,6 @@
+/**
+ * MfaModal – Approve/deny login request. Shows IP, device, time. Optional "Mark suspicious".
+ */
 import React from 'react';
 import {
   Modal,

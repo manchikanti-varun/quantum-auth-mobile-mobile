@@ -1,3 +1,6 @@
+/**
+ * Folders hook – default + custom folders, add/rename/remove.
+ */
 import { useState, useEffect } from 'react';
 import { storage } from '../services/storage';
 import { DEFAULT_FOLDERS } from '../constants/config';
