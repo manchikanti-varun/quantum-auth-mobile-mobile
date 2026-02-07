@@ -475,6 +475,7 @@ function AppContent() {
           <HistoryModal
             visible={!!historyMode}
             mode={historyMode}
+            deviceId={deviceId}
             onClose={() => setHistoryMode(null)}
           />
             </>

@@ -81,8 +81,13 @@ export const ProfileModal = ({ visible, user, onClose, onPasswordChanged }) => {
               contentContainerStyle={styles.scrollContent}
               style={styles.scrollView}
             >
-              {/* Change password first – avoids keyboard covering fields */}
-              <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Change password</Text>
+              <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Email</Text>
+              <View style={[styles.emailRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                <MaterialCommunityIcons name="email-outline" size={20} color={theme.colors.textMuted} />
+                <Text style={[styles.emailText, { color: theme.colors.text }]}>{user?.email || '—'}</Text>
+              </View>
+
+              <Text style={[styles.label, styles.labelSection, { color: theme.colors.textSecondary }]}>Change password</Text>
               <TextInput
                 style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
                 placeholder="Current password"
@@ -121,13 +126,6 @@ export const ProfileModal = ({ visible, user, onClose, onPasswordChanged }) => {
                   <Text style={[styles.buttonText, { color: theme.colors.bg }]}>Update password</Text>
                 )}
               </TouchableOpacity>
-
-              <Text style={[styles.label, styles.labelSection, { color: theme.colors.textSecondary }]}>Email (cannot be changed)</Text>
-              <TextInput
-                style={[styles.input, styles.inputDisabled, { backgroundColor: theme.colors.surface, color: theme.colors.textMuted }]}
-                value={user?.email || ''}
-                editable={false}
-              />
             </ScrollView>
           </KeyboardAvoidingView>
         </View>
@@ -188,8 +186,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: themeDark.spacing.md,
   },
-  inputDisabled: {
-    opacity: 0.8,
+  emailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: themeDark.spacing.lg,
+    paddingVertical: themeDark.spacing.md,
+    borderRadius: themeDark.radii.md,
+    borderWidth: 1,
+    marginBottom: themeDark.spacing.md,
+    gap: themeDark.spacing.sm,
+  },
+  emailText: {
+    fontSize: 16,
+    flex: 1,
   },
   button: {
     paddingVertical: themeDark.spacing.lg,

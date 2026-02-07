@@ -11,6 +11,8 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AppLogo } from './AppLogo';
@@ -49,9 +51,11 @@ export const MfaModal = ({
       const res = await mfaApi.generateCode(challenge.challengeId);
       const code = res.data?.code;
       if (code) {
+        await Clipboard.setStringAsync(code);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Alert.alert(
           'Login code',
-          `Enter this code on the other device:\n\n${code}\n\nValid for 5 minutes.`,
+          `Code copied! Enter it on the other device:\n\n${code}\n\nValid for 5 minutes.`,
           [{ text: 'OK' }]
         );
       }
@@ -79,7 +83,7 @@ export const MfaModal = ({
             Someone is trying to sign in. Approve to allow or deny to block.
           </Text>
 
-          {(ctx.ip || ctx.timestamp || challenge.createdAt) && (
+          {(ctx.ip || ctx.timestamp || challenge.createdAt || challenge.expiresAt) && (
             <View style={styles.info}>
               {ctx.ip && (
                 <>
@@ -92,6 +96,14 @@ export const MfaModal = ({
                   <Text style={styles.infoLabel}>Time</Text>
                   <Text style={styles.infoValue}>
                     {new Date(ctx.timestamp || challenge.createdAt).toLocaleString()}
+                  </Text>
+                </>
+              )}
+              {challenge.expiresAt && (
+                <>
+                  <Text style={styles.infoLabel}>Expires</Text>
+                  <Text style={styles.infoValue}>
+                    {new Date(challenge.expiresAt).toLocaleTimeString()} ({Math.max(0, Math.ceil((new Date(challenge.expiresAt) - Date.now()) / 60000))} min left)
                   </Text>
                 </>
               )}

@@ -33,22 +33,52 @@ const maskIp = (ip) => {
   return '***';
 };
 
-export const HistoryModal = ({ visible, mode, onClose }) => {
+export const HistoryModal = ({ visible, mode, deviceId, onClose }) => {
   const { theme } = useTheme();
   const [items, setItems] = useState([]);
+  const [firstDeviceId, setFirstDeviceId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
-  useEffect(() => {
+  const fetchHistory = () => {
     if (!visible || !mode) return;
     setLoading(true);
     setError(null);
     const fetch = mode === 'loginHistory' ? authApi.getLoginHistory : mfaApi.getHistory;
     fetch()
-      .then((res) => setItems(res.data?.history || []))
+      .then((res) => {
+        setItems(res.data?.history || []);
+        setFirstDeviceId(res.data?.firstDeviceId ?? null);
+      })
       .catch((e) => setError(e?.response?.data?.message || 'Failed to load'))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    if (!visible || !mode) return;
+    fetchHistory();
   }, [visible, mode]);
+
+  const canDeleteEntry = (item) => {
+    if (mode !== 'loginHistory' || !deviceId || !item.deviceId) return false;
+    if (item.deviceId === deviceId) return false; // own device
+    if (firstDeviceId && item.deviceId === firstDeviceId && deviceId !== firstDeviceId) return false; // first device, we're not on it
+    return true;
+  };
+
+  const handleDelete = async (item) => {
+    if (!canDeleteEntry(item)) return;
+    setDeletingId(item.id);
+    try {
+      await authApi.deleteLoginHistoryEntry(item.id, deviceId);
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Failed to delete');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (!visible) return null;
 
@@ -90,6 +120,20 @@ export const HistoryModal = ({ visible, mode, onClose }) => {
                     </Text>
                     <Text style={[styles.rowDate, { color: theme.colors.textMuted }]}>{formatDate(item.timestamp)}</Text>
                   </View>
+                  {mode === 'loginHistory' && canDeleteEntry(item) && (
+                    <TouchableOpacity
+                      onPress={() => handleDelete(item)}
+                      disabled={deletingId === item.id}
+                      hitSlop={12}
+                      style={styles.deleteBtn}
+                    >
+                      {deletingId === item.id ? (
+                        <ActivityIndicator size="small" color={theme.colors.error} />
+                      ) : (
+                        <MaterialCommunityIcons name="delete-outline" size={22} color={theme.colors.error} />
+                      )}
+                    </TouchableOpacity>
+                  )}
                 </View>
               ))}
             </ScrollView>
@@ -148,6 +192,11 @@ const styles = StyleSheet.create({
   },
   rowContent: {
     flex: 1,
+  },
+  deleteBtn: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   rowPrimary: {
     fontSize: 15,

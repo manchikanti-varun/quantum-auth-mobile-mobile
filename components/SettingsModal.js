@@ -40,12 +40,18 @@ export const SettingsModal = ({ visible, onClose, user, appLock, onAppLockChange
           </View>
 
           <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Profile</Text>
+          {user?.email && (
+            <View style={[styles.optionRow, { backgroundColor: theme.colors.surface }]}>
+              <MaterialCommunityIcons name="email-outline" size={24} color={theme.colors.textMuted} />
+              <Text style={[styles.optionRowText, { color: theme.colors.text }]}>{user.email}</Text>
+            </View>
+          )}
           <TouchableOpacity
             style={[styles.optionRow, { backgroundColor: theme.colors.surface }]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onProfilePress?.(); }}
           >
-            <MaterialCommunityIcons name="account-circle" size={24} color={theme.colors.accent} />
-            <Text style={[styles.optionRowText, { color: theme.colors.text }]}>Profile</Text>
+            <MaterialCommunityIcons name="lock-reset" size={24} color={theme.colors.accent} />
+            <Text style={[styles.optionRowText, { color: theme.colors.text }]}>Change password</Text>
             <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.textMuted} />
           </TouchableOpacity>
 

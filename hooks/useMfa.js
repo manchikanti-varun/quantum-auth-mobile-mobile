@@ -3,6 +3,7 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Alert, AppState } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { mfaApi } from '../services/api';
 import { storage } from '../services/storage';
 import { deviceService } from '../services/device';
@@ -19,6 +20,7 @@ export const useMfa = (deviceId, token) => {
         setPendingChallenge({
           challengeId: challenge.challengeId,
           context: challenge.context || {},
+          expiresAt: challenge.expiresAt,
         });
       } else {
         setPendingChallenge(null);
@@ -28,30 +30,25 @@ export const useMfa = (deviceId, token) => {
     }
   }, [deviceId, token]);
 
+  // Poll continuously when logged in
   useEffect(() => {
     if (!deviceId || !token) return;
 
     checkForPendingChallenges();
     const interval = setInterval(checkForPendingChallenges, 150);
-    return () => clearInterval(interval);
-  }, [deviceId, token, checkForPendingChallenges]);
 
-  // Poll when app comes to foreground – burst of polls to catch challenges quickly
-  useEffect(() => {
-    let timers = [];
     const sub = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active' && deviceId && token) {
-        timers.forEach(clearTimeout);
-        timers = [];
         checkForPendingChallenges();
-        [100, 300, 600].forEach((ms) => {
-          timers.push(setTimeout(checkForPendingChallenges, ms));
+        [50, 150, 300, 500].forEach((ms) => {
+          setTimeout(checkForPendingChallenges, ms);
         });
       }
     });
+
     return () => {
+      clearInterval(interval);
       sub?.remove();
-      timers.forEach(clearTimeout);
     };
   }, [deviceId, token, checkForPendingChallenges]);
 
@@ -72,9 +69,12 @@ export const useMfa = (deviceId, token) => {
       });
 
       setPendingChallenge(null);
+      if (decision === 'approved') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
     } catch (e) {
       if (__DEV__) console.log('MFA resolve error', e);
-      Alert.alert('Error', 'Failed to process MFA decision');
+      Alert.alert('Error', e?.response?.data?.message || 'Failed to process MFA decision');
     }
   };
 
