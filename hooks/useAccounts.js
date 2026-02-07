@@ -48,18 +48,21 @@ export const useAccounts = () => {
 
   const loadAccounts = async () => {
     const loaded = await storage.getAccounts();
-    const migrated = loaded.map((a) => ({
+    const migrated = loaded.map((a, i) => ({
       ...a,
       favorite: a.favorite ?? false,
       folder: a.folder ?? 'Personal',
       notes: a.notes ?? '',
       lastUsed: a.lastUsed ?? 0,
+      order: a.order ?? i,
     }));
+    migrated.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     setAccounts(migrated);
   };
 
   const addAccount = async (account) => {
-    const withMeta = { ...account, favorite: false, folder: 'Personal', notes: '', lastUsed: Date.now() };
+    const maxOrder = accounts.reduce((m, a) => Math.max(m, a.order ?? 0), -1);
+    const withMeta = { ...account, favorite: false, folder: 'Personal', notes: '', lastUsed: Date.now(), order: maxOrder + 1 };
     const next = [...accounts, withMeta];
     setAccounts(next);
     try {
@@ -71,9 +74,15 @@ export const useAccounts = () => {
   };
 
   const removeAccount = async (accountId) => {
-    const next = accounts.filter((acc) => acc.id !== accountId);
-    setAccounts(next);
-    await storage.saveAccounts(next);
+    const next = accounts.map((acc) => {
+      if (acc.id === accountId) {
+        return { ...acc, secret: '0'.repeat(32), issuer: '', label: '' };
+      }
+      return acc;
+    });
+    const filtered = next.filter((acc) => acc.id !== accountId);
+    setAccounts(filtered);
+    await storage.saveAccounts(filtered);
   };
 
   const toggleFavorite = async (accountId) => {
@@ -94,6 +103,12 @@ export const useAccounts = () => {
     await storage.saveAccounts(next);
   };
 
+  const reorderAccounts = async (reordered) => {
+    const next = reordered.map((a, i) => ({ ...a, order: i }));
+    setAccounts(next);
+    await storage.saveAccounts(next);
+  };
+
   return {
     accounts,
     totpCodes,
@@ -104,6 +119,7 @@ export const useAccounts = () => {
     toggleFavorite,
     updateAccount,
     setLastUsed,
+    reorderAccounts,
     reloadAccounts: loadAccounts,
   };
 };

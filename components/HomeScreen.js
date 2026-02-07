@@ -15,6 +15,7 @@ import { AccountEditModal } from './AccountEditModal';
 import { AppLogo } from './AppLogo';
 import { useLayout } from '../hooks/useLayout';
 import { useTheme } from '../context/ThemeContext';
+import { useFolders } from '../hooks/useFolders';
 import { themeDark } from '../constants/themes';
 
 export const HomeScreen = ({
@@ -30,14 +31,18 @@ export const HomeScreen = ({
   onToggleFavorite,
   updateAccount,
   setLastUsed,
+  folders: foldersProp,
 }) => {
   const { theme } = useTheme();
   const { horizontalPadding, contentMaxWidth, safeBottom } = useLayout();
+  const { folders: foldersFromHook } = useFolders();
+  const folders = foldersProp && foldersProp.length > 0 ? foldersProp : foldersFromHook;
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('issuer');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [folderFilter, setFolderFilter] = useState('all');
   const [editingAccount, setEditingAccount] = useState(null);
+  const [collapsedFolders, setCollapsedFolders] = useState({});
   const filteredAccounts = useMemo(() => {
     let list = accounts;
     if (showFavoritesOnly) list = list.filter((a) => a.favorite);
@@ -52,6 +57,7 @@ export const HomeScreen = ({
       );
     }
     const sorted = [...list].sort((a, b) => {
+      if (sortBy === 'order') return (a.order ?? 0) - (b.order ?? 0);
       if (sortBy === 'issuer') return (a.issuer || '').localeCompare(b.issuer || '');
       if (sortBy === 'label') return (a.label || '').localeCompare(b.label || '');
       if (sortBy === 'lastUsed') return (b.lastUsed || 0) - (a.lastUsed || 0);
@@ -59,6 +65,20 @@ export const HomeScreen = ({
     });
     return sorted;
   }, [accounts, searchQuery, sortBy, showFavoritesOnly, folderFilter]);
+
+  const accountsByFolder = useMemo(() => {
+    const map = {};
+    filteredAccounts.forEach((acc) => {
+      const f = acc.folder || 'Personal';
+      if (!map[f]) map[f] = [];
+      map[f].push(acc);
+    });
+    return map;
+  }, [filteredAccounts]);
+
+  const toggleFolderCollapse = (f) => {
+    setCollapsedFolders((prev) => ({ ...prev, [f]: !prev[f] }));
+  };
   const paddingBottom = 120 + safeBottom;
 
   if (!token) {
@@ -161,7 +181,7 @@ export const HomeScreen = ({
               <MaterialCommunityIcons name="star" size={16} color={showFavoritesOnly ? theme.colors.bg : theme.colors.textMuted} />
               <Text style={[styles.filterChipText, { color: showFavoritesOnly ? theme.colors.bg : theme.colors.textSecondary }]}>Favorites</Text>
             </TouchableOpacity>
-            {['Personal', 'Work', 'Banking'].map((f) => (
+            {folders.map((f) => (
               <TouchableOpacity
                 key={f}
                 style={[styles.filterChip, folderFilter === f && { backgroundColor: theme.colors.surface, borderColor: theme.colors.accent, borderWidth: 1 }]}
@@ -170,14 +190,14 @@ export const HomeScreen = ({
                 <Text style={[styles.filterChipText, { color: folderFilter === f ? theme.colors.accent : theme.colors.textSecondary }]}>{f}</Text>
               </TouchableOpacity>
             ))}
-            {['issuer', 'label', 'lastUsed'].map((opt) => (
+            {['order', 'issuer', 'label', 'lastUsed'].map((opt) => (
               <TouchableOpacity
                 key={opt}
                 style={[styles.filterChip, sortBy === opt && { backgroundColor: theme.colors.surface, borderColor: theme.colors.accent }]}
                 onPress={() => setSortBy(opt)}
               >
                 <Text style={[styles.filterChipText, { color: sortBy === opt ? theme.colors.accent : theme.colors.textSecondary }]}>
-                  {opt === 'lastUsed' ? 'Recent' : opt.charAt(0).toUpperCase() + opt.slice(1)}
+                  {opt === 'lastUsed' ? 'Recent' : opt === 'order' ? 'Custom' : opt.charAt(0).toUpperCase() + opt.slice(1)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -202,23 +222,59 @@ export const HomeScreen = ({
         <View style={styles.accountsList}>
           {filteredAccounts.length === 0 ? (
             <Text style={[styles.searchEmpty, { color: theme.colors.textMuted }]}>No accounts match "{searchQuery}"</Text>
+          ) : folderFilter === 'all' && Object.keys(accountsByFolder).length > 1 ? (
+            Object.entries(accountsByFolder).map(([folderName, accs]) => {
+              const isCollapsed = collapsedFolders[folderName];
+              return (
+                <View key={folderName} style={styles.folderGroup}>
+                  <TouchableOpacity
+                    style={[styles.folderGroupHeader, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                    onPress={() => toggleFolderCollapse(folderName)}
+                  >
+                    <MaterialCommunityIcons
+                      name={isCollapsed ? 'chevron-right' : 'chevron-down'}
+                      size={20}
+                      color={theme.colors.textMuted}
+                    />
+                    <Text style={[styles.folderGroupTitle, { color: theme.colors.text }]}>{folderName}</Text>
+                    <Text style={[styles.folderGroupCount, { color: theme.colors.textMuted }]}>{accs.length}</Text>
+                  </TouchableOpacity>
+                  {!isCollapsed && accs.map((acc, index) => {
+                    const codeKey = acc.id || `fallback-${acc.issuer}-${acc.label}-${index}`;
+                    return (
+                      <AccountCard
+                        key={acc.id || codeKey}
+                        account={acc}
+                        code={totpCodes[codeKey]}
+                        secondsRemaining={totpSecondsRemaining}
+                        onRemove={onRemoveAccount}
+                        onToggleFavorite={onToggleFavorite}
+                        isFavorite={!!acc.favorite}
+                        onCopy={() => setLastUsed?.(acc.id)}
+                        onEdit={updateAccount ? (a) => setEditingAccount(a) : undefined}
+                      />
+                    );
+                  })}
+                </View>
+              );
+            })
           ) : (
-          filteredAccounts.map((acc, index) => {
-            const codeKey = acc.id || `fallback-${acc.issuer}-${acc.label}-${index}`;
-            return (
-              <AccountCard
-                key={acc.id || codeKey}
-                account={acc}
-                code={totpCodes[codeKey]}
-                secondsRemaining={totpSecondsRemaining}
-                onRemove={onRemoveAccount}
-                onToggleFavorite={onToggleFavorite}
-                isFavorite={!!acc.favorite}
-                onCopy={() => setLastUsed?.(acc.id)}
-                onEdit={updateAccount ? (a) => setEditingAccount(a) : undefined}
-              />
-            );
-          })
+            filteredAccounts.map((acc, index) => {
+              const codeKey = acc.id || `fallback-${acc.issuer}-${acc.label}-${index}`;
+              return (
+                <AccountCard
+                  key={acc.id || codeKey}
+                  account={acc}
+                  code={totpCodes[codeKey]}
+                  secondsRemaining={totpSecondsRemaining}
+                  onRemove={onRemoveAccount}
+                  onToggleFavorite={onToggleFavorite}
+                  isFavorite={!!acc.favorite}
+                  onCopy={() => setLastUsed?.(acc.id)}
+                  onEdit={updateAccount ? (a) => setEditingAccount(a) : undefined}
+                />
+              );
+            })
           )}
         </View>
       )}
@@ -226,6 +282,7 @@ export const HomeScreen = ({
       <AccountEditModal
         visible={!!editingAccount}
         account={editingAccount}
+        folders={folders}
         onClose={() => setEditingAccount(null)}
         onSave={(id, updates) => { updateAccount?.(id, updates); setEditingAccount(null); }}
       />
@@ -347,6 +404,26 @@ const styles = StyleSheet.create({
   },
   accountsList: {
     gap: themeDark.spacing.md,
+  },
+  folderGroup: {
+    marginBottom: themeDark.spacing.md,
+  },
+  folderGroupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: themeDark.spacing.md,
+    borderRadius: themeDark.radii.md,
+    borderWidth: 1,
+    marginBottom: themeDark.spacing.sm,
+  },
+  folderGroupTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: themeDark.spacing.sm,
+    flex: 1,
+  },
+  folderGroupCount: {
+    fontSize: 13,
   },
   authPrompt: {
     flex: 1,

@@ -17,7 +17,7 @@ import { themeDark } from '../constants/themes';
 
 export const AccountCard = ({ account, code, secondsRemaining = 0, onRemove, onToggleFavorite, isFavorite, onCopy, onEdit }) => {
   const { theme } = useTheme();
-  const iconName = getIssuerIcon(account.issuer);
+  const iconName = account.customIcon || getIssuerIcon(account.issuer);
   const handleRemove = () => {
     Alert.alert(
       'Remove account',
@@ -104,16 +104,19 @@ export const AccountCard = ({ account, code, secondsRemaining = 0, onRemove, onT
                   }
                 }}
                 activeOpacity={0.8}
-                style={styles.codeTouch}
+                style={styles.codeRow}
               >
+                <View style={styles.codeSpacerLeft} />
                 <Text style={[styles.code, { color: theme.colors.success }]}>
                   {code && String(code).length === 6
                     ? `${String(code).slice(0, 3)} ${String(code).slice(3, 6)}`
                     : code || '— — — — — —'}
                 </Text>
-                {code && String(code).length === 6 && (
-                  <MaterialCommunityIcons name="content-copy" size={20} color={theme.colors.textMuted} style={styles.copyIcon} />
-                )}
+                <View style={styles.codeSpacerRight}>
+                  {code && String(code).length === 6 && (
+                    <MaterialCommunityIcons name="content-copy" size={20} color={theme.colors.textMuted} />
+                  )}
+                </View>
               </TouchableOpacity>
               <View style={[styles.countdownWrap, { backgroundColor: theme.colors.surface }]}>
                 <View style={[styles.countdownBar, { width: `${Math.max(0, (secondsRemaining || 0) / 30) * 100}%`, backgroundColor: theme.colors.accent }]} />
@@ -170,6 +173,7 @@ const styles = StyleSheet.create({
   info: {
     flex: 1,
     minWidth: 0,
+    alignItems: 'flex-start',
   },
   infoRow: {
     flexDirection: 'row',
@@ -181,14 +185,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
     fontStyle: 'italic',
+    alignSelf: 'stretch',
   },
-  codeTouch: {
+  codeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  copyIcon: {
-    marginLeft: 8,
+  codeSpacerLeft: {
+    flex: 1,
+  },
+  codeSpacerRight: {
+    flex: 1,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   issuer: {
     ...themeDark.typography.body,
@@ -197,6 +207,7 @@ const styles = StyleSheet.create({
   },
   label: {
     ...themeDark.typography.bodySm,
+    alignSelf: 'stretch',
   },
   codeContainer: {
     alignItems: 'center',

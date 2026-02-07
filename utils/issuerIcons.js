@@ -41,6 +41,12 @@ export function getIssuerIcon(issuer) {
   return iconName || null;
 }
 
+export const ICON_PICKER_OPTIONS = [
+  'google', 'shield-account', 'email', 'lock', 'key', 'domain',
+  'bank', 'credit-card', 'cart', 'gamepad-variant', 'cloud',
+  'microsoft', 'github', 'apple', 'amazon', 'facebook',
+];
+
 export function IssuerIcon({ issuer, size = 24, color, style }) {
   const iconName = getIssuerIcon(issuer);
   if (iconName) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Alert, AppState, Linking } from 'react-native';
+import * as ScreenCapture from 'expo-screen-capture';
 import { v4 as uuidv4 } from 'uuid';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -21,12 +22,18 @@ import { ExportImportModal } from './components/ExportImportModal';
 import { HistoryModal } from './components/HistoryModal';
 import { FloatingActionButton } from './components/FloatingActionButton';
 import { BiometricGate } from './components/BiometricGate';
+import { AutoLockModal } from './components/AutoLockModal';
 import { storage } from './services/storage';
+import { verifyPin } from './utils/pinHash';
 
 function AppContent() {
   const [biometricUnlocked, setBiometricUnlocked] = useState(false);
   const [biometricChecking, setBiometricChecking] = useState(true);
   const [appLock, setAppLock] = useState(true);
+  const [appLockConfig, setAppLockConfig] = useState(null);
+  const [autoLockMinutes, setAutoLockMinutes] = useState(0);
+  const [showAutoLockPicker, setShowAutoLockPicker] = useState(false);
+  const lastActivityRef = useRef(Date.now());
   const [showAuth, setShowAuth] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -49,13 +56,27 @@ function AppContent() {
   useEffect(() => {
     (async () => {
       const lockConfig = await storage.getAppLock();
+      setAppLockConfig(lockConfig);
       setAppLock(lockConfig?.enabled !== false);
+      const mins = await storage.getAutoLockMinutes();
+      setAutoLockMinutes(mins);
     })();
   }, []);
 
   useEffect(() => {
     initializeApp();
   }, []);
+
+  useEffect(() => {
+    if (!appLock || biometricUnlocked) {
+      ScreenCapture.preventScreenCaptureAsync?.().catch(() => {});
+    } else {
+      ScreenCapture.allowScreenCaptureAsync?.().catch(() => {});
+    }
+    return () => {
+      ScreenCapture.allowScreenCaptureAsync?.().catch(() => {});
+    };
+  }, [appLock, biometricUnlocked]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
@@ -67,38 +88,53 @@ function AppContent() {
           setBiometricUnlocked(true);
           return;
         }
-        setBiometricUnlocked(false);
-        setBiometricChecking(true);
-        biometricService
-          .authenticate('Verify identity to continue')
-          .then(({ success }) => {
-            setBiometricChecking(false);
-            if (success) setBiometricUnlocked(true);
-          });
+        const elapsed = (Date.now() - lastActivityRef.current) / 60000;
+        if (autoLockMinutes > 0 && elapsed >= autoLockMinutes) {
+          setBiometricUnlocked(false);
+          setBiometricChecking(true);
+          biometricService
+            .authenticate('Verify identity to continue')
+            .then(({ success }) => {
+              setBiometricChecking(false);
+              if (success) {
+                setBiometricUnlocked(true);
+                lastActivityRef.current = Date.now();
+              }
+            });
+        } else if (!biometricUnlocked) {
+          setBiometricChecking(true);
+          biometricService
+            .authenticate('Verify identity to continue')
+            .then(({ success }) => {
+              setBiometricChecking(false);
+              if (success) setBiometricUnlocked(true);
+            });
+        } else {
+          lastActivityRef.current = Date.now();
+        }
+      } else if (nextState === 'active') {
+        lastActivityRef.current = Date.now();
+      } else if (nextState.match(/inactive|background/)) {
+        lastActivityRef.current = Date.now();
       }
       appState.current = nextState;
     });
     return () => subscription?.remove();
-  }, [appLock]);
-
-  const checkBiometric = async () => {
-    const { success } = await biometricService.authenticate(
-      'Verify identity to open QSafe',
-    );
-    if (success) setBiometricUnlocked(true);
-  };
+  }, [appLock, autoLockMinutes]);
 
   const initializeApp = async () => {
     const { deviceId: id } = await deviceService.ensureDeviceIdentity();
     setDeviceId(id);
 
     const lockConfig = await storage.getAppLock();
+    setAppLockConfig(lockConfig);
     const useLock = lockConfig?.enabled !== false;
     setAppLock(useLock);
 
     if (!useLock) {
       setBiometricChecking(false);
       setBiometricUnlocked(true);
+      lastActivityRef.current = Date.now();
       return;
     }
 
@@ -106,12 +142,29 @@ function AppContent() {
       'Verify identity to open QSafe',
     );
     setBiometricChecking(false);
-    if (success) setBiometricUnlocked(true);
+    if (success) {
+      setBiometricUnlocked(true);
+      lastActivityRef.current = Date.now();
+    }
   };
 
   const handleAppLockChange = async (enabled) => {
     setAppLock(enabled);
-    await storage.saveAppLock({ enabled });
+    const config = await storage.getAppLock();
+    await storage.saveAppLock({ ...config, enabled });
+    setAppLockConfig({ ...config, enabled });
+  };
+
+  const handlePinSetup = async (pinHash) => {
+    const config = await storage.getAppLock();
+    const next = { ...config, pinHash };
+    await storage.saveAppLock(next);
+    setAppLockConfig(next);
+  };
+
+  const handleAutoLockSelect = async (minutes) => {
+    setAutoLockMinutes(minutes);
+    await storage.saveAutoLockMinutes(minutes);
   };
 
   const handleExport = async () => {
@@ -141,8 +194,18 @@ function AppContent() {
 
   const handleUnlock = async () => {
     setBiometricChecking(true);
-    await checkBiometric();
+    const { success } = await biometricService.authenticate(
+      'Verify identity to open QSafe',
+    );
     setBiometricChecking(false);
+    if (success) setBiometricUnlocked(true);
+  };
+
+  const handlePinUnlock = async (pin) => {
+    const config = await storage.getAppLock();
+    const valid = await verifyPin(pin, config?.pinHash);
+    if (valid) setBiometricUnlocked(true);
+    else Alert.alert('Wrong PIN', 'Please try again.');
   };
 
   const handleLogin = async (email, password) => {
@@ -248,6 +311,18 @@ function AppContent() {
     }
   };
 
+  const handleMfaDenySuspicious = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setMfaResolving('deny');
+    try {
+      await resolveChallenge('denied', true);
+    } catch (e) {
+      // Error shown in useMfa
+    } finally {
+      setMfaResolving(null);
+    }
+  };
+
   return (
     <>
       <StatusBar style={theme.colors.bg === '#05070d' ? 'light' : 'dark'} />
@@ -308,6 +383,7 @@ function AppContent() {
             onClose={() => {}}
             onApprove={handleMfaApprove}
             onDeny={handleMfaDeny}
+            onDenySuspicious={handleMfaDenySuspicious}
             resolving={mfaResolving}
           />
 
@@ -316,6 +392,10 @@ function AppContent() {
             onClose={() => setShowSettings(false)}
             appLock={appLock}
             onAppLockChange={handleAppLockChange}
+            appLockConfig={appLockConfig}
+            onPinSetup={handlePinSetup}
+            onAutoLockChange={() => setShowAutoLockPicker(true)}
+            autoLockMinutes={autoLockMinutes}
             onExportImport={(mode) => {
               if (mode === 'loginHistory' || mode === 'mfaHistory') {
                 setHistoryMode(mode);
@@ -323,6 +403,13 @@ function AppContent() {
                 setExportImportMode(mode);
               }
             }}
+          />
+
+          <AutoLockModal
+            visible={showAutoLockPicker}
+            currentMinutes={autoLockMinutes}
+            onSelect={handleAutoLockSelect}
+            onClose={() => setShowAutoLockPicker(false)}
           />
 
           <ExportImportModal
@@ -340,7 +427,12 @@ function AppContent() {
           />
             </>
           ) : (
-            <BiometricGate onUnlock={handleUnlock} loading={biometricChecking} />
+            <BiometricGate
+              onUnlock={handleUnlock}
+              onPinUnlock={handlePinUnlock}
+              loading={biometricChecking}
+              hasPinFallback={!!appLockConfig?.pinHash}
+            />
           )}
         </SafeAreaView>
       </LinearGradient>

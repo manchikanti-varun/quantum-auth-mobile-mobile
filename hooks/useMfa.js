@@ -36,7 +36,7 @@ export const useMfa = (deviceId, token) => {
     }
   };
 
-  const resolveChallenge = async (decision) => {
+  const resolveChallenge = async (decision, flagged = false) => {
     if (!pendingChallenge) return;
 
     try {
@@ -49,6 +49,7 @@ export const useMfa = (deviceId, token) => {
         decision,
         signature,
         deviceId,
+        flagged,
       });
 
       setPendingChallenge(null);

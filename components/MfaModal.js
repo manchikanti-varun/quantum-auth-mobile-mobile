@@ -19,12 +19,14 @@ export const MfaModal = ({
   onClose,
   onApprove,
   onDeny,
+  onDenySuspicious,
   resolving,
 }) => {
   const { horizontalPadding, contentMaxWidth } = useLayout();
   if (!challenge) return null;
 
   const disabled = !!resolving;
+  const ctx = challenge.context || {};
 
   return (
     <Modal
@@ -43,29 +45,59 @@ export const MfaModal = ({
             Someone is trying to sign in. Approve to allow or deny to block.
           </Text>
 
-          {challenge.context?.ip && (
+          {(ctx.ip || ctx.userAgent || ctx.timestamp || challenge.createdAt) && (
             <View style={styles.info}>
-              <Text style={styles.infoLabel}>From</Text>
-              <Text style={styles.infoValue}>{challenge.context.ip}</Text>
+              {ctx.ip && (
+                <>
+                  <Text style={styles.infoLabel}>IP</Text>
+                  <Text style={styles.infoValue}>{ctx.ip}</Text>
+                </>
+              )}
+              {ctx.userAgent && (
+                <>
+                  <Text style={styles.infoLabel}>Device</Text>
+                  <Text style={styles.infoValue} numberOfLines={2}>{ctx.userAgent}</Text>
+                </>
+              )}
+              {(ctx.timestamp || challenge.createdAt) && (
+                <>
+                  <Text style={styles.infoLabel}>Time</Text>
+                  <Text style={styles.infoValue}>
+                    {new Date(ctx.timestamp || challenge.createdAt).toLocaleString()}
+                  </Text>
+                </>
+              )}
             </View>
           )}
 
           <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={[styles.buttonDeny, disabled && styles.buttonDisabled]}
-              onPress={onDeny}
-              disabled={disabled}
-              activeOpacity={0.8}
-            >
-              {resolving === 'deny' ? (
-                <ActivityIndicator size="small" color={themeDark.colors.error} />
-              ) : (
-                <>
-                  <MaterialCommunityIcons name="close-circle" size={22} color={themeDark.colors.error} style={styles.buttonIcon} />
-                  <Text style={[styles.buttonText, { color: themeDark.colors.error }]}>Deny</Text>
-                </>
+            <View style={styles.denyColumn}>
+              <TouchableOpacity
+                style={[styles.buttonDeny, disabled && styles.buttonDisabled]}
+                onPress={onDeny}
+                disabled={disabled}
+                activeOpacity={0.8}
+              >
+                {resolving === 'deny' ? (
+                  <ActivityIndicator size="small" color={themeDark.colors.error} />
+                ) : (
+                  <>
+                    <MaterialCommunityIcons name="close-circle" size={22} color={themeDark.colors.error} style={styles.buttonIcon} />
+                    <Text style={[styles.buttonText, { color: themeDark.colors.error }]}>Deny</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              {onDenySuspicious && (
+                <TouchableOpacity
+                  style={[styles.suspiciousLink, disabled && styles.buttonDisabled]}
+                  onPress={() => onDenySuspicious()}
+                  disabled={disabled}
+                >
+                  <MaterialCommunityIcons name="alert-octagon" size={16} color={themeDark.colors.warning} />
+                  <Text style={styles.suspiciousText}>Mark suspicious</Text>
+                </TouchableOpacity>
               )}
-            </TouchableOpacity>
+            </View>
             <TouchableOpacity
               style={[styles.buttonApproveWrapper, disabled && styles.buttonDisabled]}
               onPress={onApprove}
@@ -143,6 +175,22 @@ const styles = StyleSheet.create({
     width: '100%',
     borderWidth: 1,
     borderColor: themeDark.colors.border,
+    gap: themeDark.spacing.sm,
+  },
+  denyColumn: {
+    flex: 1,
+    alignItems: 'center',
+    gap: themeDark.spacing.xs,
+  },
+  suspiciousLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  suspiciousText: {
+    fontSize: 12,
+    color: themeDark.colors.warning,
+    fontWeight: '600',
   },
   infoLabel: {
     ...themeDark.typography.caption,

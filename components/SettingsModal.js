@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   View,
@@ -6,14 +6,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
-  Share,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
-import { storage } from '../services/storage';
+import { PinPad } from './PinPad';
+import { hashPin } from '../utils/pinHash';
+import { themeDark } from '../constants/themes';
 
 const THEME_OPTIONS = [
   { id: 'light', icon: 'white-balance-sunny', label: 'Light' },
@@ -21,8 +20,9 @@ const THEME_OPTIONS = [
   { id: 'system', icon: 'cellphone', label: 'System' },
 ];
 
-export const SettingsModal = ({ visible, onClose, appLock, onAppLockChange, onExportImport }) => {
+export const SettingsModal = ({ visible, onClose, appLock, onAppLockChange, onExportImport, appLockConfig, onPinSetup, onAutoLockChange, autoLockMinutes }) => {
   const { theme, preference, setThemePreference } = useTheme();
+  const [showPinSetup, setShowPinSetup] = useState(false);
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -76,7 +76,47 @@ export const SettingsModal = ({ visible, onClose, appLock, onAppLockChange, onEx
                   <View style={[styles.toggleThumb, appLock && styles.toggleThumbOn]} />
                 </TouchableOpacity>
               </View>
+              {appLock && (
+                <TouchableOpacity
+                  style={[styles.optionRow, { backgroundColor: theme.colors.surface }]}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowPinSetup(true); }}
+                >
+                  <MaterialCommunityIcons name="numeric" size={24} color={theme.colors.accent} />
+                  <Text style={[styles.optionRowText, { color: theme.colors.text }]}>
+                    {appLockConfig?.pinHash ? 'Change PIN' : 'Set PIN fallback'}
+                  </Text>
+                  <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.textMuted} />
+                </TouchableOpacity>
+              )}
+              {onAutoLockChange != null && (
+                <TouchableOpacity
+                  style={[styles.optionRow, { backgroundColor: theme.colors.surface }]}
+                  onPress={() => onAutoLockChange?.()}
+                >
+                  <MaterialCommunityIcons name="clock-outline" size={24} color={theme.colors.accent} />
+                  <Text style={[styles.optionRowText, { color: theme.colors.text }]}>
+                    Auto-lock: {autoLockMinutes === 0 ? 'Never' : `${autoLockMinutes} min`}
+                  </Text>
+                  <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.textMuted} />
+                </TouchableOpacity>
+              )}
             </>
+          )}
+
+          {showPinSetup && (
+            <View style={[styles.pinSetupOverlay, { backgroundColor: theme.colors.bgElevated }]}>
+              <PinPad
+                title="Set PIN (6 digits)"
+                mode="setup"
+                minLength={6}
+                onComplete={async (pin) => {
+                  const hashed = await hashPin(pin);
+                  if (hashed) onPinSetup?.(hashed);
+                  setShowPinSetup(false);
+                }}
+                onCancel={() => setShowPinSetup(false)}
+              />
+            </View>
           )}
 
           <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Backup & Recovery</Text>
@@ -204,5 +244,12 @@ const styles = StyleSheet.create({
   },
   toggleThumbOn: {
     alignSelf: 'flex-end',
+  },
+  pinSetupOverlay: {
+    marginTop: themeDark.spacing.xl,
+    padding: themeDark.spacing.xl,
+    borderRadius: themeDark.radii.lg,
+    borderWidth: 1,
+    borderColor: themeDark.colors.border,
   },
 });

@@ -1,5 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
-import { ACCOUNTS_KEY, DEVICE_KEY, PQC_KEYPAIR_KEY, AUTH_TOKEN_KEY, PREFERENCES_KEY, APP_LOCK_KEY } from '../constants/config';
+import { ACCOUNTS_KEY, DEVICE_KEY, PQC_KEYPAIR_KEY, AUTH_TOKEN_KEY, PREFERENCES_KEY, APP_LOCK_KEY, CUSTOM_FOLDERS_KEY, AUTO_LOCK_KEY } from '../constants/config';
 
 export const storage = {
   async getToken() {
@@ -118,5 +118,35 @@ export const storage = {
     } else {
       await SecureStore.deleteItemAsync(APP_LOCK_KEY);
     }
+  },
+
+  async getCustomFolders() {
+    try {
+      const raw = await SecureStore.getItemAsync(CUSTOM_FOLDERS_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async saveCustomFolders(folders) {
+    if (folders && Array.isArray(folders)) {
+      await SecureStore.setItemAsync(CUSTOM_FOLDERS_KEY, JSON.stringify(folders));
+    } else {
+      await SecureStore.deleteItemAsync(CUSTOM_FOLDERS_KEY);
+    }
+  },
+
+  async getAutoLockMinutes() {
+    try {
+      const raw = await SecureStore.getItemAsync(AUTO_LOCK_KEY);
+      return raw != null ? parseInt(raw, 10) : 0;
+    } catch (e) {
+      return 0;
+    }
+  },
+
+  async saveAutoLockMinutes(minutes) {
+    await SecureStore.setItemAsync(AUTO_LOCK_KEY, String(minutes));
   },
 };
