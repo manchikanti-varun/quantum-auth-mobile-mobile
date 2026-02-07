@@ -2,7 +2,7 @@
  * MFA hook – polls for pending challenges, resolves with PQC signature (approve/deny).
  */
 import { useState, useEffect } from 'react';
-import { Alert } from 'react-native';
+import { Alert, AppState } from 'react-native';
 import { mfaApi } from '../services/api';
 import { storage } from '../services/storage';
 import { deviceService } from '../services/device';
@@ -16,6 +16,16 @@ export const useMfa = (deviceId, token) => {
     checkForPendingChallenges();
     const interval = setInterval(checkForPendingChallenges, 1500);
     return () => clearInterval(interval);
+  }, [deviceId, token]);
+
+  // Poll immediately when app comes to foreground (e.g. login from browser)
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active' && deviceId && token) {
+        checkForPendingChallenges();
+      }
+    });
+    return () => sub?.remove();
   }, [deviceId, token]);
 
   const checkForPendingChallenges = async () => {

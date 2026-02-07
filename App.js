@@ -383,16 +383,6 @@ function AppContent() {
             onScan={handleQrScan}
           />
 
-          <MfaModal
-            visible={!!pendingChallenge}
-            challenge={pendingChallenge}
-            onClose={() => {}}
-            onApprove={handleMfaApprove}
-            onDeny={handleMfaDeny}
-            onDenySuspicious={handleMfaDenySuspicious}
-            resolving={mfaResolving}
-          />
-
           <SettingsModal
             visible={showSettings}
             onClose={() => setShowSettings(false)}
@@ -448,6 +438,17 @@ function AppContent() {
               hasPinFallback={!!appLockConfig?.pinHash}
             />
           )}
+
+          {/* MFA approve/deny: show even when app locked (on top of lock screen) */}
+          <MfaModal
+            visible={!!pendingChallenge}
+            challenge={pendingChallenge}
+            onClose={() => {}}
+            onApprove={handleMfaApprove}
+            onDeny={handleMfaDeny}
+            onDenySuspicious={handleMfaDenySuspicious}
+            resolving={mfaResolving}
+          />
         </SafeAreaView>
       </LinearGradient>
     </>

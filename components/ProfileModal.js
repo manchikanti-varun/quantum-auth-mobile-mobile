@@ -11,6 +11,9 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -68,53 +71,64 @@ export const ProfileModal = ({ visible, user, onClose, onPasswordChanged }) => {
             </TouchableOpacity>
           </View>
 
-          <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Email (cannot be changed)</Text>
-          <TextInput
-            style={[styles.input, styles.inputDisabled, { backgroundColor: theme.colors.surface, color: theme.colors.textMuted }]}
-            value={user?.email || ''}
-            editable={false}
-          />
-
-          <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Change password</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
-            placeholder="Current password"
-            placeholderTextColor={theme.colors.textMuted}
-            value={currentPassword}
-            onChangeText={setCurrentPassword}
-            secureTextEntry
-            autoCapitalize="none"
-          />
-          <TextInput
-            style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
-            placeholder="New password (min 6 chars)"
-            placeholderTextColor={theme.colors.textMuted}
-            value={newPassword}
-            onChangeText={setNewPassword}
-            secureTextEntry
-            autoCapitalize="none"
-          />
-          <TextInput
-            style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
-            placeholder="Confirm new password"
-            placeholderTextColor={theme.colors.textMuted}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            autoCapitalize="none"
-          />
-
-          <TouchableOpacity
-            style={[styles.button, { backgroundColor: theme.colors.accent }]}
-            onPress={handleChangePassword}
-            disabled={loading}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.keyboardAvoid}
           >
-            {loading ? (
-              <ActivityIndicator color={theme.colors.bg} />
-            ) : (
-              <Text style={[styles.buttonText, { color: theme.colors.bg }]}>Update password</Text>
-            )}
-          </TouchableOpacity>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollContent}
+            >
+              {/* Change password first – avoids keyboard covering fields */}
+              <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Change password</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
+                placeholder="Current password"
+                placeholderTextColor={theme.colors.textMuted}
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
+                placeholder="New password (min 6 chars)"
+                placeholderTextColor={theme.colors.textMuted}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
+                placeholder="Confirm new password"
+                placeholderTextColor={theme.colors.textMuted}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: theme.colors.accent }]}
+                onPress={handleChangePassword}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color={theme.colors.bg} />
+                ) : (
+                  <Text style={[styles.buttonText, { color: theme.colors.bg }]}>Update password</Text>
+                )}
+              </TouchableOpacity>
+
+              <Text style={[styles.label, styles.labelSection, { color: theme.colors.textSecondary }]}>Email (cannot be changed)</Text>
+              <TextInput
+                style={[styles.input, styles.inputDisabled, { backgroundColor: theme.colors.surface, color: theme.colors.textMuted }]}
+                value={user?.email || ''}
+                editable={false}
+              />
+            </ScrollView>
+          </KeyboardAvoidingView>
         </View>
       </View>
     </Modal>
@@ -151,6 +165,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginBottom: themeDark.spacing.sm,
+  },
+  labelSection: {
+    marginTop: themeDark.spacing.xl,
+  },
+  keyboardAvoid: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
   },
   input: {
     borderRadius: themeDark.radii.md,
