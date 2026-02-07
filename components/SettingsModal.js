@@ -20,7 +20,7 @@ const THEME_OPTIONS = [
   { id: 'system', icon: 'cellphone', label: 'System' },
 ];
 
-export const SettingsModal = ({ visible, onClose, appLock, onAppLockChange, onExportImport, appLockConfig, onPinSetup, onAutoLockChange, autoLockMinutes }) => {
+export const SettingsModal = ({ visible, onClose, user, appLock, onAppLockChange, onExportImport, appLockConfig, onPinSetup, onAutoLockChange, autoLockMinutes, onProfilePress }) => {
   const { theme, preference, setThemePreference } = useTheme();
   const [showPinSetup, setShowPinSetup] = useState(false);
 
@@ -35,6 +35,16 @@ export const SettingsModal = ({ visible, onClose, appLock, onAppLockChange, onEx
               <Text style={[styles.close, { color: theme.colors.textMuted }]}>×</Text>
             </TouchableOpacity>
           </View>
+
+          <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Profile</Text>
+          <TouchableOpacity
+            style={[styles.optionRow, { backgroundColor: theme.colors.surface }]}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onProfilePress?.(); }}
+          >
+            <MaterialCommunityIcons name="account-circle" size={24} color={theme.colors.accent} />
+            <Text style={[styles.optionRowText, { color: theme.colors.text }]}>Profile</Text>
+            <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.textMuted} />
+          </TouchableOpacity>
 
           <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Theme</Text>
           <View style={styles.optionsRow}>

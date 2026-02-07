@@ -20,6 +20,7 @@ import { themeDark } from '../constants/themes';
 
 export const HomeScreen = ({
   token,
+  user,
   accounts,
   totpCodes,
   totpAdjacent = {},
@@ -131,6 +132,9 @@ export const HomeScreen = ({
     >
       <View style={styles.header}>
         <View>
+          <Text style={[styles.greeting, { color: theme.colors.textMuted }]}>
+            Hello {user?.displayName || (user?.email ? user.email.split('@')[0] : '') || 'User'}
+          </Text>
           <Text style={[styles.headerTitle, { color: theme.colors.text }]}>My Accounts</Text>
           <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>
             {accounts.length} {accounts.length === 1 ? 'account' : 'accounts'}
@@ -303,6 +307,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: themeDark.spacing.lg,
     paddingBottom: themeDark.spacing.xl,
+  },
+  greeting: {
+    ...themeDark.typography.bodySm,
+    marginBottom: 2,
   },
   headerTitle: {
     ...themeDark.typography.h1,

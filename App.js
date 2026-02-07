@@ -23,6 +23,7 @@ import { HistoryModal } from './components/HistoryModal';
 import { FloatingActionButton } from './components/FloatingActionButton';
 import { BiometricGate } from './components/BiometricGate';
 import { AutoLockModal } from './components/AutoLockModal';
+import { ProfileModal } from './components/ProfileModal';
 import { storage } from './services/storage';
 import { verifyPin } from './utils/pinHash';
 
@@ -37,12 +38,13 @@ function AppContent() {
   const [showAuth, setShowAuth] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [exportImportMode, setExportImportMode] = useState(null);
   const [historyMode, setHistoryMode] = useState(null);
   const [deviceId, setDeviceId] = useState(null);
   const { theme } = useTheme();
 
-  const { token, loading, login, register, logout, pendingMfa, cancelPendingMfa, loginWithOtp } = useAuth(deviceId, () => {
+  const { token, user, loading, login, register, logout, pendingMfa, cancelPendingMfa, loginWithOtp } = useAuth(deviceId, () => {
     setShowAuth(false);
   });
 
@@ -335,6 +337,7 @@ function AppContent() {
             <>
           <HomeScreen
             token={token}
+            user={user}
             accounts={accounts}
             totpCodes={totpCodes}
             totpAdjacent={totpAdjacent}
@@ -390,6 +393,8 @@ function AppContent() {
           <SettingsModal
             visible={showSettings}
             onClose={() => setShowSettings(false)}
+            user={user}
+            onProfilePress={() => { setShowSettings(false); setShowProfile(true); }}
             appLock={appLock}
             onAppLockChange={handleAppLockChange}
             appLockConfig={appLockConfig}
@@ -410,6 +415,12 @@ function AppContent() {
             currentMinutes={autoLockMinutes}
             onSelect={handleAutoLockSelect}
             onClose={() => setShowAutoLockPicker(false)}
+          />
+
+          <ProfileModal
+            visible={showProfile}
+            user={user}
+            onClose={() => setShowProfile(false)}
           />
 
           <ExportImportModal

@@ -51,6 +51,9 @@ export const authApi = {
     api.post('/api/auth/login-with-otp', { challengeId, deviceId, code }),
 
   getLoginHistory: () => api.get('/api/auth/login-history'),
+  getMe: () => api.get('/api/auth/me'),
+  changePassword: (currentPassword, newPassword) =>
+    api.post('/api/auth/change-password', { currentPassword, newPassword }),
 };
 
 export const deviceApi = {

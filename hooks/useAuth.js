@@ -8,10 +8,12 @@ import { getExpoPushTokenAsync } from '../services/pushNotifications';
 export const useAuth = (deviceId, onSuccess) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(null);
+  const [user, setUser] = useState(null); // { email, displayName }
   const [pendingMfa, setPendingMfa] = useState(null); // { challengeId, deviceId } when waiting for approve/deny
 
   const clearAuth = async () => {
     setToken(null);
+    setUser(null);
     await storage.saveToken(null);
     const { setAuthToken } = require('../services/api');
     setAuthToken(null);
@@ -34,6 +36,7 @@ export const useAuth = (deviceId, onSuccess) => {
           setToken(data.token);
           await storage.saveToken(data.token);
           updateApiToken(data.token);
+          setUser(data.email ? { email: data.email, displayName: data.displayName ?? null } : null);
           await registerDevice(data.uid, pendingMfa.deviceId);
           setPendingMfa(null);
           onSuccess?.();
@@ -65,6 +68,14 @@ export const useAuth = (deviceId, onSuccess) => {
           setToken(saved);
           const { setAuthToken } = await import('../services/api');
           setAuthToken(saved);
+          try {
+            const res = await authApi.getMe();
+            if (res.data?.email) {
+              setUser({ email: res.data.email, displayName: res.data.displayName ?? null });
+            }
+          } catch (e) {
+            // Token may be expired; user will be null
+          }
         }
       } catch (e) {
         console.log('Failed to restore token', e);
@@ -102,6 +113,7 @@ export const useAuth = (deviceId, onSuccess) => {
       setToken(newToken);
       await storage.saveToken(newToken);
       updateApiToken(newToken);
+      setUser(response.data.email ? { email: response.data.email, displayName: response.data.displayName ?? null } : null);
       await registerDevice(response.data.uid, deviceId);
       onSuccess?.();
       return response.data;
@@ -130,6 +142,7 @@ export const useAuth = (deviceId, onSuccess) => {
       setToken(newToken);
       await storage.saveToken(newToken);
       updateApiToken(newToken);
+      setUser(response.data.email ? { email: response.data.email, displayName: response.data.displayName ?? null } : null);
       await registerDevice(response.data.uid, deviceId);
       onSuccess?.();
       return response.data;
@@ -180,6 +193,7 @@ export const useAuth = (deviceId, onSuccess) => {
       setToken(data.token);
       await storage.saveToken(data.token);
       updateApiToken(data.token);
+      setUser(data.email ? { email: data.email, displayName: data.displayName ?? null } : null);
       await registerDevice(data.uid, deviceId);
       setPendingMfa(null);
       onSuccess?.();
@@ -193,6 +207,7 @@ export const useAuth = (deviceId, onSuccess) => {
 
   return {
     token,
+    user,
     loading,
     login,
     register,
