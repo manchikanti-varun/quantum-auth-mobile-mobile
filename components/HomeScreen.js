@@ -99,6 +99,9 @@ export const HomeScreen = ({
           <Text style={styles.emptyStateText}>
             Tap the + button to scan a QR code{'\n'}and add your first account
           </Text>
+          <Text style={styles.emptyStateHint}>
+            Accounts are stored on this device. Add them on each device you use.
+          </Text>
         </View>
       ) : (
         <View style={styles.accountsList}>
@@ -189,6 +192,13 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  emptyStateHint: {
+    ...theme.typography.caption,
+    color: theme.colors.textMuted,
+    textAlign: 'center',
+    marginTop: theme.spacing.md,
+    opacity: 0.8,
   },
   accountsList: {
     gap: theme.spacing.md,

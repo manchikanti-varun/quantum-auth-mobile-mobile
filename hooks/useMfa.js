@@ -10,10 +10,8 @@ export const useMfa = (deviceId, token) => {
   useEffect(() => {
     if (!deviceId || !token) return;
 
-    const interval = setInterval(() => {
-      checkForPendingChallenges();
-    }, 3000);
-
+    checkForPendingChallenges();
+    const interval = setInterval(checkForPendingChallenges, 2500);
     return () => clearInterval(interval);
   }, [deviceId, token]);
 
@@ -53,7 +51,6 @@ export const useMfa = (deviceId, token) => {
         deviceId,
       });
 
-      Alert.alert('Success', `Login request ${decision}`);
       setPendingChallenge(null);
     } catch (e) {
       console.log('MFA resolve error', e);

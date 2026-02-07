@@ -11,7 +11,6 @@ import {
   Platform,
   ScrollView,
   StatusBar,
-  Keyboard,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppLogo } from './AppLogo';
@@ -21,26 +20,13 @@ import { theme } from '../constants/theme';
 const KEYBOARD_VERTICAL_OFFSET_ANDROID = Platform.OS === 'android' ? (StatusBar?.currentHeight ?? 0) : 0;
 
 export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pendingMfa, onCancelPendingMfa, onLoginWithOtp }) => {
-  const { horizontalPadding, safeBottom } = useLayout();
+  const { horizontalPadding, safeBottom, safeTop } = useLayout();
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [otpCode, setOtpCode] = useState('');
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-
-  useEffect(() => {
-    if (Platform.OS !== 'android') return;
-    const show = Keyboard.addListener('keyboardDidShow', (e) => {
-      setKeyboardHeight(e.endCoordinates.height);
-    });
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
 
   useEffect(() => {
     if (pendingMfa) {
@@ -70,13 +56,13 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <View style={[styles.overlay, Platform.OS === 'android' && keyboardHeight > 0 && { paddingBottom: keyboardHeight }]}>
+      <View style={styles.overlay}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
           style={styles.keyboardView}
           keyboardVerticalOffset={KEYBOARD_VERTICAL_OFFSET_ANDROID}
         >
-          <View style={[styles.content, { paddingHorizontal: horizontalPadding, paddingBottom: Math.max(safeBottom, 24) + 24 }]}>
+          <View style={[styles.content, { paddingHorizontal: horizontalPadding, paddingTop: Math.max(safeTop, 16) + 16, paddingBottom: Math.max(safeBottom, 24) + 24 }]}>
             <View style={styles.header}>
               <View style={styles.headerLeft}>
                 <AppLogo size="sm" />
@@ -93,11 +79,56 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
               )}
             </View>
 
+            {!showWaiting && (
+              <View style={styles.switchRow}>
+                <TouchableOpacity
+                  style={styles.switchButton}
+                  onPress={() => setMode('login')}
+                  activeOpacity={0.8}
+                >
+                  {mode === 'login' ? (
+                    <LinearGradient
+                      colors={theme.gradients.accent}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.switchButtonInner}
+                    >
+                      <Text style={styles.switchButtonTextActive}>Login</Text>
+                    </LinearGradient>
+                  ) : (
+                    <View style={styles.switchButtonInner}>
+                      <Text style={styles.switchButtonText}>Login</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.switchButton}
+                  onPress={() => setMode('register')}
+                  activeOpacity={0.8}
+                >
+                  {mode === 'register' ? (
+                    <LinearGradient
+                      colors={theme.gradients.accent}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.switchButtonInner}
+                    >
+                      <Text style={styles.switchButtonTextActive}>Register</Text>
+                    </LinearGradient>
+                  ) : (
+                    <View style={styles.switchButtonInner}>
+                      <Text style={styles.switchButtonText}>Register</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+
             <ScrollView
               style={styles.scrollView}
               contentContainerStyle={styles.scrollContent}
               keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
+              showsVerticalScrollIndicator={true}
             >
               {showWaiting ? (
                 <View style={styles.waitingBlock}>
@@ -168,51 +199,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                   )}
                 </View>
               ) : (
-                <>
-                  <View style={styles.switchRow}>
-                    <TouchableOpacity
-                      style={styles.switchButton}
-                      onPress={() => setMode('login')}
-                      activeOpacity={0.8}
-                    >
-                      {mode === 'login' ? (
-                        <LinearGradient
-                          colors={theme.gradients.accent}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                          style={styles.switchButtonInner}
-                        >
-                          <Text style={styles.switchButtonTextActive}>Login</Text>
-                        </LinearGradient>
-                      ) : (
-                        <View style={styles.switchButtonInner}>
-                          <Text style={styles.switchButtonText}>Login</Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.switchButton}
-                      onPress={() => setMode('register')}
-                      activeOpacity={0.8}
-                    >
-                      {mode === 'register' ? (
-                        <LinearGradient
-                          colors={theme.gradients.accent}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                          style={styles.switchButtonInner}
-                        >
-                          <Text style={styles.switchButtonTextActive}>Register</Text>
-                        </LinearGradient>
-                      ) : (
-                        <View style={styles.switchButtonInner}>
-                          <Text style={styles.switchButtonText}>Register</Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.form}>
+                <View style={styles.form}>
                     {mode === 'register' && (
                       <>
                         <Text style={styles.label}>Display name</Text>
@@ -270,7 +257,6 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                       </LinearGradient>
                     </TouchableOpacity>
                   </View>
-                </>
               )}
             </ScrollView>
           </View>
@@ -284,24 +270,24 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(5, 7, 13, 0.92)',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
   },
   keyboardView: {
+    flex: 1,
     width: '100%',
-    maxHeight: '100%',
   },
   content: {
+    flex: 1,
     backgroundColor: theme.colors.bgElevated,
-    borderTopLeftRadius: theme.radii.xxl,
-    borderTopRightRadius: theme.radii.xxl,
-    paddingTop: theme.spacing.lg,
+    borderBottomLeftRadius: theme.radii.xxl,
+    borderBottomRightRadius: theme.radii.xxl,
     borderWidth: 1,
-    borderBottomWidth: 0,
+    borderTopWidth: 0,
     borderColor: theme.colors.border,
-    maxHeight: '90%',
   },
   scrollView: {
     flex: 1,
+    minHeight: 320,
   },
   scrollContent: {
     flexGrow: 1,

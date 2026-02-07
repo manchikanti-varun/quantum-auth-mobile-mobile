@@ -36,7 +36,6 @@ export const useAuth = (deviceId, onSuccess) => {
           updateApiToken(data.token);
           await registerDevice(data.uid, pendingMfa.deviceId);
           setPendingMfa(null);
-          Alert.alert('Success', 'Logged in successfully');
           onSuccess?.();
           return;
         }
@@ -53,7 +52,7 @@ export const useAuth = (deviceId, onSuccess) => {
       }
     };
 
-    const interval = setInterval(poll, 2000);
+    const interval = setInterval(poll, 1000);
     poll();
     return () => clearInterval(interval);
   }, [pendingMfa?.challengeId, pendingMfa?.deviceId]);
@@ -104,7 +103,6 @@ export const useAuth = (deviceId, onSuccess) => {
       await storage.saveToken(newToken);
       updateApiToken(newToken);
       await registerDevice(response.data.uid, deviceId);
-      Alert.alert('Success', 'Logged in successfully');
       onSuccess?.();
       return response.data;
     } catch (err) {
@@ -133,7 +131,6 @@ export const useAuth = (deviceId, onSuccess) => {
       await storage.saveToken(newToken);
       updateApiToken(newToken);
       await registerDevice(response.data.uid, deviceId);
-      Alert.alert('Success', 'Registered successfully');
       onSuccess?.();
       return response.data;
     } catch (err) {
@@ -184,7 +181,6 @@ export const useAuth = (deviceId, onSuccess) => {
       updateApiToken(data.token);
       await registerDevice(data.uid, deviceId);
       setPendingMfa(null);
-      Alert.alert('Success', 'Logged in successfully');
       onSuccess?.();
     } catch (err) {
       const message = err?.response?.data?.message || 'Invalid code or request. Try again.';
