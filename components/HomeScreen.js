@@ -127,8 +127,20 @@ export const HomeScreen = ({
     );
   }
 
-  const displayName = user?.displayName || (user?.email ? user.email.split('@')[0] : '') || 'User';
-  const initials = displayName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+  const formatDisplayName = (name) => {
+    if (!name || typeof name !== 'string') return '';
+    let trimmed = name.trim();
+    if (!trimmed) return '';
+    if (trimmed.includes('@')) trimmed = trimmed.split('@')[0] || trimmed;
+    return trimmed
+      .replace(/[._]/g, ' ')
+      .split(/\s+/)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(' ');
+  };
+  const rawName = user?.displayName || (user?.email ? user.email.split('@')[0] : '') || '';
+  const displayName = formatDisplayName(rawName) || 'User';
+  const initials = displayName.split(' ').filter(Boolean).map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
     <ScrollView
@@ -145,14 +157,14 @@ export const HomeScreen = ({
       ]}
       showsVerticalScrollIndicator={false}
     >
-      <View style={[styles.header, { backgroundColor: theme.colors.bgCard, borderWidth: 1, borderColor: theme.colors.border }]}>
+      <View style={[styles.header, { backgroundColor: theme.colors.bgCard, borderWidth: 1, borderColor: theme.colors.border }, Platform.OS === 'ios' && theme.shadow?.cardSoft, Platform.OS === 'android' && { elevation: 4 }]}>
         <View style={styles.headerLeft}>
           <LinearGradient colors={theme.gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatar}>
-            <Text style={[styles.avatarText, { color: theme.colors.text }]}>{initials}</Text>
+            <Text style={[styles.avatarText, { color: theme.colors.onAccent }]}>{initials}</Text>
           </LinearGradient>
-          <View>
+          <View style={styles.headerTextWrap}>
             <Text style={[styles.greeting, { color: theme.colors.textMuted }]}>Welcome back</Text>
-            <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{displayName}</Text>
+            <Text style={[styles.headerTitle, { color: theme.colors.text }]} numberOfLines={2} ellipsizeMode="tail">{displayName}</Text>
             <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>
               {accounts.length} {accounts.length === 1 ? 'account' : 'accounts'} secured
             </Text>
@@ -201,8 +213,8 @@ export const HomeScreen = ({
                 style={[styles.filterChip, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }, showFavoritesOnly && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }]}
                 onPress={() => setShowFavoritesOnly(!showFavoritesOnly)}
               >
-                <MaterialCommunityIcons name="star" size={16} color={showFavoritesOnly ? theme.colors.bg : theme.colors.textMuted} />
-                <Text style={[styles.filterChipText, { color: showFavoritesOnly ? theme.colors.bg : theme.colors.textSecondary }]}>Favorites</Text>
+                <MaterialCommunityIcons name="star" size={16} color={showFavoritesOnly ? theme.colors.onAccent : theme.colors.textMuted} />
+                <Text style={[styles.filterChipText, { color: showFavoritesOnly ? theme.colors.onAccent : theme.colors.textSecondary }]}>Favorites</Text>
               </TouchableOpacity>
               {folders.map((f) => {
                 const count = folderCounts[f] ?? 0;
@@ -213,9 +225,9 @@ export const HomeScreen = ({
                     style={[styles.filterChip, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }, isActive && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }]}
                     onPress={() => setFolderFilter(isActive ? 'all' : f)}
                   >
-                    <MaterialCommunityIcons name="folder-outline" size={14} color={isActive ? theme.colors.bg : theme.colors.textMuted} />
-                    <Text style={[styles.filterChipText, { color: isActive ? theme.colors.bg : theme.colors.textSecondary }]}>{f}</Text>
-                    <Text style={[styles.filterChipCount, { color: isActive ? theme.colors.bg : theme.colors.textMuted }]}>{count}</Text>
+                    <MaterialCommunityIcons name="folder-outline" size={14} color={isActive ? theme.colors.onAccent : theme.colors.textMuted} />
+                    <Text style={[styles.filterChipText, { color: isActive ? theme.colors.onAccent : theme.colors.textSecondary }]}>{f}</Text>
+                    <Text style={[styles.filterChipCount, { color: isActive ? theme.colors.onAccent : theme.colors.textMuted }]}>{count}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -227,7 +239,7 @@ export const HomeScreen = ({
                     style={[styles.filterChip, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }, isActive && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }]}
                     onPress={() => setSortBy(opt)}
                   >
-                    <Text style={[styles.filterChipText, { color: isActive ? theme.colors.bg : theme.colors.textSecondary }]}>
+                    <Text style={[styles.filterChipText, { color: isActive ? theme.colors.onAccent : theme.colors.textSecondary }]}>
                       {opt === 'lastUsed' ? 'Recent' : opt === 'order' ? 'Custom' : opt.charAt(0).toUpperCase() + opt.slice(1)}
                     </Text>
                   </TouchableOpacity>
@@ -347,6 +359,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    minWidth: 0,
+  },
+  headerTextWrap: {
+    flex: 1,
+    minWidth: 0,
   },
   avatar: {
     width: 52,

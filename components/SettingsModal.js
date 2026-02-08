@@ -87,6 +87,7 @@ export const SettingsModal = ({
   const [editName, setEditName] = useState('');
   const [devices, setDevices] = useState([]);
   const [devicesLoading, setDevicesLoading] = useState(false);
+  const [resetCodeInfo, setResetCodeInfo] = useState({ visible: false, code: null });
 
   const allowMultipleDevices = user?.preferences?.allowMultipleDevices ?? true;
 
@@ -424,13 +425,7 @@ export const SettingsModal = ({
             try {
               const res = await authApi.requestPasswordResetCode(deviceId);
               const code = res.data?.code;
-              if (code) {
-                Alert.alert(
-                  'Reset code',
-                  `Use this code on the device where you forgot your password.\n\nCode: ${code}\n\nValid for 10 minutes.`,
-                  [{ text: 'OK' }]
-                );
-              }
+              if (code) setResetCodeInfo({ visible: true, code });
             } catch (e) {
               const msg = e?.response?.data?.message || 'Could not generate code';
               Alert.alert(
@@ -665,6 +660,7 @@ export const SettingsModal = ({
   if (!visible) return null;
 
   return (
+    <>
     <Modal visible animationType="slide" transparent onRequestClose={onClose} statusBarTranslucent>
       <View style={[s.overlay, { backgroundColor: theme.colors.overlay }]}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={screen === SCREENS.main ? onClose : goBack} />
@@ -697,6 +693,30 @@ export const SettingsModal = ({
         </View>
       </View>
     </Modal>
+
+    <Modal visible={resetCodeInfo.visible} animationType="fade" transparent onRequestClose={() => setResetCodeInfo({ visible: false, code: null })}>
+      <View style={[s.resetCodeOverlay, { backgroundColor: theme.colors.overlay }]}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setResetCodeInfo({ visible: false, code: null })} />
+        <View style={[s.resetCodeDialog, { backgroundColor: theme.colors.bgCard, borderColor: theme.colors.border }]}>
+          <Text style={[s.resetCodeTitle, { color: theme.colors.text }]}>Reset code</Text>
+          <Text style={[s.resetCodeBody, { color: theme.colors.textSecondary }]}>
+            Use this code on the device where you forgot your password.
+          </Text>
+          <Text style={[s.resetCodeCode, { color: theme.colors.accent }]}>{resetCodeInfo.code}</Text>
+          <Text style={[s.resetCodeHint, { color: theme.colors.textMuted }]}>Valid for 10 minutes.</Text>
+          <TouchableOpacity
+            style={[s.resetCodeOk, { backgroundColor: theme.colors.accent }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setResetCodeInfo({ visible: false, code: null });
+            }}
+          >
+            <Text style={[s.resetCodeOkText, { color: theme.colors.onAccent }]}>OK</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 };
 
@@ -894,5 +914,49 @@ const s = StyleSheet.create({
   badgeText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  resetCodeOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  resetCodeDialog: {
+    width: '100%',
+    maxWidth: 320,
+    borderRadius: radii.lg,
+    padding: spacing.xl,
+    borderWidth: 1,
+  },
+  resetCodeTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: spacing.md,
+  },
+  resetCodeBody: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: spacing.md,
+  },
+  resetCodeCode: {
+    fontSize: 24,
+    fontWeight: '700',
+    letterSpacing: 4,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  resetCodeHint: {
+    fontSize: 13,
+    marginBottom: spacing.lg,
+  },
+  resetCodeOk: {
+    paddingVertical: spacing.md,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resetCodeOkText: {
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

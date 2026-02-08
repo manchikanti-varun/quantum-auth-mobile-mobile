@@ -9,8 +9,10 @@ import * as Haptics from 'expo-haptics';
 import { mfaApi } from '../services/api';
 import { storage } from '../services/storage';
 import { deviceService } from '../services/device';
+import { useToast } from '../context/ToastContext';
 
 export const useMfa = (deviceId, token) => {
+  const { showToast } = useToast();
   const [pendingChallenge, setPendingChallenge] = useState(null);
   const pollErrorCountRef = useRef(0);
 
@@ -78,13 +80,13 @@ export const useMfa = (deviceId, token) => {
       setPendingChallenge(null);
       if (decision === 'approved') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('Login approved', 'The other device can now sign in.');
+        showToast('Login approved. The other device can now sign in.');
       } else if (flagged) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        Alert.alert('Login denied', 'The login request was blocked and marked as suspicious.');
+        showToast('Login denied and marked as suspicious.');
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        Alert.alert('Login denied', 'The login request was blocked.');
+        showToast('Login denied.');
       }
     } catch (e) {
       Alert.alert('Error', e?.response?.data?.message || 'Failed to process MFA decision');
