@@ -31,7 +31,7 @@ import { validatePassword } from '../utils/validation';
 import { PASSWORD_REQUIREMENTS } from '../utils/validation';
 import { spacing, radii } from '../constants/designTokens';
 import { DEFAULT_FOLDERS } from '../constants/config';
-import { AUTO_LOCK_OPTIONS } from '../constants/config';
+import { AUTO_LOCK_OPTIONS, SESSION_TIMEOUT_OPTIONS } from '../constants/config';
 
 const THEME_OPTIONS = [
   { id: 'light', icon: 'white-balance-sunny', label: 'Light' },
@@ -44,6 +44,7 @@ const SCREENS = {
   changePassword: 'changePassword',
   changePin: 'changePin',
   autoLock: 'autoLock',
+  sessionTimeout: 'sessionTimeout',
   manageFolders: 'manageFolders',
   myDevices: 'myDevices',
 };
@@ -59,6 +60,8 @@ export const SettingsModal = ({
   onPinSetup,
   onAutoLockSelect,
   autoLockMinutes,
+  onSessionTimeoutSelect,
+  sessionTimeoutDays = 0,
   hasBiometric,
   onCheckMfa,
   folders: foldersProp = [],
@@ -225,6 +228,7 @@ export const SettingsModal = ({
       case SCREENS.changePassword: return 'lock-reset';
       case SCREENS.changePin: return 'numeric';
       case SCREENS.autoLock: return 'clock-outline';
+      case SCREENS.sessionTimeout: return 'logout';
       case SCREENS.manageFolders: return 'folder-multiple';
       case SCREENS.myDevices: return 'cellphone-link';
       default: return 'cog';
@@ -236,6 +240,7 @@ export const SettingsModal = ({
     [SCREENS.changePassword]: 'Change password',
     [SCREENS.changePin]: appLockConfig?.pinHash ? 'Change PIN' : 'Set PIN',
     [SCREENS.autoLock]: 'Auto-lock',
+    [SCREENS.sessionTimeout]: 'Session timeout',
     [SCREENS.manageFolders]: 'Manage folders',
     [SCREENS.myDevices]: 'My devices',
   }[screen];
@@ -245,6 +250,7 @@ export const SettingsModal = ({
     [SCREENS.changePassword]: 'Update your password',
     [SCREENS.changePin]: '6-digit PIN',
     [SCREENS.autoLock]: 'Lock after inactivity',
+    [SCREENS.sessionTimeout]: 'Logout after inactivity',
     [SCREENS.manageFolders]: 'Organize your accounts',
     [SCREENS.myDevices]: 'Devices linked to your account',
   }[screen];
@@ -373,6 +379,12 @@ export const SettingsModal = ({
               />
             </>
           )}
+          <Row
+            icon="logout"
+            label={`Session timeout: ${sessionTimeoutDays === 0 ? 'Never' : `${sessionTimeoutDays} days`}`}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setScreen(SCREENS.sessionTimeout); }}
+            right={<MaterialCommunityIcons name="chevron-right" size={22} color={theme.colors.textMuted} />}
+          />
         </Section>
       )}
 
@@ -500,6 +512,36 @@ export const SettingsModal = ({
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               onAutoLockSelect?.(opt.value);
+              goBack();
+            }}
+            activeOpacity={0.7}
+          >
+            <MaterialCommunityIcons name={opt.icon} size={22} color={isSelected ? theme.colors.accent : theme.colors.textMuted} style={s.rowIcon} />
+            <View style={s.rowBody}>
+              <Text style={[s.rowLabel, { color: theme.colors.text }]}>{opt.label}</Text>
+            </View>
+            {isSelected && <MaterialCommunityIcons name="check-circle" size={24} color={theme.colors.accent} />}
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
+  );
+
+  const renderSessionTimeout = () => (
+    <ScrollView style={s.flex} contentContainerStyle={s.panelPad} showsVerticalScrollIndicator={false}>
+      <View style={[s.hintRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+        <MaterialCommunityIcons name="information-outline" size={20} color={theme.colors.accent} />
+        <Text style={[s.hintText, { color: theme.colors.textSecondary }]}>Log out automatically if the app is inactive for this many days. Default: 90 days.</Text>
+      </View>
+      {SESSION_TIMEOUT_OPTIONS.map((opt) => {
+        const isSelected = sessionTimeoutDays === opt.value;
+        return (
+          <TouchableOpacity
+            key={opt.value}
+            style={[s.row, { backgroundColor: theme.colors.surface, borderColor: isSelected ? theme.colors.accent : theme.colors.border }, isSelected && { borderWidth: 2 }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onSessionTimeoutSelect?.(opt.value);
               goBack();
             }}
             activeOpacity={0.7}
@@ -651,6 +693,7 @@ export const SettingsModal = ({
       case SCREENS.changePassword: return renderChangePassword();
       case SCREENS.changePin: return renderChangePin();
       case SCREENS.autoLock: return renderAutoLock();
+      case SCREENS.sessionTimeout: return renderSessionTimeout();
       case SCREENS.manageFolders: return renderManageFolders();
       case SCREENS.myDevices: return renderMyDevices();
       default: return renderMain();

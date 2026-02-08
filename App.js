@@ -53,6 +53,7 @@ function AppContent() {
   const [hasBiometric, setHasBiometric] = useState(false);
   const [showAppLockPrompt, setShowAppLockPrompt] = useState(false);
   const [showIntro, setShowIntro] = useState(null);
+  const [sessionTimeoutDays, setSessionTimeoutDays] = useState(90);
   const { theme, isDark } = useTheme();
   const { showToast } = useToast();
 
@@ -63,7 +64,7 @@ function AppContent() {
     })();
   }, []);
 
-  const { token, user, loading, login, register, logout, pendingMfa, cancelPendingMfa, loginWithOtp, refreshUser } = useAuth(deviceId, () => {
+  const { token, user, loading, login, register, logout, pendingMfa, cancelPendingMfa, loginWithOtp, refreshUser, recordLastActivity } = useAuth(deviceId, () => {
     setShowAuth(false);
   });
 
@@ -82,6 +83,8 @@ function AppContent() {
       setAppLock(lockConfig?.enabled === true);
       const mins = await storage.getAutoLockMinutes();
       setAutoLockMinutes(mins);
+      const timeoutDays = await storage.getSessionTimeoutDays();
+      setSessionTimeoutDays(timeoutDays);
     })();
   }, []);
 
@@ -108,15 +111,17 @@ function AppContent() {
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
+      const now = Date.now();
       if (
         appState.current.match(/inactive|background/) &&
         nextState === 'active'
       ) {
+        if (token) recordLastActivity?.();
         if (!appLock) {
           setBiometricUnlocked(true);
           return;
         }
-        const elapsed = (Date.now() - lastActivityRef.current) / 60000;
+        const elapsed = (now - lastActivityRef.current) / 60000;
         const shouldLock = autoLockMinutes > 0 && elapsed >= autoLockMinutes;
         if (shouldLock) setBiometricUnlocked(false);
 
@@ -132,21 +137,22 @@ function AppContent() {
               setBiometricChecking(false);
               if (success) {
                 setBiometricUnlocked(true);
-                lastActivityRef.current = Date.now();
+                lastActivityRef.current = now;
               }
             });
         } else {
-          lastActivityRef.current = Date.now();
+          lastActivityRef.current = now;
         }
       } else if (nextState === 'active') {
-        lastActivityRef.current = Date.now();
+        lastActivityRef.current = now;
+        if (token) recordLastActivity?.();
       } else if (nextState.match(/inactive|background/)) {
-        lastActivityRef.current = Date.now();
+        lastActivityRef.current = now;
       }
       appState.current = nextState;
     });
     return () => subscription?.remove();
-  }, [appLock, autoLockMinutes, hasBiometric]);
+  }, [appLock, autoLockMinutes, hasBiometric, token, recordLastActivity]);
 
   const initializeApp = async () => {
     const { deviceId: id } = await deviceService.ensureDeviceIdentity();
@@ -406,7 +412,10 @@ function AppContent() {
             onSettingsPress={() => setShowSettings(true)}
             onToggleFavorite={toggleFavorite}
             updateAccount={updateAccount}
-            setLastUsed={setLastUsed}
+            setLastUsed={(id) => {
+              setLastUsed(id);
+              recordLastActivity?.();
+            }}
           />
 
           {token && (
@@ -453,6 +462,11 @@ function AppContent() {
             onPinSetup={handlePinSetup}
             onAutoLockSelect={handleAutoLockSelect}
             autoLockMinutes={autoLockMinutes}
+            onSessionTimeoutSelect={async (days) => {
+              await storage.saveSessionTimeoutDays(days);
+              setSessionTimeoutDays(days);
+            }}
+            sessionTimeoutDays={sessionTimeoutDays}
             hasBiometric={hasBiometric}
             onCheckMfa={token ? checkForPendingChallenges : undefined}
             onExportImport={(mode) => {

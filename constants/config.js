@@ -19,6 +19,8 @@ export const APP_LOCK_KEY = 'QSAFE_APP_LOCK';
 export const CUSTOM_FOLDERS_KEY = 'QSAFE_CUSTOM_FOLDERS';
 export const AUTO_LOCK_KEY = 'QSAFE_AUTO_LOCK_MINUTES';
 export const INTRO_SEEN_KEY = 'QSAFE_INTRO_SEEN';
+export const SESSION_TIMEOUT_KEY = 'QSAFE_SESSION_TIMEOUT_DAYS';
+export const LAST_ACTIVITY_KEY = 'QSAFE_LAST_ACTIVITY';
 export const DEFAULT_FOLDERS = ['Personal', 'Work', 'Banking'];
 export const AUTO_LOCK_OPTIONS = [
   { value: 0, label: 'Never', icon: 'clock-outline' },
@@ -26,4 +28,11 @@ export const AUTO_LOCK_OPTIONS = [
   { value: 5, label: '5 minutes', icon: 'timer-sand-empty' },
   { value: 15, label: '15 minutes', icon: 'timer-outline' },
   { value: 30, label: '30 minutes', icon: 'clock-alert-outline' },
+];
+export const SESSION_TIMEOUT_OPTIONS = [
+  { value: 0, label: 'Never', icon: 'infinity' },
+  { value: 7, label: '7 days', icon: 'calendar-week' },
+  { value: 14, label: '14 days', icon: 'calendar' },
+  { value: 30, label: '30 days', icon: 'calendar-month' },
+  { value: 90, label: '90 days', icon: 'calendar-range' },
 ];

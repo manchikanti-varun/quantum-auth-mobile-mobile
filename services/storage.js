@@ -5,7 +5,7 @@
  * @module services/storage
  */
 import * as SecureStore from 'expo-secure-store';
-import { ACCOUNTS_KEY, ACCOUNTS_KEY_PREFIX, CUSTOM_FOLDERS_KEY, CUSTOM_FOLDERS_KEY_PREFIX, DEVICE_KEY, PQC_KEYPAIR_KEY, AUTH_TOKEN_KEY, PREFERENCES_KEY, APP_LOCK_KEY, AUTO_LOCK_KEY, INTRO_SEEN_KEY } from '../constants/config';
+import { ACCOUNTS_KEY, ACCOUNTS_KEY_PREFIX, CUSTOM_FOLDERS_KEY, CUSTOM_FOLDERS_KEY_PREFIX, DEVICE_KEY, PQC_KEYPAIR_KEY, AUTH_TOKEN_KEY, PREFERENCES_KEY, APP_LOCK_KEY, AUTO_LOCK_KEY, INTRO_SEEN_KEY, SESSION_TIMEOUT_KEY, LAST_ACTIVITY_KEY } from '../constants/config';
 
 export const storage = {
   async getToken() {
@@ -196,5 +196,31 @@ export const storage = {
 
   async setIntroSeen() {
     await SecureStore.setItemAsync(INTRO_SEEN_KEY, 'true');
+  },
+
+  async getSessionTimeoutDays() {
+    try {
+      const raw = await SecureStore.getItemAsync(SESSION_TIMEOUT_KEY);
+      return raw != null ? parseInt(raw, 10) : 90;
+    } catch (e) {
+      return 90;
+    }
+  },
+
+  async saveSessionTimeoutDays(days) {
+    await SecureStore.setItemAsync(SESSION_TIMEOUT_KEY, String(days));
+  },
+
+  async getLastActivity() {
+    try {
+      const raw = await SecureStore.getItemAsync(LAST_ACTIVITY_KEY);
+      return raw != null ? parseInt(raw, 10) : 0;
+    } catch (e) {
+      return 0;
+    }
+  },
+
+  async saveLastActivity(timestamp) {
+    await SecureStore.setItemAsync(LAST_ACTIVITY_KEY, String(timestamp));
   },
 };

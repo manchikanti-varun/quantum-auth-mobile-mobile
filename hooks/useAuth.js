@@ -41,13 +41,14 @@ export const useAuth = (deviceId, onSuccess) => {
           if (approvedHandledRef.current) return;
           approvedHandledRef.current = true;
           const data = res.data;
-          setToken(data.token);
-          await storage.saveToken(data.token);
-          updateApiToken(data.token);
-          setUser(data.email ? { uid: data.uid, email: data.email, displayName: data.displayName ?? null, preferences: { allowMultipleDevices: true } } : null);
-          setPendingMfa(null);
-          onSuccess?.();
-          await registerDevice(data.uid, pendingMfa.deviceId, pendingMfa.rememberDevice ?? true);
+      setToken(data.token);
+      await storage.saveToken(data.token);
+      updateApiToken(data.token);
+      setUser(data.email ? { uid: data.uid, email: data.email, displayName: data.displayName ?? null, preferences: { allowMultipleDevices: true } } : null);
+      setPendingMfa(null);
+      await storage.saveLastActivity(Date.now());
+      onSuccess?.();
+      await registerDevice(data.uid, pendingMfa.deviceId, pendingMfa.rememberDevice ?? true);
           return;
         }
         if (status === 'denied' || status === 'expired') {
@@ -82,6 +83,19 @@ export const useAuth = (deviceId, onSuccess) => {
       try {
         const saved = await storage.getToken();
         if (saved) {
+          const timeoutDays = await storage.getSessionTimeoutDays();
+          let lastActivity = await storage.getLastActivity();
+          const now = Date.now();
+          if (lastActivity === 0) {
+            await storage.saveLastActivity(now);
+            lastActivity = now;
+          }
+          const msPerDay = 24 * 60 * 60 * 1000;
+          if (timeoutDays > 0 && (now - lastActivity) > timeoutDays * msPerDay) {
+            await clearAuth();
+            setLoading(false);
+            return;
+          }
           setToken(saved);
           const { setAuthToken } = await import('../services/api');
           setAuthToken(saved);
@@ -135,6 +149,7 @@ export const useAuth = (deviceId, onSuccess) => {
       await storage.saveToken(newToken);
       updateApiToken(newToken);
       setUser(response.data.email ? { uid: response.data.uid, email: response.data.email, displayName: response.data.displayName ?? null } : null);
+      await storage.saveLastActivity(Date.now());
       await registerDevice(response.data.uid, deviceId, rememberDevice);
       onSuccess?.();
       return response.data;
@@ -170,6 +185,7 @@ export const useAuth = (deviceId, onSuccess) => {
       await storage.saveToken(newToken);
       updateApiToken(newToken);
       setUser(response.data.email ? { uid: response.data.uid, email: response.data.email, displayName: response.data.displayName ?? null, preferences: { allowMultipleDevices: true } } : null);
+      await storage.saveLastActivity(Date.now());
       await registerDevice(response.data.uid, deviceId, rememberDevice);
       onSuccess?.();
       return response.data;
@@ -212,6 +228,10 @@ export const useAuth = (deviceId, onSuccess) => {
 
   const cancelPendingMfa = () => setPendingMfa(null);
 
+  const recordLastActivity = async () => {
+    await storage.saveLastActivity(Date.now());
+  };
+
   const refreshUser = async () => {
     if (!token) return;
     try {
@@ -241,6 +261,7 @@ export const useAuth = (deviceId, onSuccess) => {
       await storage.saveToken(data.token);
       updateApiToken(data.token);
       setUser(data.email ? { uid: data.uid, email: data.email, displayName: data.displayName ?? null, preferences: { allowMultipleDevices: true } } : null);
+      await storage.saveLastActivity(Date.now());
       await registerDevice(data.uid, deviceId, rememberDevice);
       setPendingMfa(null);
       onSuccess?.();
@@ -263,5 +284,6 @@ export const useAuth = (deviceId, onSuccess) => {
     cancelPendingMfa,
     loginWithOtp,
     refreshUser,
+    recordLastActivity,
   };
 };

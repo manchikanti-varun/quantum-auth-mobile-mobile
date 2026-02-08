@@ -1,5 +1,5 @@
 /**
- * TOTP account card. Displays issuer, code, countdown; tap to copy.
+ * TOTP account card. Displays issuer, code, countdown; long-press to copy.
  * @module components/AccountCard
  */
 import React from 'react';
@@ -80,7 +80,7 @@ export const AccountCard = ({ account, code, secondsRemaining = 0, onRemove, onT
         </View>
 
         <TouchableOpacity
-          onPress={async () => {
+          onLongPress={async () => {
             const c = code && String(code).length === 6 ? String(code).replace(/\s/g, '') : '';
             if (c) {
               await Clipboard.setStringAsync(c);
@@ -92,7 +92,7 @@ export const AccountCard = ({ account, code, secondsRemaining = 0, onRemove, onT
           activeOpacity={0.7}
           style={[styles.codeSection, { backgroundColor: theme.colors.surface }]}
           accessible
-          accessibilityLabel="Tap to copy code"
+          accessibilityLabel="Long-press to copy code"
         >
           <Text style={[styles.code, { color: theme.colors.success }]}>
             {code && String(code).length === 6
@@ -104,7 +104,7 @@ export const AccountCard = ({ account, code, secondsRemaining = 0, onRemove, onT
               <View style={[styles.countdownFill, { width: `${Math.max(0, (secondsRemaining || 0) / 30) * 100}%`, backgroundColor: theme.colors.accent }]} />
             </View>
             {code && String(code).length === 6 && (
-              <Text style={[styles.copyHint, { color: theme.colors.textMuted }]}>Tap to copy</Text>
+              <Text style={[styles.copyHint, { color: theme.colors.textMuted }]}>Long-press to copy</Text>
             )}
           </View>
         </TouchableOpacity>
