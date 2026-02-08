@@ -1,20 +1,17 @@
-/**
- * Authentication hook. Handles login, register, logout, MFA polling, backup OTP.
- * Manages JWT token and user state; integrates with device registration and push.
- * @module hooks/useAuth
- */
+/** Auth: login, register, logout, MFA polling, backup OTP, device registration. */
 import { useState, useEffect, useRef } from 'react';
-import { Alert } from 'react-native';
 import { authApi, deviceApi, setOnUnauthorized } from '../services/api';
+import { useAlert } from '../context/AlertContext';
 import { validateRegister, validateLogin } from '../utils/validation';
 import { storage } from '../services/storage';
 import { deviceService } from '../services/device';
 import { getExpoPushTokenAsync } from '../services/pushNotifications';
 
 export const useAuth = (deviceId, onSuccess) => {
+  const { showAlert } = useAlert();
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(null);
-  const [user, setUser] = useState(null); // { email, displayName }
+  const [user, setUser] = useState(null);
   const [pendingMfa, setPendingMfa] = useState(null);
   const approvedHandledRef = useRef(false);
 
@@ -53,7 +50,7 @@ export const useAuth = (deviceId, onSuccess) => {
         }
         if (status === 'denied' || status === 'expired') {
           setPendingMfa(null);
-          Alert.alert(
+          showAlert(
             status === 'denied' ? 'Login denied' : 'Login expired',
             status === 'denied' ? 'The login was denied on your other device.' : 'The login request expired. Try again.',
           );
@@ -68,7 +65,7 @@ export const useAuth = (deviceId, onSuccess) => {
             : status === 403
               ? 'Device mismatch. Cancel and log in again.'
               : 'Challenge not found. It may have expired.';
-          Alert.alert('Error', msg);
+          showAlert('Error', msg);
         }
       }
     };
@@ -126,11 +123,11 @@ export const useAuth = (deviceId, onSuccess) => {
   const login = async (email, password, rememberDevice = true) => {
     const loginErrors = validateLogin({ email, password });
     if (loginErrors.length > 0) {
-      Alert.alert('Validation', loginErrors[0]);
+      showAlert('Validation', loginErrors[0]);
       return;
     }
     if (!deviceId) {
-      Alert.alert('Error', 'Device ID is missing. Please restart the app.');
+      showAlert('Error', 'Device ID is missing. Please restart the app.');
       return;
     }
 
@@ -163,7 +160,7 @@ export const useAuth = (deviceId, onSuccess) => {
         else if (status === 429) message = 'Too many attempts. Please wait a moment and try again.';
         else message = 'Something went wrong. Please try again.';
       }
-      Alert.alert('Sign in failed', message);
+      showAlert('Sign in failed', message);
       throw err;
     } finally {
       setLoading(false);
@@ -173,7 +170,7 @@ export const useAuth = (deviceId, onSuccess) => {
   const register = async (email, password, displayName, rememberDevice = true, securityCode = '') => {
     const registerErrors = validateRegister({ email, password, displayName });
     if (registerErrors.length > 0) {
-      Alert.alert('Validation', registerErrors[0]);
+      showAlert('Validation', registerErrors[0]);
       return;
     }
 
@@ -197,7 +194,7 @@ export const useAuth = (deviceId, onSuccess) => {
         else if (err?.response?.status === 409) message = 'An account with this email already exists. Try signing in instead.';
         else message = 'Something went wrong. Please try again.';
       }
-      Alert.alert('Registration failed', message);
+      showAlert('Registration failed', message);
       throw err;
     } finally {
       setLoading(false);
@@ -207,12 +204,15 @@ export const useAuth = (deviceId, onSuccess) => {
   const registerDevice = async (uid, deviceId, rememberDevice = true) => {
     try {
       const keypair = await storage.getPqcKeypair();
+      const kyberKeypair = await storage.getKyberKeypair();
       if (deviceId && keypair?.publicKey && keypair?.algorithm) {
         const pushToken = await getExpoPushTokenAsync();
         await deviceApi.register({
           deviceId,
           pqcPublicKey: keypair.publicKey,
           pqcAlgorithm: keypair.algorithm,
+          kyberPublicKey: kyberKeypair?.publicKey || null,
+          kyberAlgorithm: kyberKeypair?.algorithm || null,
           platform: 'android',
           pushToken: pushToken || null,
           rememberDevice,
@@ -250,7 +250,7 @@ export const useAuth = (deviceId, onSuccess) => {
 
   const loginWithOtp = async (challengeId, deviceId, code, rememberDevice = true) => {
     if (!challengeId || !deviceId || !code) {
-      Alert.alert('Validation', 'Enter the 6-digit code');
+      showAlert('Validation', 'Enter the 6-digit code');
       return;
     }
     try {
@@ -267,7 +267,7 @@ export const useAuth = (deviceId, onSuccess) => {
       onSuccess?.();
     } catch (err) {
       const message = err?.response?.data?.message || 'Invalid or expired code. Please try again with a fresh 6-digit code.';
-      Alert.alert('Could not sign in', message);
+      showAlert('Could not sign in', message);
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,4 @@
-/**
- * Folders hook. Manages default and custom folders; add, rename, remove, reorder.
- * @module hooks/useFolders
- */
+/** Folders: custom list, add, rename, remove, reorder. */
 import { useState, useEffect } from 'react';
 import { storage } from '../services/storage';
 export const useFolders = (token, uid) => {

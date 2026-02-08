@@ -11,7 +11,6 @@ import {
   StyleSheet,
   ScrollView,
   TextInput,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -22,6 +21,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
+import { useAlert } from '../context/AlertContext';
 import { useLayout } from '../hooks/useLayout';
 import { PinPad } from './PinPad';
 import { PasswordInput } from './ui';
@@ -77,6 +77,7 @@ export const SettingsModal = ({
   onLogout,
 }) => {
   const { theme, preference, setThemePreference } = useTheme();
+  const { showAlert, showConfirm } = useAlert();
   const { safeBottom } = useLayout();
   const { height: screenHeight } = useWindowDimensions();
   const [screen, setScreen] = useState(SCREENS.main);
@@ -118,30 +119,30 @@ export const SettingsModal = ({
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Required', 'Fill in all fields');
+      showAlert('Required', 'Fill in all fields');
       return;
     }
     const pwResult = validatePassword(newPassword);
     if (!pwResult.valid) {
-      Alert.alert('Invalid', pwResult.message);
+      showAlert('Invalid', pwResult.message);
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert('Mismatch', 'New password and confirm do not match');
+      showAlert('Mismatch', 'New password and confirm do not match');
       return;
     }
     setPwLoading(true);
     try {
       await authApi.changePassword(currentPassword, newPassword);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Success', 'Password updated');
+      showAlert('Success', 'Password updated');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       goBack();
     } catch (err) {
       const msg = err?.response?.data?.message || 'Failed to change password';
-      Alert.alert('Error', msg);
+      showAlert('Error', msg);
     } finally {
       setPwLoading(false);
     }
@@ -154,7 +155,7 @@ export const SettingsModal = ({
     const name = newFolderName.trim();
     if (!name) return;
     if (folders.includes(name)) {
-      Alert.alert('Exists', `Folder "${name}" already exists.`);
+      showAlert('Exists', `Folder "${name}" already exists.`);
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -174,7 +175,7 @@ export const SettingsModal = ({
       return;
     }
     if (folders.includes(name) && name !== editingFolder) {
-      Alert.alert('Exists', `Folder "${name}" already exists.`);
+      showAlert('Exists', `Folder "${name}" already exists.`);
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -196,30 +197,26 @@ export const SettingsModal = ({
     }
     const otherFolders = folders.filter((f) => f !== folderName);
     if (otherFolders.length === 0) {
-      Alert.alert('Cannot remove', 'Move accounts to another folder first.');
+      showAlert('Cannot remove', 'Move accounts to another folder first.');
       return;
     }
     const moveTo = otherFolders[0];
-    Alert.alert(
-      `Remove "${folderName}"?`,
-      `${count} account(s) will be moved to ${moveTo}. Continue?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            const toMove = accounts.filter((acc) => (acc.folder || 'Personal') === folderName);
-            if (toMove.length > 0) {
-              await updateAccountsBatch?.(toMove.map((acc) => ({ id: acc.id, updates: { folder: moveTo } })));
-            }
-            removeFolder?.(folderName);
-            refreshFolders?.();
-          },
-        },
-      ]
-    );
+    showConfirm({
+      title: `Remove "${folderName}"?`,
+      message: `${count} account(s) will be moved to ${moveTo}. Continue?`,
+      confirmText: 'Remove',
+      cancelText: 'Cancel',
+      destructive: true,
+      onConfirm: async () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        const toMove = accounts.filter((acc) => (acc.folder || 'Personal') === folderName);
+        if (toMove.length > 0) {
+          await updateAccountsBatch?.(toMove.map((acc) => ({ id: acc.id, updates: { folder: moveTo } })));
+        }
+        removeFolder?.(folderName);
+        refreshFolders?.();
+      },
+    });
   };
 
   const getHeaderIcon = () => {
@@ -313,7 +310,7 @@ export const SettingsModal = ({
                 await authApi.updatePreferences({ allowMultipleDevices: !allowMultipleDevices });
                 onPreferencesChange?.();
               } catch (e) {
-                Alert.alert('Error', e?.response?.data?.message || 'Could not update');
+                showAlert('Error', e?.response?.data?.message || 'Could not update');
               }
             }}
           >
@@ -442,7 +439,7 @@ export const SettingsModal = ({
               if (code) setResetCodeInfo({ visible: true, code });
             } catch (e) {
               const msg = e?.response?.data?.message || 'Could not generate code';
-              Alert.alert(
+              showAlert(
                 e?.response?.status === 403 ? 'Use primary device' : 'Error',
                 msg
               );
@@ -686,26 +683,22 @@ export const SettingsModal = ({
             const isPrimary = d.deviceNumber === 1;
             const canDelete = !isPrimary && !isCurrent;
             const handleRevoke = () => {
-              Alert.alert(
-                'Logout from device',
-                'You want to logout from this device?',
-                [
-                  { text: 'No', style: 'cancel' },
-                  {
-                    text: 'Yes',
-                    style: 'destructive',
-                    onPress: async () => {
-                      try {
-                        await deviceApi.revoke(d.deviceId);
-                        setDevices((prev) => prev.filter((dev) => dev.deviceId !== d.deviceId));
-                        if (isCurrent) onLogout?.();
-                      } catch (e) {
-                        Alert.alert('Error', e?.response?.data?.message || 'Failed to revoke device');
-                      }
-                    },
-                  },
-                ]
-              );
+              showConfirm({
+                title: 'Logout from device',
+                message: 'You want to logout from this device?',
+                confirmText: 'Yes',
+                cancelText: 'No',
+                destructive: true,
+                onConfirm: async () => {
+                  try {
+                    await deviceApi.revoke(d.deviceId);
+                    setDevices((prev) => prev.filter((dev) => dev.deviceId !== d.deviceId));
+                    if (isCurrent) onLogout?.();
+                  } catch (e) {
+                    showAlert('Error', e?.response?.data?.message || 'Failed to revoke device');
+                  }
+                },
+              });
             };
             return (
               <View

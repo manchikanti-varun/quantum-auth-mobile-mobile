@@ -1,8 +1,4 @@
-/**
- * Device identity and PQC (Dilithium2) keypair management.
- * Ensures unique device ID, generates or migrates keypair, signs messages for MFA approval.
- * @module services/device
- */
+/** Device ID, Dilithium2 keypair (MFA signatures), Kyber keypair (key exchange). */
 import * as Crypto from 'expo-crypto';
 import * as Application from 'expo-application';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,6 +8,7 @@ import {
   DilithiumPrivateKey,
   DilithiumSignature,
 } from '@asanrom/dilithium';
+import { generateKeyPair as generateKyberKeypair } from './kyber';
 import { storage } from './storage';
 
 const DILITHIUM_LEVEL = 2;
@@ -53,9 +50,15 @@ export const deviceService = {
         await storage.savePqcKeypair(keypair);
       }
 
-      return { deviceId, keypair };
+      let kyberKeypair = await storage.getKyberKeypair();
+      if (!kyberKeypair?.publicKey) {
+        kyberKeypair = await generateKyberKeypair();
+        await storage.saveKyberKeypair(kyberKeypair);
+      }
+
+      return { deviceId, keypair, kyberKeypair };
     } catch (e) {
-      return { deviceId: null, keypair: null };
+      return { deviceId: null, keypair: null, kyberKeypair: null };
     }
   },
 

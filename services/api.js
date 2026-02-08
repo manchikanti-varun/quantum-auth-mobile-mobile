@@ -1,8 +1,4 @@
-/**
- * HTTP API client for auth, devices, and MFA endpoints.
- * Attaches JWT to requests; clears token and invokes onUnauthorized on 401.
- * @module services/api
- */
+/** API client: auth, devices, MFA. Attaches JWT; clears on 401. */
 
 import axios from 'axios';
 import { API_BASE_URL } from '../constants/config';

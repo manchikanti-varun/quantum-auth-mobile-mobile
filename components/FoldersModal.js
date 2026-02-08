@@ -11,7 +11,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
@@ -20,6 +19,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
+import { useAlert } from '../context/AlertContext';
 import { spacing, radii } from '../constants/designTokens';
 
 export const FoldersModal = ({
@@ -34,6 +34,7 @@ export const FoldersModal = ({
   refreshFolders,
 }) => {
   const { theme } = useTheme();
+  const { showAlert, showConfirm } = useAlert();
   const [newFolderName, setNewFolderName] = useState('');
   const [editingFolder, setEditingFolder] = useState(null);
   const [editName, setEditName] = useState('');
@@ -49,7 +50,7 @@ export const FoldersModal = ({
     const name = newFolderName.trim();
     if (!name) return;
     if (folders.includes(name)) {
-      Alert.alert('Exists', `Folder "${name}" already exists.`);
+      showAlert('Exists', `Folder "${name}" already exists.`);
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -69,7 +70,7 @@ export const FoldersModal = ({
       return;
     }
     if (folders.includes(name) && name !== editingFolder) {
-      Alert.alert('Exists', `Folder "${name}" already exists.`);
+      showAlert('Exists', `Folder "${name}" already exists.`);
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -92,31 +93,27 @@ export const FoldersModal = ({
     }
     const otherFolders = folders.filter((f) => f !== folderName);
     if (otherFolders.length === 0) {
-      Alert.alert('Cannot remove', 'Move accounts to another folder first.');
+      showAlert('Cannot remove', 'Move accounts to another folder first.');
       return;
     }
     const moveTo = otherFolders[0];
-    Alert.alert(
-      `Remove "${folderName}"?`,
-      `${count} account(s) will be moved to ${moveTo}. Continue?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            accounts.forEach((acc) => {
-              if ((acc.folder || 'Personal') === folderName) {
-                updateAccount?.(acc.id, { folder: moveTo });
-              }
-            });
-            removeFolder(folderName);
-            refreshFolders?.();
-          },
-        },
-      ]
-    );
+    showConfirm({
+      title: `Remove "${folderName}"?`,
+      message: `${count} account(s) will be moved to ${moveTo}. Continue?`,
+      confirmText: 'Remove',
+      cancelText: 'Cancel',
+      destructive: true,
+      onConfirm: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        accounts.forEach((acc) => {
+          if ((acc.folder || 'Personal') === folderName) {
+            updateAccount?.(acc.id, { folder: moveTo });
+          }
+        });
+        removeFolder(folderName);
+        refreshFolders?.();
+      },
+    });
   };
 
   if (!visible) return null;

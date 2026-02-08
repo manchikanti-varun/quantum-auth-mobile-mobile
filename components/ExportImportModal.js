@@ -12,7 +12,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   Share,
   ActivityIndicator,
 } from 'react-native';
@@ -20,12 +19,14 @@ import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useAlert } from '../context/AlertContext';
 import { spacing, radii } from '../constants/designTokens';
 import { encryptBackup, decryptBackup, isEncryptedBackup } from '../utils/backupEncryption';
 import { saveEncryptedBackup, listSavedBackups, loadEncryptedBackup } from '../services/backupStorage';
 
 export const ExportImportModal = ({ visible, mode, onClose, onExport, onImport }) => {
   const { theme } = useTheme();
+  const { showAlert } = useAlert();
   const [importData, setImportData] = useState('');
   const [exportPassword, setExportPassword] = useState('');
   const [exportPasswordConfirm, setExportPasswordConfirm] = useState('');
@@ -54,11 +55,11 @@ export const ExportImportModal = ({ visible, mode, onClose, onExport, onImport }
     const accountsJson = await onExport?.();
     if (!accountsJson) return;
     if (exportPassword.length < 6) {
-      Alert.alert('Password required', 'Use at least 6 characters for the backup password.');
+      showAlert('Password required', 'Use at least 6 characters for the backup password.');
       return;
     }
     if (exportPassword !== exportPasswordConfirm) {
-      Alert.alert('Passwords do not match', 'Please confirm the password.');
+      showAlert('Passwords do not match', 'Please confirm the password.');
       return;
     }
     setSaving(true);
@@ -66,9 +67,9 @@ export const ExportImportModal = ({ visible, mode, onClose, onExport, onImport }
       const encrypted = encryptBackup(accountsJson, exportPassword);
       const { filename } = await saveEncryptedBackup(encrypted);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Saved', `Encrypted backup saved as ${filename}`, [{ text: 'OK', onPress: onClose }]);
+      showAlert('Saved', `Encrypted backup saved as ${filename}`, onClose);
     } catch (e) {
-      Alert.alert('Error', e?.message || 'Failed to save backup');
+      showAlert('Error', e?.message || 'Failed to save backup');
     } finally {
       setSaving(false);
     }
@@ -82,7 +83,7 @@ export const ExportImportModal = ({ visible, mode, onClose, onExport, onImport }
       try {
         data = encryptBackup(accountsJson, exportPassword);
       } catch (e) {
-        Alert.alert('Error', e?.message || 'Encryption failed');
+        showAlert('Error', e?.message || 'Encryption failed');
         return;
       }
     }
@@ -94,7 +95,7 @@ export const ExportImportModal = ({ visible, mode, onClose, onExport, onImport }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
       await Clipboard.setStringAsync(data);
-      Alert.alert('Copied', 'Backup copied to clipboard. Save it somewhere safe.');
+      showAlert('Copied', 'Backup copied to clipboard. Save it somewhere safe.');
     }
     onClose?.();
   };
@@ -103,7 +104,7 @@ export const ExportImportModal = ({ visible, mode, onClose, onExport, onImport }
     let parsed;
     if (isEncryptedBackup(trimmed)) {
       if (!importPassword) {
-        Alert.alert('Password required', 'This backup is encrypted. Enter the password used when exporting.');
+        showAlert('Password required', 'This backup is encrypted. Enter the password used when exporting.');
         return;
       }
       const decrypted = decryptBackup(trimmed, importPassword);
@@ -116,8 +117,7 @@ export const ExportImportModal = ({ visible, mode, onClose, onExport, onImport }
     if (!valid) throw new Error('Invalid account data');
     await onImport?.(parsed);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert('Imported', `${parsed.length} accounts imported.`);
-    onClose?.();
+    showAlert('Imported', `${parsed.length} accounts imported.`, onClose);
   };
 
   const handleImport = async () => {
@@ -127,16 +127,16 @@ export const ExportImportModal = ({ visible, mode, onClose, onExport, onImport }
       await importFromData(trimmed);
     } catch (e) {
       if (e?.message?.includes('Wrong password')) {
-        Alert.alert('Wrong password', 'The password is incorrect. Please try again.');
+        showAlert('Wrong password', 'The password is incorrect. Please try again.');
       } else {
-        Alert.alert('Invalid data', 'Paste a valid QSafe backup (JSON or encrypted backup).');
+        showAlert('Invalid data', 'Paste a valid QSafe backup (JSON or encrypted backup).');
       }
     }
   };
 
   const handleLoadFromStored = async (backupPath) => {
     if (!importPassword) {
-      Alert.alert('Password required', 'Enter the password used when saving this backup.');
+      showAlert('Password required', 'Enter the password used when saving this backup.');
       return;
     }
     try {
@@ -144,9 +144,9 @@ export const ExportImportModal = ({ visible, mode, onClose, onExport, onImport }
       await importFromData(encrypted);
     } catch (e) {
       if (e?.message?.includes('Wrong password')) {
-        Alert.alert('Wrong password', 'The password is incorrect. Please try again.');
+        showAlert('Wrong password', 'The password is incorrect. Please try again.');
       } else {
-        Alert.alert('Error', e?.message || 'Failed to load backup');
+        showAlert('Error', e?.message || 'Failed to load backup');
       }
     }
   };

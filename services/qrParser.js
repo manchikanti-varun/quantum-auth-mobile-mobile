@@ -1,9 +1,4 @@
-/**
- * Parses otpauth:// URIs from QR codes or pasted strings.
- * Extracts secret, issuer, and account label for TOTP setup.
- * Pass onAlert(title, message) in options to use themed dialogs instead of native Alert.
- * @module services/qrParser
- */
+/** Parses otpauth:// URIs. Extracts issuer, label, secret. Pass onAlert for themed dialogs. */
 
 import { Alert } from 'react-native';
 

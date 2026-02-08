@@ -1,8 +1,4 @@
-/**
- * Expo Push Notifications – retrieves push token for MFA login alerts.
- * Returns null on simulator, in Expo Go, or when permission is denied.
- * @module services/pushNotifications
- */
+/** Expo push token for MFA alerts. Null on simulator/Expo Go or when denied. */
 
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';

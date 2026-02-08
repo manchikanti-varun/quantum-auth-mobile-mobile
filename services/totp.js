@@ -1,8 +1,4 @@
-/**
- * TOTP (RFC 6238) implementation for React Native.
- * Self-contained HMAC-SHA1 and base32 decode; no external crypto dependencies.
- * @module services/totp
- */
+/** TOTP (RFC 6238): HMAC-SHA1, base32, 30s window, 6 digits. */
 
 function hexToBytes(hex) {
   const a = hex.replace(/^0x/i, '');

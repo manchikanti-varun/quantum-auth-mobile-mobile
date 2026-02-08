@@ -1,8 +1,4 @@
-/**
- * Biometric authentication service (fingerprint, face ID).
- * Uses expo-local-authentication with device passcode fallback.
- * @module services/biometric
- */
+/** Biometric (fingerprint/face) via expo-local-authentication. Passcode fallback. */
 import * as LocalAuthentication from 'expo-local-authentication';
 
 export const biometricService = {

@@ -1,7 +1,4 @@
-/**
- * Toast context provider. Displays brief feedback messages app-wide.
- * @module context/ToastContext
- */
+/** Toast feedback messages app-wide. */
 import React, { createContext, useState, useCallback, useContext } from 'react';
 import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
 import { useTheme } from './ThemeContext';

@@ -1,7 +1,4 @@
-/**
- * Issuer-to-icon mapping and brand colors for account cards.
- * @module utils/issuerIcons
- */
+/** Issuer → icon name and brand colors for account cards. */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const ICON_MAP = {
@@ -11,7 +8,7 @@ const ICON_MAP = {
   microsoft: 'microsoft',
   github: 'github',
   twitter: 'twitter',
-  amazon: 'amazon',
+  amazon: 'cart',
   apple: 'apple',
   discord: 'discord',
   slack: 'slack',
@@ -54,10 +51,16 @@ const ISSUER_COLORS = {
   steam: { bg: '#1b2838', icon: '#fff' },
 };
 
+const INVALID_ICON_FALLBACK = { amazon: 'cart' };
+
 export function getIssuerIcon(issuer) {
   const key = String(issuer || '').toLowerCase().trim();
   const iconName = ICON_MAP[key] || ICON_MAP[key.replace(/\s+/g, '')];
   return iconName || null;
+}
+
+export function resolveIconName(iconName) {
+  return iconName ? (INVALID_ICON_FALLBACK[iconName] || iconName) : null;
 }
 
 export function getIssuerColor(issuer) {
@@ -68,7 +71,7 @@ export function getIssuerColor(issuer) {
 export const ICON_PICKER_OPTIONS = [
   'google', 'shield-account', 'email', 'lock', 'key', 'domain',
   'bank', 'credit-card', 'cart', 'gamepad-variant', 'cloud',
-  'microsoft', 'github', 'apple', 'amazon', 'facebook',
+  'microsoft', 'github', 'apple', 'facebook',
 ];
 
 export function IssuerIcon({ issuer, size = 24, color, style }) {

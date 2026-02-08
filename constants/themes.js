@@ -1,7 +1,4 @@
-/**
- * Light and dark theme definitions. Colors, gradients, typography, shadows.
- * @module constants/themes
- */
+/** Light/dark themes: colors, gradients, typography, shadows. */
 const baseTypo = {
   display: { fontSize: 40, fontWeight: '800', letterSpacing: -1 },
   h1: { fontSize: 28, fontWeight: '700', letterSpacing: -0.5 },

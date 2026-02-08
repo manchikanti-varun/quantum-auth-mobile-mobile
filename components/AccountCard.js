@@ -16,14 +16,14 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { ConfirmDialog } from './ui';
-import { getIssuerIcon, getIssuerColor } from '../utils/issuerIcons';
+import { getIssuerIcon, getIssuerColor, resolveIconName } from '../utils/issuerIcons';
 import { spacing, radii } from '../constants/designTokens';
 
 export const AccountCard = ({ account, code, secondsRemaining = 0, onRemove, onToggleFavorite, isFavorite, onCopy, onEdit, onMoveUp, onMoveDown, canMoveUp, canMoveDown }) => {
   const { theme } = useTheme();
   const { showToast } = useToast();
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
-  const iconName = account.customIcon || getIssuerIcon(account.issuer);
+  const iconName = resolveIconName(account.customIcon || getIssuerIcon(account.issuer));
   const brandColors = getIssuerColor(account.issuer);
   const iconBg = brandColors?.bg || theme.colors.surface;
   const iconColor = brandColors?.icon || theme.colors.accent;

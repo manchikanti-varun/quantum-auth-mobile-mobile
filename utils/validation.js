@@ -1,8 +1,4 @@
-/**
- * Form validation for email, password, display name, security code.
- * Matches backend validation rules.
- * @module utils/validation
- */
+/** Form validation: email, password, display name, security code. Matches backend. */
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_MIN_LENGTH = 8;

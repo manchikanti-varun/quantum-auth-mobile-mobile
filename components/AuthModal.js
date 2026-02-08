@@ -8,7 +8,6 @@ import {
   View,
   Text,
   TextInput,
-  Alert,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
@@ -24,6 +23,7 @@ import { authApi } from '../services/api';
 import { useLayout } from '../hooks/useLayout';
 import { useTheme, ThemeContext } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
+import { useAlert } from '../context/AlertContext';
 import { themeLight } from '../constants/themes';
 import { spacing, radii, typography } from '../constants/designTokens';
 import { PASSWORD_REQUIREMENTS, SECURITY_CODE_HINT, validateSecurityCode } from '../utils/validation';
@@ -33,6 +33,7 @@ const KEYBOARD_VERTICAL_OFFSET_ANDROID = Platform.OS === 'android' ? (StatusBar?
 export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pendingMfa, onCancelPendingMfa, onLoginWithOtp }) => {
   const theme = themeLight;
   const { showToast } = useToast();
+  const { showAlert } = useAlert();
   const { horizontalPadding, safeBottom, safeTop } = useLayout();
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
@@ -62,7 +63,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
     if (mode === 'register') {
       const scResult = validateSecurityCode(securityCode);
       if (!scResult.valid) {
-        Alert.alert('Validation', scResult.message);
+        showAlert('Validation', scResult.message);
         return;
       }
     }
@@ -90,22 +91,22 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
 
   const handleForgotPasswordSubmit = async () => {
     if (newPassword !== confirmPassword) {
-      Alert.alert('Passwords do not match', 'Please make sure both password fields are the same.');
+      showAlert('Passwords do not match', 'Please make sure both password fields are the same.');
       return;
     }
     const pwResult = require('../utils/validation').validatePassword(newPassword);
     if (!pwResult.valid) {
-      Alert.alert('Password requirements', pwResult.message);
+      showAlert('Password requirements', pwResult.message);
       return;
     }
     if (forgotCodeMode === 'security') {
       const scResult = validateSecurityCode(forgotCode);
       if (!scResult.valid) {
-        Alert.alert('Validation', scResult.message);
+        showAlert('Validation', scResult.message);
         return;
       }
     } else if (forgotCode.length !== 6) {
-      Alert.alert('Validation', 'Enter the 6-digit code.');
+      showAlert('Validation', 'Enter the 6-digit code.');
       return;
     }
     setForgotLoading(true);
@@ -126,9 +127,9 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
       const msg = e?.response?.data?.message || 'Check your email and code, then try again.';
       const lockedUntil = e?.response?.data?.lockedUntil;
       if (lockedUntil) {
-        Alert.alert('Account locked', `${msg}\n\nTry again after ${new Date(lockedUntil).toLocaleString()}.`);
+        showAlert('Account locked', `${msg}\n\nTry again after ${new Date(lockedUntil).toLocaleString()}.`);
       } else {
-        Alert.alert('Could not reset password', msg);
+        showAlert('Could not reset password', msg);
       }
     } finally {
       setForgotLoading(false);
@@ -137,7 +138,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
 
   const handleUseSecurityCode = async () => {
     if (!email.trim()) {
-      Alert.alert('Enter email first', 'Enter your email above, then tap Use security code.');
+      showAlert('Enter email first', 'Enter your email above, then tap Use security code.');
       return;
     }
     setRecoveryOptionsLoading(true);
@@ -145,18 +146,18 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
       const res = await authApi.checkRecoveryOptions(email.trim().toLowerCase());
       const { canUseSecurityCode, lockedUntil } = res.data || {};
       if (lockedUntil && new Date(lockedUntil) > new Date()) {
-        Alert.alert('Account locked', `Try again after ${new Date(lockedUntil).toLocaleString()}.`);
+        showAlert('Account locked', `Try again after ${new Date(lockedUntil).toLocaleString()}.`);
         return;
       }
       if (!canUseSecurityCode) {
-        Alert.alert('Not available', 'Security code recovery is not set up for this account. Use code from primary device.');
+        showAlert('Not available', 'Security code recovery is not set up for this account. Use code from primary device.');
         return;
       }
       setForgotCodeMode('security');
       setForgotCode('');
       setForgotStep(1);
     } catch (e) {
-      Alert.alert('Error', e?.response?.data?.message || 'Could not check recovery options.');
+      showAlert('Error', e?.response?.data?.message || 'Could not check recovery options.');
     } finally {
       setRecoveryOptionsLoading(false);
     }
@@ -369,7 +370,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                                 ? forgotCode.length >= 4 && forgotCode.length <= 6
                                 : forgotCode.length === 6;
                               if (!valid) {
-                                Alert.alert('Validation', forgotCodeMode === 'security' ? 'Enter your 4–6 digit security code.' : 'Enter the 6-digit code from your primary device.');
+                                showAlert('Validation', forgotCodeMode === 'security' ? 'Enter your 4–6 digit security code.' : 'Enter the 6-digit code from your primary device.');
                                 return;
                               }
                               setForgotStep(2);
@@ -513,7 +514,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                     </View>
                     <TouchableOpacity
                       style={[styles.socialButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-                      onPress={() => Alert.alert('Coming soon', 'Sign in with Google will be available in a future update.')}
+                      onPress={() => showAlert('Coming soon', 'Sign in with Google will be available in a future update.')}
                       activeOpacity={0.8}
                     >
                       <MaterialCommunityIcons name="google" size={22} color={theme.colors.textMuted} />

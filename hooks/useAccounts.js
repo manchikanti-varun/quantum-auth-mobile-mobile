@@ -1,8 +1,4 @@
-/**
- * Accounts hook. Loads and persists TOTP accounts; generates codes every second.
- * Manages favorites, folders, sort order, and last-used timestamps.
- * @module hooks/useAccounts
- */
+/** TOTP accounts: load, persist, codes every second. Favorites, folders, sort, last-used. */
 import { useState, useEffect } from 'react';
 import { generateTOTP, generateTOTPWithAdjacent, getTimeRemainingInWindow } from '../services/totp';
 import { storage } from '../services/storage';

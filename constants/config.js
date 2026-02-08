@@ -1,17 +1,13 @@
-/**
- * Application configuration constants.
- * API base URL, SecureStore keys, default folders, auto-lock options.
- * Set EXPO_PUBLIC_API_URL in .env or eas.json to override production API.
- * @module constants/config
- */
+/** API URL, SecureStore keys, auto-lock and session options. */
 
-const PRODUCTION_API_URL = 'https://quantum-auth-mobile-backend-production-c4a5.up.railway.app';
-export const API_BASE_URL = (process.env.EXPO_PUBLIC_API_URL || PRODUCTION_API_URL).trim();
+const API_URL = 'https://quantum-auth-mobile-backend-production-c4a5.up.railway.app';
+export const API_BASE_URL = (process.env.EXPO_PUBLIC_API_URL || API_URL).trim();
 export const ACCOUNTS_KEY = 'QSAFE_TOTP_ACCOUNTS';
 export const ACCOUNTS_KEY_PREFIX = 'QSAFE_ACCOUNTS_';
 export const CUSTOM_FOLDERS_KEY_PREFIX = 'QSAFE_FOLDERS_';
 export const DEVICE_KEY = 'QSAFE_DEVICE_ID';
 export const PQC_KEYPAIR_KEY = 'QSAFE_PQC_KEYPAIR';
+export const KYBER_KEYPAIR_KEY = 'QSAFE_KYBER_KEYPAIR';
 export const AUTH_TOKEN_KEY = 'QSAFE_AUTH_TOKEN';
 export const THEME_PREFERENCE_KEY = 'QSAFE_THEME_PREFERENCE';
 export const PREFERENCES_KEY = 'QSAFE_PREFERENCES';

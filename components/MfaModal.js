@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   Platform,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
@@ -21,6 +20,7 @@ import { AppLogo } from './AppLogo';
 import { useLayout } from '../hooks/useLayout';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
+import { useAlert } from '../context/AlertContext';
 import { mfaApi } from '../services/api';
 import { spacing, radii } from '../constants/designTokens';
 
@@ -35,6 +35,7 @@ export const MfaModal = ({
 }) => {
   const { theme } = useTheme();
   const { showToast } = useToast();
+  const { showAlert } = useAlert();
   const { horizontalPadding, contentMaxWidth } = useLayout();
   const [generatingCode, setGeneratingCode] = useState(false);
   if (!challenge) return null;
@@ -55,7 +56,7 @@ export const MfaModal = ({
         showToast('Code copied! Enter on other device');
       }
     } catch (e) {
-      Alert.alert('Could not generate code', e?.response?.data?.message || 'Please try again.');
+      showAlert('Could not generate code', e?.response?.data?.message || 'Please try again.');
     } finally {
       setGeneratingCode(false);
     }

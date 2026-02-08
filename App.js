@@ -1,8 +1,6 @@
 /**
- * QSafe Mobile – Main application component.
- * Orchestrates authentication, app lock, biometric gate, modals, and screen routing.
- * Wraps content in ThemeProvider, ToastProvider, and SafeAreaProvider.
- * @module App
+ * QSafe – Quantum-safe mobile authenticator.
+ * Auth, app lock, biometric gate, TOTP, MFA polling.
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, AppState, Linking } from 'react-native';
@@ -14,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { usePreventScreenCapture } from 'expo-screen-capture';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { ToastProvider, useToast } from './context/ToastContext';
+import { AlertProvider, useAlert } from './context/AlertContext';
 import { useAuth } from './hooks/useAuth';
 import { useAccounts } from './hooks/useAccounts';
 import { useFolders } from './hooks/useFolders';
@@ -33,7 +32,6 @@ import { FloatingActionButton } from './components/FloatingActionButton';
 import { BiometricGate } from './components/BiometricGate';
 import { AppLockPromptModal } from './components/AppLockPromptModal';
 import { IntroModal } from './components/IntroModal';
-import { AlertDialog } from './components/ui';
 import { storage } from './services/storage';
 import { verifyPin } from './utils/pinHash';
 
@@ -56,12 +54,9 @@ function AppContent() {
   const [showAppLockPrompt, setShowAppLockPrompt] = useState(false);
   const [showIntro, setShowIntro] = useState(null);
   const [sessionTimeoutDays, setSessionTimeoutDays] = useState(90);
-  const [alert, setAlert] = useState({ visible: false, title: '', message: '' });
   const { theme, isDark } = useTheme();
   const { showToast } = useToast();
-
-  const showAlert = (title, message) => setAlert({ visible: true, title, message });
-  const dismissAlert = () => setAlert((p) => ({ ...p, visible: false }));
+  const { showAlert } = useAlert();
 
   useEffect(() => {
     (async () => {
@@ -539,13 +534,6 @@ function AppContent() {
             onDenySuspicious={handleMfaDenySuspicious}
             resolving={mfaResolving}
           />
-
-          <AlertDialog
-            visible={alert.visible}
-            title={alert.title}
-            message={alert.message}
-            onOk={dismissAlert}
-          />
         </SafeAreaView>
       </LinearGradient>
     </>
@@ -558,7 +546,9 @@ export default function App() {
       <SafeAreaProvider>
         <ThemeProvider>
           <ToastProvider>
-            <AppContent />
+            <AlertProvider>
+              <AppContent />
+            </AlertProvider>
           </ToastProvider>
         </ThemeProvider>
       </SafeAreaProvider>

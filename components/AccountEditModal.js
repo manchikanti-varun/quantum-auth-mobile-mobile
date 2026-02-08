@@ -15,7 +15,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useFolders } from '../hooks/useFolders';
-import { ICON_PICKER_OPTIONS } from '../utils/issuerIcons';
+import { ICON_PICKER_OPTIONS, resolveIconName } from '../utils/issuerIcons';
 import { spacing, radii } from '../constants/designTokens';
 
 export const AccountEditModal = ({ visible, account, folders: foldersProp, accounts = [], addFolder: addFolderProp, onClose, onSave }) => {
@@ -86,7 +86,7 @@ export const AccountEditModal = ({ visible, account, folders: foldersProp, accou
                 onPress={() => setCustomIcon(customIcon === icon ? null : icon)}
               >
                 <MaterialCommunityIcons
-                  name={icon}
+                  name={resolveIconName(icon)}
                   size={24}
                   color={customIcon === icon ? theme.colors.onAccent : theme.colors.textMuted}
                 />

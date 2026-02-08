@@ -1,11 +1,9 @@
 /**
- * Secure storage layer using expo-secure-store (Keychain/Keystore).
- * Persists auth token, TOTP accounts, PQC keypair, preferences, app lock settings.
- * Large keypair data is chunked when exceeding SecureStore size limits.
- * @module services/storage
+ * SecureStore: auth token, TOTP accounts, PQC/Kyber keypairs, preferences.
+ * Large data chunked (2KB) to avoid SecureStore limit.
  */
 import * as SecureStore from 'expo-secure-store';
-import { ACCOUNTS_KEY, ACCOUNTS_KEY_PREFIX, CUSTOM_FOLDERS_KEY, CUSTOM_FOLDERS_KEY_PREFIX, FOLDER_ORDER_KEY_PREFIX, DEVICE_KEY, PQC_KEYPAIR_KEY, AUTH_TOKEN_KEY, PREFERENCES_KEY, APP_LOCK_KEY, AUTO_LOCK_KEY, INTRO_SEEN_KEY, SESSION_TIMEOUT_KEY, LAST_ACTIVITY_KEY } from '../constants/config';
+import { ACCOUNTS_KEY, ACCOUNTS_KEY_PREFIX, CUSTOM_FOLDERS_KEY, CUSTOM_FOLDERS_KEY_PREFIX, FOLDER_ORDER_KEY_PREFIX, DEVICE_KEY, PQC_KEYPAIR_KEY, KYBER_KEYPAIR_KEY, AUTH_TOKEN_KEY, PREFERENCES_KEY, APP_LOCK_KEY, AUTO_LOCK_KEY, INTRO_SEEN_KEY, SESSION_TIMEOUT_KEY, LAST_ACTIVITY_KEY } from '../constants/config';
 
 export const storage = {
   async getToken() {
@@ -104,6 +102,60 @@ export const storage = {
     const numChunks = Math.ceil(data.length / CHUNK_SIZE);
     for (let i = numChunks; ; i++) {
       const key = `${PQC_KEYPAIR_KEY}_${i}`;
+      if ((await SecureStore.getItemAsync(key)) == null) break;
+      await SecureStore.deleteItemAsync(key);
+    }
+  },
+
+  async getKyberKeypair() {
+    try {
+      let raw = await SecureStore.getItemAsync(KYBER_KEYPAIR_KEY);
+      if (!raw) {
+        const chunks = [];
+        for (let i = 0; ; i++) {
+          const part = await SecureStore.getItemAsync(`${KYBER_KEYPAIR_KEY}_${i}`);
+          if (!part) break;
+          chunks.push(part);
+        }
+        raw = chunks.length ? chunks.join('') : null;
+      }
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async saveKyberKeypair(keypair) {
+    if (!keypair) {
+      await SecureStore.deleteItemAsync(KYBER_KEYPAIR_KEY);
+      for (let i = 0; ; i++) {
+        const key = `${KYBER_KEYPAIR_KEY}_${i}`;
+        if ((await SecureStore.getItemAsync(key)) == null) break;
+        await SecureStore.deleteItemAsync(key);
+      }
+      return;
+    }
+    const data = JSON.stringify(keypair);
+    const CHUNK_SIZE = 2000;
+    if (data.length <= CHUNK_SIZE) {
+      await SecureStore.setItemAsync(KYBER_KEYPAIR_KEY, data);
+      for (let i = 0; ; i++) {
+        const key = `${KYBER_KEYPAIR_KEY}_${i}`;
+        if ((await SecureStore.getItemAsync(key)) == null) break;
+        await SecureStore.deleteItemAsync(key);
+      }
+      return;
+    }
+    for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+      await SecureStore.setItemAsync(
+        `${KYBER_KEYPAIR_KEY}_${i / CHUNK_SIZE}`,
+        data.slice(i, i + CHUNK_SIZE),
+      );
+    }
+    await SecureStore.deleteItemAsync(KYBER_KEYPAIR_KEY);
+    const numChunks = Math.ceil(data.length / CHUNK_SIZE);
+    for (let i = numChunks; ; i++) {
+      const key = `${KYBER_KEYPAIR_KEY}_${i}`;
       if ((await SecureStore.getItemAsync(key)) == null) break;
       await SecureStore.deleteItemAsync(key);
     }

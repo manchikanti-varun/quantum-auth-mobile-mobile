@@ -1,7 +1,4 @@
-/**
- * Design tokens for consistent spacing, radii, and typography across the app.
- * @module constants/designTokens
- */
+/** Design tokens: spacing, radii, typography. */
 export const spacing = {
   xs: 4,
   sm: 8,

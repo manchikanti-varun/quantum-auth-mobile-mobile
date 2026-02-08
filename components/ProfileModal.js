@@ -9,7 +9,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   ScrollView,
@@ -18,6 +17,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
+import { useAlert } from '../context/AlertContext';
 import { Input, PasswordInput } from './ui';
 import { authApi } from '../services/api';
 import { validatePassword } from '../utils/validation';
@@ -26,6 +26,7 @@ import { spacing, radii } from '../constants/designTokens';
 
 export const ProfileModal = ({ visible, user, onClose, onPasswordChanged }) => {
   const { theme } = useTheme();
+  const { showAlert } = useAlert();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -33,23 +34,23 @@ export const ProfileModal = ({ visible, user, onClose, onPasswordChanged }) => {
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Required', 'Fill in all fields');
+      showAlert('Required', 'Fill in all fields');
       return;
     }
     const pwResult = validatePassword(newPassword);
     if (!pwResult.valid) {
-      Alert.alert('Invalid', pwResult.message);
+      showAlert('Invalid', pwResult.message);
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert('Mismatch', 'New password and confirm do not match');
+      showAlert('Mismatch', 'New password and confirm do not match');
       return;
     }
     setLoading(true);
     try {
       await authApi.changePassword(currentPassword, newPassword);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Success', 'Password updated');
+      showAlert('Success', 'Password updated');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -57,7 +58,7 @@ export const ProfileModal = ({ visible, user, onClose, onPasswordChanged }) => {
       onClose?.();
     } catch (err) {
       const msg = err?.response?.data?.message || 'Failed to change password';
-      Alert.alert('Error', msg);
+      showAlert('Error', msg);
     } finally {
       setLoading(false);
     }

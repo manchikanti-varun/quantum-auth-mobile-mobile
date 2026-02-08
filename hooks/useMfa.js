@@ -1,18 +1,16 @@
-/**
- * MFA hook. Polls for pending login challenges; resolves with PQC signature (approve/deny).
- * Bursts polling when app becomes active.
- * @module hooks/useMfa
- */
+/** MFA: poll pending challenges, approve/deny with PQC signature. Burst on app focus. */
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Alert, AppState } from 'react-native';
+import { AppState } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { mfaApi } from '../services/api';
 import { storage } from '../services/storage';
 import { deviceService } from '../services/device';
 import { useToast } from '../context/ToastContext';
+import { useAlert } from '../context/AlertContext';
 
 export const useMfa = (deviceId, token) => {
   const { showToast } = useToast();
+  const { showAlert } = useAlert();
   const [pendingChallenge, setPendingChallenge] = useState(null);
   const pollErrorCountRef = useRef(0);
 
@@ -89,7 +87,7 @@ export const useMfa = (deviceId, token) => {
         showToast('Login denied.');
       }
     } catch (e) {
-      Alert.alert('Error', e?.response?.data?.message || 'Failed to process MFA decision');
+      showAlert('Error', e?.response?.data?.message || 'Failed to process MFA decision');
     }
   };
 
