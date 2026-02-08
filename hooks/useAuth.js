@@ -1,5 +1,7 @@
 /**
- * Auth hook – login, register, logout, MFA polling, backup OTP. Manages token & user.
+ * Authentication hook. Handles login, register, logout, MFA polling, backup OTP.
+ * Manages JWT token and user state; integrates with device registration and push.
+ * @module hooks/useAuth
  */
 import { useState, useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
@@ -13,7 +15,7 @@ export const useAuth = (deviceId, onSuccess) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null); // { email, displayName }
-  const [pendingMfa, setPendingMfa] = useState(null); // { challengeId, deviceId } when waiting for approve/deny
+  const [pendingMfa, setPendingMfa] = useState(null);
   const approvedHandledRef = useRef(false);
 
   const clearAuth = async () => {
@@ -28,7 +30,6 @@ export const useAuth = (deviceId, onSuccess) => {
     setOnUnauthorized(clearAuth);
   }, []);
 
-  // Poll for login approval when waiting for other device
   useEffect(() => {
     if (!pendingMfa?.challengeId || !pendingMfa?.deviceId) return;
 
@@ -94,13 +95,10 @@ export const useAuth = (deviceId, onSuccess) => {
                 preferences: res.data.preferences ?? { allowMultipleDevices: true },
               });
             }
-          } catch (e) {
-            // Token may be expired; user will be null
-          }
+          } catch (e) {}
         }
-      } catch (e) {
-        if (__DEV__) console.log('Failed to restore token', e);
-      } finally {
+      } catch (e) {}
+      finally {
         setLoading(false);
       }
     })();
@@ -157,7 +155,7 @@ export const useAuth = (deviceId, onSuccess) => {
     }
   };
 
-  const register = async (email, password, displayName, rememberDevice = true) => {
+  const register = async (email, password, displayName, rememberDevice = true, securityCode = '') => {
     const registerErrors = validateRegister({ email, password, displayName });
     if (registerErrors.length > 0) {
       Alert.alert('Validation', registerErrors[0]);
@@ -166,7 +164,7 @@ export const useAuth = (deviceId, onSuccess) => {
 
     try {
       setLoading(true);
-      const response = await authApi.register(email, password, displayName);
+      const response = await authApi.register(email, password, displayName, securityCode);
       const newToken = response.data.token;
       setToken(newToken);
       await storage.saveToken(newToken);
@@ -205,12 +203,10 @@ export const useAuth = (deviceId, onSuccess) => {
         });
       }
     } catch (e) {
-      if (__DEV__) console.log('Device registration failed', e);
     }
   };
 
   const logout = async () => {
-    // Don't revoke on logout – keeps device trusted so user can login again with just email/password
     await clearAuth();
   };
 
@@ -229,7 +225,6 @@ export const useAuth = (deviceId, onSuccess) => {
         });
       }
     } catch (e) {
-      if (__DEV__) console.log('refreshUser failed', e);
     }
   };
 

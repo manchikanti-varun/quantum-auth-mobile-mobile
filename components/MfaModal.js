@@ -1,5 +1,6 @@
 /**
- * MfaModal – Approve/deny login request. Generate code for Device 2. Shows masked location, time.
+ * MFA approve/deny modal. Sign challenge with PQC keypair.
+ * @module components/MfaModal
  */
 import React, { useState } from 'react';
 import {
@@ -117,11 +118,11 @@ export const MfaModal = ({
                 style={styles.buttonApprove}
               >
                 {resolving === 'approve' ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color={theme.colors.text} />
                 ) : (
                   <>
-                    <MaterialCommunityIcons name="check-circle" size={24} color={theme.colors.bg} style={styles.buttonIcon} />
-                    <Text style={styles.buttonApproveText}>Approve</Text>
+                    <MaterialCommunityIcons name="check-circle" size={24} color={theme.colors.text} style={styles.buttonIcon} />
+                    <Text style={[styles.buttonApproveText, { color: theme.colors.text }]}>Approve</Text>
                   </>
                 )}
               </LinearGradient>
@@ -277,7 +278,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonApproveText: {
-    color: '#fff',
     fontSize: 17,
     fontWeight: '700',
   },

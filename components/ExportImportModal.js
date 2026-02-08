@@ -1,5 +1,6 @@
 /**
- * ExportImportModal – Export accounts as JSON, or paste JSON to import.
+ * Export accounts as JSON or import from pasted JSON.
+ * @module components/ExportImportModal
  */
 import React, { useState } from 'react';
 import {
@@ -17,7 +18,6 @@ import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
-import { themeDark } from '../constants/themes';
 import { spacing, radii } from '../constants/designTokens';
 
 export const ExportImportModal = ({ visible, mode, onClose, onExport, onImport }) => {
@@ -59,7 +59,7 @@ export const ExportImportModal = ({ visible, mode, onClose, onExport, onImport }
 
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { backgroundColor: theme.colors.overlay }]}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={[styles.content, { backgroundColor: theme.colors.bgElevated }]}>
           <View style={styles.header}>
@@ -98,7 +98,7 @@ export const ExportImportModal = ({ visible, mode, onClose, onExport, onImport }
                   style={[styles.primaryButton, { backgroundColor: theme.colors.accent }]}
                   onPress={handleExport}
                 >
-                  <Text style={[styles.primaryButtonText, { color: theme.colors.bg }]}>Export & Share</Text>
+                  <Text style={[styles.primaryButtonText, { color: theme.colors.onAccent }]}>Export & Share</Text>
                 </TouchableOpacity>
               </>
             ) : (
@@ -123,7 +123,7 @@ export const ExportImportModal = ({ visible, mode, onClose, onExport, onImport }
                   onPress={handleImport}
                   disabled={!importData.trim()}
                 >
-                  <Text style={[styles.primaryButtonText, { color: theme.colors.bg }]}>Import</Text>
+                  <Text style={[styles.primaryButtonText, { color: theme.colors.onAccent }]}>Import</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -137,7 +137,6 @@ export const ExportImportModal = ({ visible, mode, onClose, onExport, onImport }
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   content: {

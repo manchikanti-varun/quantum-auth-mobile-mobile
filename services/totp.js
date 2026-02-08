@@ -1,9 +1,9 @@
 /**
- * TOTP (RFC 6238) for React Native.
- * Self-contained HMAC-SHA1 (no @noble/hashes) so it works in RN; hi-base32 for secret decode.
+ * TOTP (RFC 6238) implementation for React Native.
+ * Self-contained HMAC-SHA1 and base32 decode; no external crypto dependencies.
+ * @module services/totp
  */
 
-/** Decode hex string to Uint8Array (for test vector). */
 function hexToBytes(hex) {
   const a = hex.replace(/^0x/i, '');
   const out = new Uint8Array(a.length / 2);
@@ -13,7 +13,6 @@ function hexToBytes(hex) {
   return out;
 }
 
-/** Decode base32 secret to raw bytes (RFC 4648; same as Google/authenticator apps). */
 function base32Decode(str) {
   const base32 = require('hi-base32');
   const clean = String(str).toUpperCase().replace(/\s/g, '').replace(/=+$/, '');
@@ -21,7 +20,6 @@ function base32Decode(str) {
   return new Uint8Array(bytes);
 }
 
-/** Minimal SHA1 (RFC 3174): hash bytes, return 20-byte Uint8Array. */
 function sha1Bytes(msg) {
   const len = msg.length;
   const bitLen = len * 8;
@@ -78,7 +76,6 @@ function sha1Bytes(msg) {
   return out;
 }
 
-/** HMAC-SHA1 (RFC 2104): key and message as Uint8Array, returns 20-byte Uint8Array. */
 function hmacSha1(key, message) {
   const blockLen = 64;
   let k = key;
@@ -103,9 +100,6 @@ function hmacSha1(key, message) {
   return sha1Bytes(outer);
 }
 
-/**
- * HOTP: 6-digit code from secret and counter (RFC 4226).
- */
 function hotp(secret, counter) {
   const counterBytes = new Uint8Array(8);
   const view = new DataView(counterBytes.buffer);
@@ -121,9 +115,6 @@ function hotp(secret, counter) {
   return (binary % 1000000).toString().padStart(6, '0');
 }
 
-/**
- * Generate 6-digit TOTP code from secret (base32).
- */
 export function generateTOTP(secretBase32) {
   const secret = base32Decode(secretBase32);
   const epoch = Math.floor(Date.now() / 1000);
@@ -131,9 +122,6 @@ export function generateTOTP(secretBase32) {
   return hotp(secret, counter);
 }
 
-/**
- * Return current code plus previous and next window (for time drift).
- */
 export function generateTOTPWithAdjacent(secretBase32) {
   const secret = base32Decode(secretBase32);
   const epoch = Math.floor(Date.now() / 1000);
@@ -145,21 +133,16 @@ export function generateTOTPWithAdjacent(secretBase32) {
   };
 }
 
-/** Seconds (0–29) until the TOTP code changes. */
 export function getTimeRemainingInWindow() {
   return 30 - (Math.floor(Date.now() / 1000) % 30);
 }
 
-/** RFC 4226 test: key = "12345678901234567890", counter 1 → 6-digit 287082. */
 function verifyTotpImplementation() {
   const rfcKeyHex = '3132333435363738393031323334353637383930';
   const keyBytes = hexToBytes(rfcKeyHex);
   const got = hotp(keyBytes, 1);
   const expected = '287082';
-  if (got !== expected) {
-    if (__DEV__) console.error('TOTP implementation mismatch: got', got, 'expected', expected);
-    return false;
-  }
+  if (got !== expected) return false;
   return true;
 }
 verifyTotpImplementation();

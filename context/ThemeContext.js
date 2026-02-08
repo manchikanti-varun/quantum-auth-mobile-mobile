@@ -1,5 +1,6 @@
 /**
- * Theme context – light/dark/system preference, persisted to SecureStore.
+ * Theme context provider. Manages light/dark/system preference, persisted to SecureStore.
+ * @module context/ThemeContext
  */
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useColorScheme } from 'react-native';

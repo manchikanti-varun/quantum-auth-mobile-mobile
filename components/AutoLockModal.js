@@ -1,5 +1,6 @@
 /**
- * AutoLockModal – Pick auto-lock timeout (never, 1/5/15/30 min).
+ * Auto-lock timeout picker modal.
+ * @module components/AutoLockModal
  */
 import React from 'react';
 import {
@@ -13,7 +14,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { AUTO_LOCK_OPTIONS } from '../constants/config';
-import { themeDark } from '../constants/themes';
 import { spacing, radii } from '../constants/designTokens';
 
 export const AutoLockModal = ({ visible, currentMinutes, onSelect, onClose }) => {
@@ -21,7 +21,7 @@ export const AutoLockModal = ({ visible, currentMinutes, onSelect, onClose }) =>
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { backgroundColor: theme.colors.overlay }]}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={[styles.content, { backgroundColor: theme.colors.bgElevated }]}>
           <View style={styles.header}>
@@ -66,7 +66,6 @@ export const AutoLockModal = ({ visible, currentMinutes, onSelect, onClose }) =>
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   content: {

@@ -1,5 +1,6 @@
 /**
- * ScannerModal – QR scan or manual secret entry for TOTP enrollment.
+ * QR scan or manual secret entry for TOTP enrollment.
+ * @module components/ScannerModal
  */
 import React, { useState, useRef, useEffect } from 'react';
 import {
@@ -21,12 +22,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Input } from './ui';
+import { useTheme } from '../context/ThemeContext';
 import { themeDark } from '../constants/themes';
 import { spacing, radii } from '../constants/designTokens';
 
 const useNativeScanner = CameraView?.isModernBarcodeScannerAvailable === true;
 
 export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = [] }) => {
+  const { theme } = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [mode, setMode] = useState('scan');
@@ -109,7 +112,6 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
         );
       }
     } catch (e) {
-      if (__DEV__) console.warn('Scan from photo failed', e);
       Alert.alert(
         'Error',
         'Something went wrong. Use Manual entry and paste the setup key from Google instead.',
@@ -202,10 +204,10 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.colors.bg }]}>
         <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-          <View style={styles.header}>
-            <Text style={styles.title}>
+          <View style={[styles.header, { backgroundColor: theme.colors.bgElevated, borderBottomColor: theme.colors.border }]}>
+            <Text style={[styles.title, { color: theme.colors.text }]}>
               {mode === 'scan' ? 'Scan QR Code' : 'Enter key manually'}
             </Text>
             <TouchableOpacity
@@ -213,7 +215,7 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
               style={styles.closeButton}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <Text style={styles.close}>×</Text>
+              <Text style={[styles.close, { color: theme.colors.textMuted }]}>×</Text>
             </TouchableOpacity>
           </View>
 
@@ -228,7 +230,7 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
                 contentContainerStyle={styles.manualContent}
                 keyboardShouldPersistTaps="handled"
               >
-                <Text style={styles.manualHint}>
+                <Text style={[styles.manualHint, { color: theme.colors.textSecondary }]}>
                   Paste the setup key from your service (e.g. "vzxx mt5x w7xp 2u5z...") or paste a full otpauth:// link. Spaces are fine.
                 </Text>
                 <Input
@@ -259,18 +261,18 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
                   autoCapitalize="none"
                   hint="The company or app name"
                 />
-                <Text style={[styles.folderLabel, { color: themeDark.colors.textSecondary }]}>Folder</Text>
+                <Text style={[styles.folderLabel, { color: theme.colors.textSecondary }]}>Folder</Text>
                 <View style={styles.folderChipsRow}>
                   {folders.map((f) => (
                     <TouchableOpacity
                       key={f}
                       style={[
                         styles.folderChip,
-                        { backgroundColor: manualFolder === f ? themeDark.colors.accent : themeDark.colors.bgElevated, borderColor: themeDark.colors.border },
+                        { backgroundColor: manualFolder === f ? theme.colors.accent : theme.colors.bgElevated, borderColor: theme.colors.border },
                       ]}
                       onPress={() => setManualFolder(f)}
                     >
-                      <Text style={[styles.folderChipText, { color: manualFolder === f ? themeDark.colors.bg : themeDark.colors.textSecondary }]}>
+                      <Text style={[styles.folderChipText, { color: manualFolder === f ? theme.colors.onAccent : theme.colors.textSecondary }]}>
                         {f}
                       </Text>
                     </TouchableOpacity>
@@ -283,25 +285,25 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
                   disabled={!canSubmitManual}
                 >
                   <LinearGradient
-                    colors={themeDark.gradients.accent}
+                    colors={theme.gradients.accent}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.button}
                   >
-                    <Text style={styles.buttonText}>Add account</Text>
+                    <Text style={[styles.buttonText, { color: theme.colors.onAccent }]}>Add account</Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </ScrollView>
             </KeyboardAvoidingView>
           ) : !permission ? (
             <View style={styles.placeholder}>
-              <Text style={styles.placeholderText}>
+              <Text style={[styles.placeholderText, { color: theme.colors.textSecondary }]}>
                 Requesting camera permission...
               </Text>
             </View>
           ) : !permission.granted ? (
             <View style={styles.placeholder}>
-              <Text style={styles.placeholderText}>
+              <Text style={[styles.placeholderText, { color: theme.colors.textSecondary }]}>
                 Camera permission is required
               </Text>
               <TouchableOpacity
@@ -310,18 +312,18 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
                 activeOpacity={0.85}
               >
                 <LinearGradient
-                  colors={themeDark.gradients.accent}
+                  colors={theme.gradients.accent}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.button}
                 >
-                  <Text style={styles.buttonText}>Allow camera</Text>
+                  <Text style={[styles.buttonText, { color: theme.colors.onAccent }]}>Allow camera</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
           ) : useNativeScanner ? (
             <View style={styles.placeholder}>
-              <Text style={styles.placeholderText}>
+              <Text style={[styles.placeholderText, { color: theme.colors.textSecondary }]}>
                 Scan the QR code with your camera or from a photo.
               </Text>
               <TouchableOpacity
@@ -331,29 +333,29 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
                 activeOpacity={0.85}
               >
                 <LinearGradient
-                  colors={themeDark.gradients.accent}
+                  colors={theme.gradients.accent}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.button}
                 >
                   {scanningPhoto ? (
-                    <ActivityIndicator color={themeDark.colors.bg} size="small" />
+                    <ActivityIndicator color={theme.colors.onAccent} size="small" />
                   ) : (
-                    <Text style={styles.buttonText}>Scan from photo</Text>
+                    <Text style={[styles.buttonText, { color: theme.colors.onAccent }]}>Scan from photo</Text>
                   )}
                 </LinearGradient>
               </TouchableOpacity>
-              <Text style={styles.orText}>or</Text>
+              <Text style={[styles.orText, { color: theme.colors.textMuted }]}>or</Text>
               <TouchableOpacity
-                style={styles.buttonWrapperOutline}
+                style={[styles.buttonWrapperOutline, { borderColor: theme.colors.accent }]}
                 onPress={openNativeScanner}
                 disabled={launchingScanner}
                 activeOpacity={0.85}
               >
                 {launchingScanner ? (
-                  <ActivityIndicator color={themeDark.colors.accent} size="small" />
+                  <ActivityIndicator color={theme.colors.accent} size="small" />
                 ) : (
-                  <Text style={styles.buttonTextOutline}>Scan with camera</Text>
+                  <Text style={[styles.buttonTextOutline, { color: theme.colors.accent }]}>Scan with camera</Text>
                 )}
               </TouchableOpacity>
               <TouchableOpacity
@@ -361,7 +363,7 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
                 onPress={() => setMode('manual')}
                 activeOpacity={0.7}
               >
-                <Text style={styles.manualLinkText}>
+                <Text style={[styles.manualLinkText, { color: theme.colors.accent }]}>
                   Enter key manually
                 </Text>
               </TouchableOpacity>
@@ -374,22 +376,22 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
                 onBarcodeScanned={onBarcodeScannedStable}
               />
               <View style={styles.overlay} pointerEvents="none">
-                <View style={styles.frameOuter}>
-                  <View style={styles.frame} />
+                <View style={[styles.frameOuter, { borderColor: theme.colors.accentGlow }]}>
+                  <View style={[styles.frame, { borderColor: theme.colors.accent }]} />
                 </View>
-                <Text style={styles.hint}>Align QR code within frame</Text>
+                <Text style={[styles.hint, { color: theme.colors.textMuted }]}>Align QR code within frame</Text>
               </View>
               <View style={styles.scanActions}>
                 <TouchableOpacity
-                  style={styles.scanFromPhotoButton}
+                  style={[styles.scanFromPhotoButton, { borderColor: theme.colors.accent }]}
                   onPress={pickImageAndScan}
                   disabled={scanningPhoto}
                   activeOpacity={0.85}
                 >
                   {scanningPhoto ? (
-                    <ActivityIndicator color={themeDark.colors.accent} size="small" />
+                    <ActivityIndicator color={theme.colors.accent} size="small" />
                   ) : (
-                    <Text style={styles.scanFromPhotoText}>Scan from photo</Text>
+                    <Text style={[styles.scanFromPhotoText, { color: theme.colors.accent }]}>Scan from photo</Text>
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -397,7 +399,7 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
                   onPress={() => setMode('manual')}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.manualLinkText}>Enter key manually</Text>
+                  <Text style={[styles.manualLinkText, { color: theme.colors.accent }]}>Enter key manually</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -411,7 +413,6 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: themeDark.colors.bg,
   },
   safe: {
     flex: 1,
@@ -421,20 +422,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: spacing.lg,
-    backgroundColor: themeDark.colors.bgElevated,
     borderBottomWidth: 1,
-    borderBottomColor: themeDark.colors.border,
   },
   title: {
     ...themeDark.typography.h2,
-    color: themeDark.colors.text,
   },
   closeButton: {
     padding: spacing.xs,
   },
   close: {
     fontSize: 28,
-    color: themeDark.colors.textMuted,
     fontWeight: '300',
   },
   placeholder: {
@@ -444,7 +441,6 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
   },
   placeholderText: {
-    color: themeDark.colors.textSecondary,
     marginBottom: spacing.xl,
     fontSize: 16,
     textAlign: 'center',
@@ -459,12 +455,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: {
-    color: themeDark.colors.bg,
     fontSize: 16,
     fontWeight: '700',
   },
   orText: {
-    color: themeDark.colors.textMuted,
     marginVertical: spacing.md,
     fontSize: 14,
   },
@@ -472,13 +466,11 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: themeDark.colors.accent,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
     alignItems: 'center',
   },
   buttonTextOutline: {
-    color: themeDark.colors.accent,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -496,18 +488,15 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: themeDark.colors.accentGlow,
   },
   frame: {
     width: 240,
     height: 240,
     borderWidth: 2,
-    borderColor: themeDark.colors.accent,
     borderRadius: 20,
   },
   hint: {
     ...themeDark.typography.caption,
-    color: themeDark.colors.textMuted,
     marginTop: spacing.xl,
     letterSpacing: 1,
   },
@@ -524,10 +513,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     borderRadius: radii.md,
     borderWidth: 2,
-    borderColor: themeDark.colors.accent,
   },
   scanFromPhotoText: {
-    color: themeDark.colors.accent,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -535,7 +522,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   manualLinkText: {
-    color: themeDark.colors.accent,
     fontSize: 15,
     textDecorationLine: 'underline',
   },
@@ -546,18 +532,14 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   manualHint: {
-    color: themeDark.colors.textSecondary,
     fontSize: 14,
     marginBottom: spacing.lg,
     lineHeight: 20,
   },
   input: {
-    backgroundColor: themeDark.colors.bgElevated,
     borderWidth: 1,
-    borderColor: themeDark.colors.border,
     borderRadius: radii.md,
     padding: spacing.md,
-    color: themeDark.colors.text,
     fontSize: 16,
     marginBottom: spacing.md,
     minHeight: 48,

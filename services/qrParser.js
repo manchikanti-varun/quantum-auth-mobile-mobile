@@ -1,15 +1,11 @@
 /**
- * QR parser – parse otpauth:// URIs from QR (secret, issuer, account).
+ * Parses otpauth:// URIs from QR codes or pasted strings.
+ * Extracts secret, issuer, and account label for TOTP setup.
+ * @module services/qrParser
  */
-/**
- * QR parser – parse otpauth:// URIs from QR (secret, issuer, account).
- */
+
 import { Alert } from 'react-native';
 
-/**
- * Parse query string (e.g. "secret=ABC&issuer=Google") without URLSearchParams
- * so it works reliably in React Native.
- */
 function safeDecode(str) {
   try {
     return decodeURIComponent(String(str || '').replace(/\+/g, ' '));
@@ -31,10 +27,6 @@ function parseQueryString(search) {
   return params;
 }
 
-/**
- * Parse otpauth URI. Uses regex fallback so it works even when URL() is
- * unreliable in React Native / Expo Go.
- */
 export const qrParser = {
   parseOtpauth(data) {
     try {
@@ -92,7 +84,6 @@ export const qrParser = {
 
       return { issuer, label, secret: secretClean };
     } catch (e) {
-      if (__DEV__) console.warn('QR parse error', e);
       Alert.alert('Error', 'Could not process QR. Try manual entry.');
       return null;
     }

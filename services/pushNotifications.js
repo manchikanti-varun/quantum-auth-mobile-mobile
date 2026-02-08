@@ -1,17 +1,14 @@
 /**
- * Expo Push Notifications – get token for MFA login alerts.
- * Push is not supported in Expo Go (SDK 53+); use dev/production build for push.
+ * Expo Push Notifications – retrieves push token for MFA login alerts.
+ * Returns null on simulator, in Expo Go, or when permission is denied.
+ * @module services/pushNotifications
  */
+
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 
-/**
- * Request permission and return Expo push token, or null if unavailable.
- * Returns null in Expo Go (push removed in SDK 53), simulator, or when user denies.
- */
 export async function getExpoPushTokenAsync() {
   if (!Device.isDevice) return null;
-  // Skip in Expo Go to avoid "removed from Expo Go" error; push works in dev/production build
   if (Constants.appOwnership === 'expo') return null;
 
   try {
@@ -38,7 +35,6 @@ export async function getExpoPushTokenAsync() {
     );
     return token?.data ?? null;
   } catch (e) {
-    if (__DEV__) console.warn('Expo push token error:', e?.message);
     return null;
   }
 }

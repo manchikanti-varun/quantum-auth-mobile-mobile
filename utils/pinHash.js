@@ -1,8 +1,6 @@
 /**
- * PIN hashing – SHA256 with salt for app lock; verify against stored hash.
- */
-/**
- * PIN hashing – SHA256 with salt for app lock; verify against stored hash.
+ * PIN hashing for app lock. SHA256 with salt; verify against stored hash.
+ * @module utils/pinHash
  */
 import * as Crypto from 'expo-crypto';
 

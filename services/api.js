@@ -1,14 +1,13 @@
 /**
- * API client – auth, devices, MFA. Auto-attaches JWT, clears on 401.
- * Set EXPO_PUBLIC_API_URL in .env for production.
+ * HTTP API client for auth, devices, and MFA endpoints.
+ * Attaches JWT to requests; clears token and invokes onUnauthorized on 401.
+ * @module services/api
  */
+
 import axios from 'axios';
 import { API_BASE_URL } from '../constants/config';
 
 const baseURL = API_BASE_URL?.trim() || undefined;
-if (!baseURL && __DEV__) {
-  console.warn('EXPO_PUBLIC_API_URL is not set. Add it to .env for API calls.');
-}
 
 const api = axios.create({
   baseURL: baseURL || '',
@@ -47,8 +46,14 @@ api.interceptors.response.use(
 );
 
 export const authApi = {
-  register: (email, password, displayName) =>
-    api.post('/api/auth/register', { email, password, displayName }),
+  register: (email, password, displayName, securityCode) =>
+    api.post('/api/auth/register', { email, password, displayName, securityCode }),
+
+  checkRecoveryOptions: (email) =>
+    api.get(`/api/auth/check-recovery-options?email=${encodeURIComponent(email)}`),
+
+  forgotPasswordWithSecurityCode: (email, securityCode, newPassword) =>
+    api.post('/api/auth/forgot-password-security-code', { email, securityCode, newPassword }),
 
   login: (email, password, deviceId) =>
     api.post('/api/auth/login', { email, password, deviceId }),

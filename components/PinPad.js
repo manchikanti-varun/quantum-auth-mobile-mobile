@@ -1,5 +1,6 @@
 /**
- * PinPad – Numeric keypad for PIN entry (verify or setup with confirm step).
+ * 6-digit PIN entry component. Setup and verify modes.
+ * @module components/PinPad
  */
 import React, { useState } from 'react';
 import {

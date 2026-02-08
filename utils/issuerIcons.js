@@ -1,5 +1,6 @@
 /**
- * Issuer icons and brand colors – Google, Microsoft, Authy style.
+ * Issuer-to-icon mapping and brand colors for account cards.
+ * @module utils/issuerIcons
  */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -34,7 +35,6 @@ const ICON_MAP = {
   epic: 'gamepad-variant',
 };
 
-/** Brand colors for accounts (Microsoft Authenticator style) */
 const ISSUER_COLORS = {
   google: { bg: '#4285F4', icon: '#fff' },
   microsoft: { bg: '#00a4ef', icon: '#fff' },

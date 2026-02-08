@@ -1,5 +1,6 @@
 /**
- * FloatingActionButton – Add account FAB (Google/Microsoft style).
+ * Floating action button for adding accounts (scan QR).
+ * @module components/FloatingActionButton
  */
 import React from 'react';
 import { TouchableOpacity, StyleSheet, Platform, View } from 'react-native';
@@ -19,9 +20,9 @@ export const FloatingActionButton = ({ onPress }) => {
       onPress={onPress}
       activeOpacity={0.85}
     >
-      <View style={styles.fabShadow}>
+      <View style={[styles.fabShadow, Platform.OS === 'ios' && { shadowColor: theme.colors.accent }]}>
         <LinearGradient colors={theme.gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fab}>
-          <MaterialCommunityIcons name="qrcode-scan" size={28} color="#0f172a" />
+          <MaterialCommunityIcons name="qrcode-scan" size={28} color={theme.colors.text} />
         </LinearGradient>
       </View>
     </TouchableOpacity>
@@ -35,7 +36,6 @@ const styles = StyleSheet.create({
   fabShadow: {
     ...Platform.select({
       ios: {
-        shadowColor: '#38bdf8',
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.35,
         shadowRadius: 16,

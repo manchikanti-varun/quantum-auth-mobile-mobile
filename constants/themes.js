@@ -1,5 +1,6 @@
 /**
- * QSafe – Modern, satisfaction-focused UI. Rich gradients, depth, warmth.
+ * Light and dark theme definitions. Colors, gradients, typography, shadows.
+ * @module constants/themes
  */
 const baseTypo = {
   display: { fontSize: 40, fontWeight: '800', letterSpacing: -1 },
@@ -35,6 +36,8 @@ export const themeDark = {
     text: '#f8fafc',
     textSecondary: '#94a3b8',
     textMuted: '#64748b',
+    overlay: 'rgba(0,0,0,0.5)',
+    onAccent: '#0f172a',
   },
   gradients: {
     accent: ['#38bdf8', '#0ea5e9'],
@@ -73,6 +76,8 @@ export const themeLight = {
     text: '#0f172a',
     textSecondary: '#475569',
     textMuted: '#64748b',
+    overlay: 'rgba(0,0,0,0.5)',
+    onAccent: '#0f172a',
   },
   gradients: {
     accent: ['#0ea5e9', '#38bdf8'],
@@ -84,6 +89,7 @@ export const themeLight = {
   typography: baseTypo,
   shadow: {
     glow: { shadowColor: '#0284c7', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8 },
+    glowSubtle: { shadowColor: '#0284c7', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.12, shadowRadius: 10, elevation: 4 },
     card: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
     cardSoft: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
   },

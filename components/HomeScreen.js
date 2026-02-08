@@ -1,5 +1,6 @@
 /**
- * HomeScreen – Main view: greeting, account list, search, filters, collapsible folders.
+ * Main screen. Greeting, account list, search, filters, collapsible folders.
+ * @module components/HomeScreen
  */
 import React, { useState, useMemo } from 'react';
 import {
@@ -116,10 +117,10 @@ export const HomeScreen = ({
           <MaterialCommunityIcons name="shield-check" size={20} color={theme.colors.accent} />
           <Text style={[styles.authPromptCtaText, { color: theme.colors.textSecondary }]}>One app for all your codes</Text>
         </View>
-        <TouchableOpacity style={styles.authPromptButtonWrapper} onPress={onScanPress} activeOpacity={0.85}>
+        <TouchableOpacity style={[styles.authPromptButtonWrapper, Platform.select({ ios: theme.shadow.glow, android: { elevation: 10 } })]} onPress={onScanPress} activeOpacity={0.85}>
           <LinearGradient colors={theme.gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.authPromptButton}>
-            <MaterialCommunityIcons name="login" size={22} color="#0f172a" />
-            <Text style={styles.authPromptButtonText}>Sign in to get started</Text>
+            <MaterialCommunityIcons name="login" size={22} color={theme.colors.onAccent} />
+            <Text style={[styles.authPromptButtonText, { color: theme.colors.onAccent }]}>Sign in to get started</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -147,7 +148,7 @@ export const HomeScreen = ({
       <View style={[styles.header, { backgroundColor: theme.colors.bgCard, borderWidth: 1, borderColor: theme.colors.border }]}>
         <View style={styles.headerLeft}>
           <LinearGradient colors={theme.gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatar}>
-            <Text style={[styles.avatarText, { color: '#0f172a' }]}>{initials}</Text>
+            <Text style={[styles.avatarText, { color: theme.colors.text }]}>{initials}</Text>
           </LinearGradient>
           <View>
             <Text style={[styles.greeting, { color: theme.colors.textMuted }]}>Welcome back</Text>
@@ -389,7 +390,7 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     paddingVertical: 60,
-    paddingHorizontal: themeDark.spacing.lg,
+    paddingHorizontal: spacing.lg,
   },
   emptyIconWrap: {
     width: 96,
@@ -467,11 +468,11 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   searchIcon: {
-    marginRight: themeDark.spacing.sm,
+    marginRight: spacing.sm,
   },
   searchInput: {
     flex: 1,
-    paddingVertical: themeDark.spacing.md,
+    paddingVertical: spacing.md,
     fontSize: 16,
   },
   searchEmpty: {
@@ -511,7 +512,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: themeDark.spacing.xl,
+    paddingHorizontal: spacing.xl,
   },
   logoRing: {
     width: 100,
@@ -523,18 +524,15 @@ const styles = StyleSheet.create({
   },
   authPromptTitle: {
     ...themeDark.typography.display,
-    color: themeDark.colors.text,
-    marginBottom: themeDark.spacing.sm,
+    marginBottom: spacing.sm,
   },
   authPromptSubtitle: {
     ...themeDark.typography.h2,
-    color: themeDark.colors.textSecondary,
     textAlign: 'center',
-    marginBottom: themeDark.spacing.xs,
+    marginBottom: spacing.xs,
   },
   authPromptTagline: {
     fontSize: 14,
-    color: themeDark.colors.textMuted,
     textAlign: 'center',
     marginBottom: spacing.lg,
     letterSpacing: 0.5,
@@ -555,10 +553,6 @@ const styles = StyleSheet.create({
   authPromptButtonWrapper: {
     borderRadius: radii.lg,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: themeDark.shadow.glow,
-      android: { elevation: 10 },
-    }),
   },
   authPromptButton: {
     flexDirection: 'row',
@@ -571,7 +565,6 @@ const styles = StyleSheet.create({
     minWidth: 200,
   },
   authPromptButtonText: {
-    color: themeDark.colors.bg,
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.5,

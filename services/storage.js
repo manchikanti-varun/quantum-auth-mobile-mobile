@@ -1,6 +1,8 @@
 /**
- * Secure storage – token, accounts, PQC keys, preferences, app lock.
- * Uses expo-secure-store (Keychain / Keystore). PQC keypair chunked when > 2KB.
+ * Secure storage layer using expo-secure-store (Keychain/Keystore).
+ * Persists auth token, TOTP accounts, PQC keypair, preferences, app lock settings.
+ * Large keypair data is chunked when exceeding SecureStore size limits.
+ * @module services/storage
  */
 import * as SecureStore from 'expo-secure-store';
 import { ACCOUNTS_KEY, ACCOUNTS_KEY_PREFIX, CUSTOM_FOLDERS_KEY, CUSTOM_FOLDERS_KEY_PREFIX, DEVICE_KEY, PQC_KEYPAIR_KEY, AUTH_TOKEN_KEY, PREFERENCES_KEY, APP_LOCK_KEY, AUTO_LOCK_KEY, INTRO_SEEN_KEY } from '../constants/config';
@@ -38,7 +40,6 @@ export const storage = {
       }
       return [];
     } catch (e) {
-      if (__DEV__) console.log('Failed to load accounts', e);
       return [];
     }
   },
@@ -50,7 +51,6 @@ export const storage = {
       await SecureStore.setItemAsync(key, data);
       return true;
     } catch (e) {
-      if (__DEV__) console.log('Failed to save accounts', e);
       throw e;
     }
   },
@@ -65,10 +65,8 @@ export const storage = {
 
   async getPqcKeypair() {
     try {
-      // Try single key first (backward compat)
       let raw = await SecureStore.getItemAsync(PQC_KEYPAIR_KEY);
       if (!raw) {
-        // Chunked format (over 2048 bytes)
         const chunks = [];
         for (let i = 0; ; i++) {
           const part = await SecureStore.getItemAsync(`${PQC_KEYPAIR_KEY}_${i}`);
@@ -85,7 +83,7 @@ export const storage = {
 
   async savePqcKeypair(keypair) {
     const data = JSON.stringify(keypair);
-    const CHUNK_SIZE = 2000; // SecureStore limit 2048
+    const CHUNK_SIZE = 2000;
     if (data.length <= CHUNK_SIZE) {
       await SecureStore.setItemAsync(PQC_KEYPAIR_KEY, data);
       for (let i = 0; ; i++) {

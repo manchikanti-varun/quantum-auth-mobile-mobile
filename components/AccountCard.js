@@ -1,5 +1,6 @@
 /**
- * AccountCard – Polished TOTP card (Google/Microsoft/Authy inspired).
+ * TOTP account card. Displays issuer, code, countdown; tap to copy.
+ * @module components/AccountCard
  */
 import React from 'react';
 import {
@@ -16,7 +17,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { getIssuerIcon, getIssuerColor } from '../utils/issuerIcons';
-import { themeDark } from '../constants/themes';
 import { spacing, radii } from '../constants/designTokens';
 
 export const AccountCard = ({ account, code, secondsRemaining = 0, onRemove, onToggleFavorite, isFavorite, onCopy, onEdit }) => {
@@ -39,7 +39,7 @@ export const AccountCard = ({ account, code, secondsRemaining = 0, onRemove, onT
   };
 
   return (
-    <View style={[styles.cardWrapper, Platform.select({ ios: themeDark.shadow.cardSoft, android: { elevation: 6 } })]}>
+    <View style={[styles.cardWrapper, Platform.select({ ios: theme.shadow.cardSoft, android: { elevation: 6 } })]}>
       <View style={[styles.card, { backgroundColor: theme.colors.bgCard, borderWidth: 1, borderColor: theme.colors.border }]}>
         <View style={styles.cardInner}>
           <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>

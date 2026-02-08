@@ -1,3 +1,8 @@
+/**
+ * Responsive layout hook. Provides dynamic spacing, max widths, safe areas.
+ * @module hooks/useLayout
+ */
+
 import { useWindowDimensions, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -6,10 +11,6 @@ const CONTENT_MAX_WIDTH = 480;
 const HORIZONTAL_PADDING_BASE = 24;
 const HORIZONTAL_PADDING_SMALL = 16;
 
-/**
- * Responsive layout hook. Use for dynamic spacing, max widths, and safe areas
- * so UI adapts to any device (small phones, large phones, tablets).
- */
 export function useLayout() {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();

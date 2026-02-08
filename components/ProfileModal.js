@@ -1,5 +1,6 @@
 /**
- * ProfileModal – Email (read-only), change password form.
+ * Profile modal. User info, change password.
+ * @module components/ProfileModal
  */
 import React, { useState } from 'react';
 import {

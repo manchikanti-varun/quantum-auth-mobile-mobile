@@ -1,6 +1,6 @@
 /**
- * AppLockPromptModal – First-time setup: always set PIN first (even with biometric).
- * PIN is required as fallback when biometric fails or isn't available.
+ * App lock setup prompt. First-time PIN setup; fallback when biometric unavailable.
+ * @module components/AppLockPromptModal
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -14,6 +14,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AppLogo } from './AppLogo';
 import { PinPad } from './PinPad';
 import { hashPin } from '../utils/pinHash';
+import { useTheme } from '../context/ThemeContext';
 import { themeDark } from '../constants/themes';
 import { spacing, radii } from '../constants/designTokens';
 
@@ -24,6 +25,7 @@ export const AppLockPromptModal = ({
   onEnable,
   onSkip,
 }) => {
+  const { theme } = useTheme();
   const [showPinSetup, setShowPinSetup] = useState(isMigration);
 
   useEffect(() => {
@@ -46,15 +48,15 @@ export const AppLockPromptModal = ({
 
   return (
     <Modal visible animationType="fade" transparent>
-      <View style={styles.overlay}>
-        <View style={styles.content}>
+      <View style={[styles.overlay, { backgroundColor: theme.colors.overlay }]}>
+        <View style={[styles.content, { backgroundColor: theme.colors.bgElevated }]}>
           <AppLogo size="md" />
           {showPinSetup ? (
             <>
-              <Text style={styles.title}>
+              <Text style={[styles.title, { color: theme.colors.text }]}>
                 {isMigration ? 'Set your PIN' : 'Create a PIN'}
               </Text>
-              <Text style={styles.subtitle}>
+              <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>
                 {isMigration
                   ? 'Use a 6-digit PIN as backup. You can unlock with fingerprint or face, and PIN when needed.'
                   : hasBiometric
@@ -71,26 +73,26 @@ export const AppLockPromptModal = ({
             </>
           ) : (
             <>
-              <Text style={styles.title}>Keep your codes secure</Text>
-              <Text style={styles.subtitle}>
+              <Text style={[styles.title, { color: theme.colors.text }]}>Keep your codes secure</Text>
+              <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>
                 Lock QSafe when you're not using it. You'll unlock with {hasBiometric ? 'fingerprint, face, or PIN' : 'PIN'} when you return.
               </Text>
               <View style={styles.buttons}>
                 <TouchableOpacity
-                  style={[styles.button, styles.buttonPrimary]}
+                  style={[styles.button, { backgroundColor: theme.colors.accent }]}
                   onPress={handleSetPin}
                   activeOpacity={0.85}
                 >
-                  <MaterialCommunityIcons name="numeric" size={22} color={themeDark.colors.bg} />
-                  <Text style={[styles.buttonText, { color: themeDark.colors.bg }]}>Set PIN</Text>
+                  <MaterialCommunityIcons name="numeric" size={22} color={theme.colors.onAccent} />
+                  <Text style={[styles.buttonText, { color: theme.colors.onAccent }]}>Set PIN</Text>
                 </TouchableOpacity>
                 {!isMigration && (
                   <TouchableOpacity
-                    style={[styles.button, styles.buttonSecondary]}
+                    style={[styles.button, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }]}
                     onPress={onSkip}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.buttonText, { color: themeDark.colors.textSecondary }]}>Skip for now</Text>
+                    <Text style={[styles.buttonText, { color: theme.colors.textSecondary }]}>Skip for now</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -105,13 +107,11 @@ export const AppLockPromptModal = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
   },
   content: {
-    backgroundColor: themeDark.colors.bgElevated,
     borderRadius: radii.xxl,
     padding: spacing.xl,
     width: '100%',
@@ -120,13 +120,11 @@ const styles = StyleSheet.create({
   },
   title: {
     ...themeDark.typography.h2,
-    color: themeDark.colors.text,
     marginTop: spacing.lg,
     textAlign: 'center',
   },
   subtitle: {
     ...themeDark.typography.bodySm,
-    color: themeDark.colors.textMuted,
     textAlign: 'center',
     marginTop: spacing.sm,
     marginBottom: spacing.xl,
@@ -142,14 +140,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     borderRadius: radii.lg,
     gap: spacing.sm,
-  },
-  buttonPrimary: {
-    backgroundColor: themeDark.colors.accent,
-  },
-  buttonSecondary: {
-    backgroundColor: themeDark.colors.surface,
-    borderWidth: 1,
-    borderColor: themeDark.colors.border,
   },
   buttonText: {
     fontSize: 16,

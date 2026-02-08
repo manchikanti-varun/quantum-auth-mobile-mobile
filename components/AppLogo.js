@@ -1,11 +1,13 @@
+/**
+ * App logo component. Sizes: sm, md, lg.
+ * @module components/AppLogo
+ */
+
 import React from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 
-const LOGO = require('../assets/icon.png');
+const LOGO = require('../assets/qsafe-logo.png');
 
-/**
- * Reusable QSafe app logo. Use size="sm" | "md" | "lg" for different contexts.
- */
 export const AppLogo = ({ size = 'md', style }) => {
   const { container, image } = sizes[size];
   return (
@@ -16,9 +18,9 @@ export const AppLogo = ({ size = 'md', style }) => {
 };
 
 const sizes = {
-  sm: { container: { width: 36, height: 36 }, image: { width: 28, height: 28 } },
-  md: { container: { width: 56, height: 56 }, image: { width: 44, height: 44 } },
-  lg: { container: { width: 88, height: 88 }, image: { width: 72, height: 72 } },
+  sm: { container: { width: 40, height: 40 }, image: { width: 40, height: 40 } },
+  md: { container: { width: 64, height: 64 }, image: { width: 64, height: 64 } },
+  lg: { container: { width: 96, height: 96 }, image: { width: 96, height: 96 } },
 };
 
 const styles = StyleSheet.create({
@@ -27,7 +29,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   image: {
-    width: 44,
-    height: 44,
+    width: 64,
+    height: 64,
   },
 });

@@ -1,5 +1,6 @@
 /**
- * Toast context – show brief feedback (e.g. "Copied!") app-wide.
+ * Toast context provider. Displays brief feedback messages app-wide.
+ * @module context/ToastContext
  */
 import React, { createContext, useState, useCallback, useContext } from 'react';
 import { View, Text, StyleSheet, Animated, Platform } from 'react-native';

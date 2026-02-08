@@ -1,5 +1,6 @@
 /**
- * SettingsModal – Clean, user-focused settings. Profile, theme, lock, folders, backup, activity.
+ * Settings modal. Profile, theme, app lock, folders, export/import, devices, activity.
+ * @module components/SettingsModal
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -28,7 +29,6 @@ import { hashPin } from '../utils/pinHash';
 import { authApi, deviceApi } from '../services/api';
 import { validatePassword } from '../utils/validation';
 import { PASSWORD_REQUIREMENTS } from '../utils/validation';
-import { themeDark } from '../constants/themes';
 import { spacing, radii } from '../constants/designTokens';
 import { DEFAULT_FOLDERS } from '../constants/config';
 import { AUTO_LOCK_OPTIONS } from '../constants/config';
@@ -295,15 +295,12 @@ export const SettingsModal = ({
           right={<MaterialCommunityIcons name="chevron-right" size={22} color={theme.colors.textMuted} />}
         />
         <View style={[s.row, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-          <MaterialCommunityIcons name="cellphone-sync" size={22} color={theme.colors.accent} style={s.rowIcon} />
+          <MaterialCommunityIcons name="phone-sync" size={22} color={theme.colors.accent} style={s.rowIcon} />
           <View style={s.rowBody}>
             <Text style={[s.rowLabel, { color: theme.colors.text }]}>Allow multiple devices</Text>
-            <Text style={[s.hintText, { color: theme.colors.textSecondary, marginTop: 2 }]}>
-              {allowMultipleDevices ? 'Log in on multiple devices' : 'Only one device at a time'}
-            </Text>
           </View>
           <TouchableOpacity
-            style={[s.toggle, allowMultipleDevices && { backgroundColor: theme.colors.accent }]}
+            style={[s.toggle, { backgroundColor: allowMultipleDevices ? theme.colors.accent : theme.colors.surface }]}
             onPress={async () => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               try {
@@ -314,7 +311,7 @@ export const SettingsModal = ({
               }
             }}
           >
-            <View style={[s.toggleKnob, allowMultipleDevices && s.toggleKnobOn]} />
+            <View style={[s.toggleKnob, { backgroundColor: theme.colors.text }, allowMultipleDevices && s.toggleKnobOn]} />
           </TouchableOpacity>
         </View>
         <Row
@@ -353,10 +350,10 @@ export const SettingsModal = ({
               <Text style={[s.rowLabel, { color: theme.colors.text }]}>App lock {hasBiometric ? '(biometric)' : '(PIN)'}</Text>
             </View>
             <TouchableOpacity
-              style={[s.toggle, appLock && { backgroundColor: theme.colors.accent }]}
+              style={[s.toggle, { backgroundColor: appLock ? theme.colors.accent : theme.colors.surface }]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onAppLockChange?.(!appLock); }}
             >
-              <View style={[s.toggleKnob, appLock && s.toggleKnobOn]} />
+              <View style={[s.toggleKnob, { backgroundColor: theme.colors.text }, appLock && s.toggleKnobOn]} />
             </TouchableOpacity>
           </View>
           {appLock && (
@@ -469,7 +466,7 @@ export const SettingsModal = ({
           onPress={handleChangePassword}
           disabled={pwLoading}
         >
-          {pwLoading ? <ActivityIndicator color={theme.colors.bg} /> : <Text style={[s.btnText, { color: theme.colors.bg }]}>Update password</Text>}
+          {pwLoading ? <ActivityIndicator color={theme.colors.text} /> : <Text style={[s.btnText, { color: theme.colors.text }]}>Update password</Text>}
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -539,7 +536,7 @@ export const SettingsModal = ({
                 onSubmitEditing={handleAddFolder}
               />
               <TouchableOpacity style={[s.addBtn, { backgroundColor: theme.colors.accent }]} onPress={handleAddFolder}>
-                <Text style={s.addBtnText}>Add</Text>
+                <Text style={[s.addBtnText, { color: theme.colors.onAccent }]}>Add</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -555,7 +552,7 @@ export const SettingsModal = ({
                     autoFocus
                   />
                   <TouchableOpacity style={[s.iconBtn, { backgroundColor: theme.colors.success }]} onPress={handleSaveRename}>
-                    <MaterialCommunityIcons name="check" size={20} color="#fff" />
+                    <MaterialCommunityIcons name="check" size={20} color={theme.colors.text} />
                   </TouchableOpacity>
                   <TouchableOpacity style={[s.iconBtn, { backgroundColor: theme.colors.surface }]} onPress={() => { setEditingFolder(null); setEditName(''); }}>
                     <MaterialCommunityIcons name="close" size={20} color={theme.colors.textMuted} />
@@ -595,58 +592,62 @@ export const SettingsModal = ({
       contentContainerStyle={[s.scrollContent, { paddingBottom: padBottom }]}
       showsVerticalScrollIndicator={false}
     >
-      {user?.email && (
-        <View style={[s.row, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-          <MaterialCommunityIcons name="email-outline" size={22} color={theme.colors.textMuted} style={s.rowIcon} />
-          <View style={s.rowBody}>
-            <Text style={[s.rowLabel, { color: theme.colors.text }]}>{user.email}</Text>
+      <Section title="Account">
+        {user?.email && (
+          <View style={[s.row, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <MaterialCommunityIcons name="email-outline" size={22} color={theme.colors.textMuted} style={s.rowIcon} />
+            <View style={s.rowBody}>
+              <Text style={[s.rowLabel, { color: theme.colors.text }]}>{user.email}</Text>
+            </View>
           </View>
+        )}
+      </Section>
+      <Section title="Devices">
+        <View style={[s.hintRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <MaterialCommunityIcons name="information-outline" size={20} color={theme.colors.accent} />
+          <Text style={[s.hintText, { color: theme.colors.textSecondary }]}>
+            Each device has a unique ID. Device 1 receives login approval requests.
+          </Text>
         </View>
-      )}
-      <View style={[s.hintRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-        <MaterialCommunityIcons name="information-outline" size={20} color={theme.colors.accent} />
-        <Text style={[s.hintText, { color: theme.colors.textSecondary }]}>
-          Each device has a unique ID. Device 1 receives login approval requests.
-        </Text>
-      </View>
-      {devicesLoading ? (
-        <View style={{ padding: 24, alignItems: 'center' }}>
-          <ActivityIndicator size="small" color={theme.colors.accent} />
-        </View>
-      ) : (
-        devices.map((d) => {
-          const isCurrent = d.deviceId === deviceId;
-          return (
-            <View
-              key={d.deviceId}
-              style={[s.row, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-            >
-              <MaterialCommunityIcons
-                name={d.deviceNumber === 1 ? 'cellphone-check' : 'cellphone'}
-                size={22}
-                color={d.deviceNumber === 1 ? theme.colors.accent : theme.colors.textMuted}
-                style={s.rowIcon}
-              />
-              <View style={s.rowBody}>
-                <Text style={[s.rowLabel, { color: theme.colors.text }]}>
-                  Device {d.deviceNumber} {isCurrent && '(this device)'}
-                </Text>
-                <Text style={[s.hintText, { color: theme.colors.textSecondary, marginTop: 2, fontSize: 12 }]} numberOfLines={1}>
-                  {d.deviceId}
-                </Text>
-                {d.platform && (
-                  <Text style={[s.hintText, { color: theme.colors.textMuted, fontSize: 11 }]}>{d.platform}</Text>
+        {devicesLoading ? (
+          <View style={{ padding: 24, alignItems: 'center' }}>
+            <ActivityIndicator size="small" color={theme.colors.accent} />
+          </View>
+        ) : (
+          devices.map((d) => {
+            const isCurrent = d.deviceId === deviceId;
+            return (
+              <View
+                key={d.deviceId}
+                style={[s.row, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+              >
+                <MaterialCommunityIcons
+                  name={d.deviceNumber === 1 ? 'cellphone-check' : 'cellphone'}
+                  size={22}
+                  color={d.deviceNumber === 1 ? theme.colors.accent : theme.colors.textMuted}
+                  style={s.rowIcon}
+                />
+                <View style={[s.rowBody, { flexDirection: 'column', alignItems: 'flex-start' }]}>
+                  <Text style={[s.rowLabel, { color: theme.colors.text }]}>
+                    Device {d.deviceNumber} {isCurrent && '(this device)'}
+                  </Text>
+                  <Text style={[s.hintText, { color: theme.colors.textSecondary, marginTop: 2, fontSize: 12 }]} numberOfLines={1}>
+                    {d.deviceId}
+                  </Text>
+                  {d.platform && (
+                    <Text style={[s.hintText, { color: theme.colors.textMuted, fontSize: 11 }]}>{d.platform}</Text>
+                  )}
+                </View>
+                {d.deviceNumber === 1 && (
+                  <View style={[s.badge, { backgroundColor: theme.colors.accent + '30' }]}>
+                    <Text style={[s.badgeText, { color: theme.colors.accent }]}>Primary</Text>
+                  </View>
                 )}
               </View>
-              {d.deviceNumber === 1 && (
-                <View style={[s.badge, { backgroundColor: theme.colors.accent + '30' }]}>
-                  <Text style={[s.badgeText, { color: theme.colors.accent }]}>Primary</Text>
-                </View>
-              )}
-            </View>
-          );
-        })
-      )}
+            );
+          })
+        )}
+      </Section>
     </ScrollView>
   );
 
@@ -665,7 +666,7 @@ export const SettingsModal = ({
 
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose} statusBarTranslucent>
-      <View style={s.overlay}>
+      <View style={[s.overlay, { backgroundColor: theme.colors.overlay }]}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={screen === SCREENS.main ? onClose : goBack} />
         <View style={[s.sheetWrapper, { backgroundColor: theme.colors.bgElevated }]}>
           <View style={[s.sheet, { height: sheetHeight }]}>
@@ -702,7 +703,6 @@ export const SettingsModal = ({
 const s = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   sheetWrapper: {
@@ -802,7 +802,6 @@ const s = StyleSheet.create({
     width: 48,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(128,128,128,0.3)',
     justifyContent: 'center',
     padding: 2,
   },
@@ -810,7 +809,6 @@ const s = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#fff',
   },
   toggleKnobOn: {
     alignSelf: 'flex-end',
@@ -885,7 +883,6 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   addBtnText: {
-    color: themeDark.colors.bg,
     fontSize: 14,
     fontWeight: '600',
   },

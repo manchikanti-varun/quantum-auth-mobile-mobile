@@ -1,5 +1,7 @@
 /**
- * Auth validation – email, password, display name. Matches backend rules.
+ * Form validation for email, password, display name, security code.
+ * Matches backend validation rules.
+ * @module utils/validation
  */
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -59,6 +61,17 @@ export function validateRegister({ email, password, displayName }) {
   return errors;
 }
 
+export function validateSecurityCode(code) {
+  if (!code || typeof code !== 'string') {
+    return { valid: false, message: 'Security code is required' };
+  }
+  const c = String(code).replace(/\s/g, '');
+  if (!/^\d{4,6}$/.test(c)) {
+    return { valid: false, message: 'Security code must be 4–6 digits' };
+  }
+  return { valid: true, value: c };
+}
+
 export function validateLogin({ email, password }) {
   const errors = [];
   if (!email || !email.trim()) {
@@ -75,3 +88,4 @@ export function validateLogin({ email, password }) {
 }
 
 export const PASSWORD_REQUIREMENTS = '8+ chars, upper, lower, number, special char (!@#$%^&*)';
+export const SECURITY_CODE_HINT = '4–6 digits. Use this to recover your account if you forget your password (single device).';

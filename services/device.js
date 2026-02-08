@@ -1,5 +1,7 @@
 /**
- * Device service – device ID, PQC keypair (Dilithium2), sign messages for MFA.
+ * Device identity and PQC (Dilithium2) keypair management.
+ * Ensures unique device ID, generates or migrates keypair, signs messages for MFA approval.
+ * @module services/device
  */
 import * as Crypto from 'expo-crypto';
 import * as Application from 'expo-application';
@@ -19,7 +21,6 @@ export const deviceService = {
   async ensureDeviceIdentity() {
     try {
       let deviceId = await storage.getDeviceId();
-      // Migrate: device-com.* was from applicationId (same on all devices) – regenerate
       if (deviceId && deviceId.startsWith('device-com.')) {
         await storage.saveDeviceId(null);
         deviceId = null;
@@ -32,7 +33,6 @@ export const deviceService = {
 
       let keypair = await storage.getPqcKeypair();
 
-      // Migrate from Mock-Dilithium to real CRYSTALS-Dilithium
       if (keypair?.algorithm === 'Mock-Dilithium') {
         await storage.savePqcKeypair(null);
         keypair = null;
@@ -55,7 +55,6 @@ export const deviceService = {
 
       return { deviceId, keypair };
     } catch (e) {
-      if (__DEV__) console.log('Failed to ensure device identity', e);
       return { deviceId: null, keypair: null };
     }
   },
@@ -72,7 +71,6 @@ export const deviceService = {
       const signature = privateKey.sign(messageBytes);
       return signature.toHex();
     } catch (e) {
-      if (__DEV__) console.log('Failed to sign message', e);
       return null;
     }
   },

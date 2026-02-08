@@ -1,5 +1,6 @@
 /**
- * AccountEditModal – Edit folder, notes, icon for an account.
+ * Edit account modal. Folder, notes, icon.
+ * @module components/AccountEditModal
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -15,7 +16,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useFolders } from '../hooks/useFolders';
 import { ICON_PICKER_OPTIONS } from '../utils/issuerIcons';
-import { themeDark } from '../constants/themes';
 import { spacing, radii } from '../constants/designTokens';
 
 export const AccountEditModal = ({ visible, account, folders: foldersProp, accounts = [], onClose, onSave }) => {
@@ -65,7 +65,7 @@ export const AccountEditModal = ({ visible, account, folders: foldersProp, accou
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { backgroundColor: theme.colors.overlay }]}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={[styles.content, { backgroundColor: theme.colors.bgElevated }]}>
           <View style={styles.header}>
@@ -86,7 +86,7 @@ export const AccountEditModal = ({ visible, account, folders: foldersProp, accou
                 <MaterialCommunityIcons
                   name={icon}
                   size={24}
-                  color={customIcon === icon ? theme.colors.bg : theme.colors.textMuted}
+                  color={customIcon === icon ? theme.colors.onAccent : theme.colors.textMuted}
                 />
               </TouchableOpacity>
             ))}
@@ -105,11 +105,11 @@ export const AccountEditModal = ({ visible, account, folders: foldersProp, accou
                   <MaterialCommunityIcons
                     name="folder-outline"
                     size={16}
-                    color={folder === f ? theme.colors.bg : theme.colors.textMuted}
+                    color={folder === f ? theme.colors.onAccent : theme.colors.textMuted}
                     style={styles.folderChipIcon}
                   />
-                  <Text style={[styles.folderChipText, { color: folder === f ? theme.colors.bg : theme.colors.textSecondary }]}>{f}</Text>
-                  <Text style={[styles.folderChipCount, { color: folder === f ? theme.colors.bg : theme.colors.textMuted }]}>{count}</Text>
+                  <Text style={[styles.folderChipText, { color: folder === f ? theme.colors.onAccent : theme.colors.textSecondary }]}>{f}</Text>
+                  <Text style={[styles.folderChipCount, { color: folder === f ? theme.colors.onAccent : theme.colors.textMuted }]}>{count}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -126,7 +126,7 @@ export const AccountEditModal = ({ visible, account, folders: foldersProp, accou
               style={[styles.addFolderBtn, { backgroundColor: theme.colors.accent }]}
               onPress={handleAddFolder}
             >
-              <Text style={styles.addFolderBtnText}>Add</Text>
+              <Text style={[styles.addFolderBtnText, { color: theme.colors.onAccent }]}>Add</Text>
             </TouchableOpacity>
           </View>
 
@@ -145,7 +145,7 @@ export const AccountEditModal = ({ visible, account, folders: foldersProp, accou
             style={[styles.saveButton, { backgroundColor: theme.colors.accent }]}
             onPress={handleSave}
           >
-            <Text style={[styles.saveButtonText, { color: theme.colors.bg }]}>Save</Text>
+            <Text style={[styles.saveButtonText, { color: theme.colors.onAccent }]}>Save</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -156,7 +156,6 @@ export const AccountEditModal = ({ visible, account, folders: foldersProp, accou
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   content: {
@@ -205,7 +204,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addFolderBtnText: {
-    color: themeDark.colors.bg,
     fontSize: 14,
     fontWeight: '600',
   },

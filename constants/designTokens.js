@@ -1,5 +1,6 @@
 /**
- * Design tokens – unified spacing, radii, typography for app-wide consistency.
+ * Design tokens for consistent spacing, radii, and typography across the app.
+ * @module constants/designTokens
  */
 export const spacing = {
   xs: 4,
@@ -29,4 +30,4 @@ export const typography = {
   caption: { fontSize: 12 },
 };
 
-export const touchTarget = 48; // min height for touchable elements
+export const touchTarget = 48;

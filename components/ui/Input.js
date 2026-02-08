@@ -1,5 +1,6 @@
 /**
- * Input – Styled text input with optional label and icon.
+ * Styled text input with optional label and icon.
+ * @module components/ui/Input
  */
 import React from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
@@ -96,7 +97,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: themeDark.radii.lg,
-    borderWidth: 0,
+    borderWidth: 1,
     paddingHorizontal: themeDark.spacing.lg,
     minHeight: 52,
   },

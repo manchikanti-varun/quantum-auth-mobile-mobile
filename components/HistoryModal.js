@@ -1,5 +1,6 @@
 /**
- * HistoryModal – Login history or MFA history from backend.
+ * Login and MFA history modal. Fetches from backend.
+ * @module components/HistoryModal
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -14,7 +15,6 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { authApi, mfaApi } from '../services/api';
-import { themeDark } from '../constants/themes';
 import { spacing, radii } from '../constants/designTokens';
 
 const formatDate = (iso) => {
@@ -79,7 +79,7 @@ export const HistoryModal = ({ visible, mode, deviceId, onClose }) => {
 
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { backgroundColor: theme.colors.overlay }]}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={[styles.content, { backgroundColor: theme.colors.bgElevated }]}>
           <View style={styles.header}>
@@ -173,7 +173,6 @@ export const HistoryModal = ({ visible, mode, deviceId, onClose }) => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   content: {

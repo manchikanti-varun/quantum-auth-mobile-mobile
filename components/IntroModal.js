@@ -1,5 +1,6 @@
 /**
- * IntroModal – Modern onboarding with clear value proposition.
+ * Onboarding intro modal for first-time users.
+ * @module components/IntroModal
  */
 import React, { useState, useRef, useEffect } from 'react';
 import {
@@ -83,7 +84,7 @@ export const IntroModal = ({ visible, onComplete }) => {
 
       <View style={styles.brandRow}>
         <LinearGradient colors={theme.gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.logoBox}>
-          <MaterialCommunityIcons name="shield-check" size={28} color="#0f172a" />
+          <MaterialCommunityIcons name="shield-check" size={28} color={theme.colors.text} />
         </LinearGradient>
         <Text style={[styles.brand, { color: theme.colors.text }]}>QSafe</Text>
       </View>
@@ -121,10 +122,10 @@ export const IntroModal = ({ visible, onComplete }) => {
             end={{ x: 1, y: 1 }}
             style={styles.button}
           >
-            <Text style={styles.buttonText}>
+            <Text style={[styles.buttonText, { color: theme.colors.text }]}>
               {index === SLIDES.length - 1 ? 'Get started' : 'Next'}
             </Text>
-            <MaterialCommunityIcons name="arrow-right" size={22} color="#0f172a" />
+            <MaterialCommunityIcons name="arrow-right" size={22} color={theme.colors.text} />
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -227,6 +228,5 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#0f172a',
   },
 });

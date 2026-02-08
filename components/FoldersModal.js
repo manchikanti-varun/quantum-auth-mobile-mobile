@@ -1,5 +1,6 @@
 /**
- * FoldersModal – Manage folders: view, add, rename, delete. Update accounts when renaming/removing.
+ * Folders management modal. Add, rename, remove; updates accounts on rename/remove.
+ * @module components/FoldersModal
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -20,7 +21,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { DEFAULT_FOLDERS } from '../constants/config';
-import { themeDark } from '../constants/themes';
 import { spacing, radii } from '../constants/designTokens';
 
 export const FoldersModal = ({
@@ -126,7 +126,7 @@ export const FoldersModal = ({
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.overlay}>
+        <View style={[styles.overlay, { backgroundColor: theme.colors.overlay }]}>
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -166,7 +166,7 @@ export const FoldersModal = ({
                   style={[styles.addBtn, { backgroundColor: theme.colors.accent }]}
                   onPress={handleAddFolder}
                 >
-                  <Text style={styles.addBtnText}>Add</Text>
+                  <Text style={[styles.addBtnText, { color: theme.colors.onAccent }]}>Add</Text>
                 </TouchableOpacity>
                 </View>
               </View>
@@ -189,7 +189,7 @@ export const FoldersModal = ({
                       autoFocus
                     />
                     <TouchableOpacity style={[styles.iconBtn, { backgroundColor: theme.colors.success }]} onPress={handleSaveRename}>
-                      <MaterialCommunityIcons name="check" size={20} color="#fff" />
+                      <MaterialCommunityIcons name="check" size={20} color={theme.colors.text} />
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.iconBtn, { backgroundColor: theme.colors.surface }]} onPress={() => { setEditingFolder(null); setEditName(''); }}>
                       <MaterialCommunityIcons name="close" size={20} color={theme.colors.textMuted} />
@@ -236,7 +236,6 @@ export const FoldersModal = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-start',
   },
   keyboardAvoid: {
@@ -312,7 +311,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addBtnText: {
-    color: themeDark.colors.bg,
     fontSize: 14,
     fontWeight: '600',
   },

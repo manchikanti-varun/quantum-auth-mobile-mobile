@@ -1,5 +1,6 @@
 /**
- * BiometricGate – Unlock screen. Biometric or PIN fallback when app is locked.
+ * Unlock screen. Biometric or PIN when app is locked.
+ * @module components/BiometricGate
  */
 import React, { useState } from 'react';
 import {
@@ -69,7 +70,7 @@ export const BiometricGate = ({ onUnlock, onPinUnlock, loading, hasPinFallback, 
               {loading ? 'Verifying...' : 'Tap to unlock with biometric'}
             </Text>
             <TouchableOpacity
-              style={styles.buttonWrapper}
+              style={[styles.buttonWrapper, Platform.OS === 'ios' && theme.shadow?.glowSubtle]}
               onPress={handleUnlockPress}
               disabled={loading}
               activeOpacity={0.85}
@@ -81,11 +82,11 @@ export const BiometricGate = ({ onUnlock, onPinUnlock, loading, hasPinFallback, 
                 style={styles.button}
               >
                 {loading ? (
-                  <ActivityIndicator color={theme.colors.bg} />
+                  <ActivityIndicator color={theme.colors.onAccent} />
                 ) : (
                   <>
-                    <MaterialCommunityIcons name="fingerprint" size={24} color={theme.colors.bg} />
-                    <Text style={[styles.buttonText, { color: theme.colors.bg }]}>Unlock</Text>
+                    <MaterialCommunityIcons name="fingerprint" size={24} color={theme.colors.onAccent} />
+                    <Text style={[styles.buttonText, { color: theme.colors.onAccent }]}>Unlock</Text>
                   </>
                 )}
               </LinearGradient>
@@ -149,10 +150,7 @@ const styles = StyleSheet.create({
     maxWidth: 280,
     borderRadius: radii.lg,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: themeDark.shadow.glowSubtle,
-      android: { elevation: 4 },
-    }),
+    ...Platform.select({ android: { elevation: 4 } }),
   },
   button: {
     flexDirection: 'row',
@@ -162,7 +160,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl,
   },
   buttonText: {
-    color: themeDark.colors.bg,
     fontSize: 16,
     fontWeight: '700',
   },

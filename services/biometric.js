@@ -1,5 +1,7 @@
 /**
- * Biometric service – fingerprint/face unlock. Falls back to device passcode.
+ * Biometric authentication service (fingerprint, face ID).
+ * Uses expo-local-authentication with device passcode fallback.
+ * @module services/biometric
  */
 import * as LocalAuthentication from 'expo-local-authentication';
 
@@ -34,8 +36,7 @@ export const biometricService = {
         error: result.error,
       };
     } catch (e) {
-      if (__DEV__) console.log('Biometric auth error', e);
-      return { success: true }; // On error, allow to not block user
+      return { success: true };
     }
   },
 };

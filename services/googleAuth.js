@@ -1,5 +1,6 @@
 /**
- * Google Sign-In – Coming soon.
+ * Google Sign-In integration. Placeholder for future implementation.
+ * @module services/googleAuth
  */
 
 export function isGoogleSignInConfigured() {

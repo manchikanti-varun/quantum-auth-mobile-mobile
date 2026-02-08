@@ -1,5 +1,6 @@
 /**
- * AuthModal – Login / register form. MFA wait state + backup OTP entry.
+ * Login and register modal. MFA wait state, backup OTP, forgot password.
+ * @module components/AuthModal
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -21,18 +22,16 @@ import { AppLogo } from './AppLogo';
 import { Input, PasswordInput } from './ui';
 import { authApi } from '../services/api';
 import { useLayout } from '../hooks/useLayout';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme, ThemeContext } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { themeLight } from '../constants/themes';
 import { spacing, radii, typography } from '../constants/designTokens';
-import { PASSWORD_REQUIREMENTS } from '../utils/validation';
-
-const BK = '#0f172a'; // dark text on accent buttons
+import { PASSWORD_REQUIREMENTS, SECURITY_CODE_HINT, validateSecurityCode } from '../utils/validation';
 
 const KEYBOARD_VERTICAL_OFFSET_ANDROID = Platform.OS === 'android' ? (StatusBar?.currentHeight ?? 0) : 0;
 
 export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pendingMfa, onCancelPendingMfa, onLoginWithOtp }) => {
-  const theme = themeLight; // white screen for all devices
+  const theme = themeLight;
   const { showToast } = useToast();
   const { horizontalPadding, safeBottom, safeTop } = useLayout();
   const [mode, setMode] = useState('login');
@@ -42,12 +41,15 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
   const [rememberDevice, setRememberDevice] = useState(true);
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [otpCode, setOtpCode] = useState('');
+  const [securityCode, setSecurityCode] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotCode, setForgotCode] = useState('');
-  const [forgotCodeFromDevice, setForgotCodeFromDevice] = useState(false);
+  const [forgotCodeMode, setForgotCodeMode] = useState('device'); // 'device' | 'security'
+  const [forgotStep, setForgotStep] = useState(1); // 1: email+code, 2: password
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [recoveryOptionsLoading, setRecoveryOptionsLoading] = useState(false);
 
   useEffect(() => {
     if (pendingMfa) {
@@ -57,13 +59,20 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
   }, [pendingMfa?.challengeId]);
 
   const handleSubmit = async () => {
+    if (mode === 'register') {
+      const scResult = validateSecurityCode(securityCode);
+      if (!scResult.valid) {
+        Alert.alert('Validation', scResult.message);
+        return;
+      }
+    }
     let success = false;
     try {
       if (mode === 'login') {
         const res = await onLogin(email, password, rememberDevice);
         success = !!res;
       } else {
-        const res = await onRegister(email, password, displayName, rememberDevice);
+        const res = await onRegister(email, password, displayName, rememberDevice, securityCode);
         success = !!res;
       }
     } catch (_) {
@@ -73,8 +82,8 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
       setEmail('');
       setPassword('');
       setDisplayName('');
+      setSecurityCode('');
     } else {
-      // On error: keep email and display name visible; clear password only
       setPassword('');
     }
   };
@@ -89,24 +98,73 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
       Alert.alert('Password requirements', pwResult.message);
       return;
     }
+    if (forgotCodeMode === 'security') {
+      const scResult = validateSecurityCode(forgotCode);
+      if (!scResult.valid) {
+        Alert.alert('Validation', scResult.message);
+        return;
+      }
+    } else if (forgotCode.length !== 6) {
+      Alert.alert('Validation', 'Enter the 6-digit code.');
+      return;
+    }
     setForgotLoading(true);
     try {
-      await authApi.forgotPassword(email.trim().toLowerCase(), forgotCode, newPassword);
+      if (forgotCodeMode === 'security') {
+        await authApi.forgotPasswordWithSecurityCode(email.trim().toLowerCase(), forgotCode, newPassword);
+      } else {
+        await authApi.forgotPassword(email.trim().toLowerCase(), forgotCode, newPassword);
+      }
       setShowForgotPassword(false);
       setForgotCode('');
-      setForgotCodeFromDevice(false);
+      setForgotCodeMode('device');
+      setForgotStep(1);
       setNewPassword('');
       setConfirmPassword('');
       showToast('Password updated! Sign in with your new password.');
     } catch (e) {
       const msg = e?.response?.data?.message || 'Check your email and code, then try again.';
-      Alert.alert('Could not reset password', msg);
+      const lockedUntil = e?.response?.data?.lockedUntil;
+      if (lockedUntil) {
+        Alert.alert('Account locked', `${msg}\n\nTry again after ${new Date(lockedUntil).toLocaleString()}.`);
+      } else {
+        Alert.alert('Could not reset password', msg);
+      }
     } finally {
       setForgotLoading(false);
     }
   };
 
+  const handleUseSecurityCode = async () => {
+    if (!email.trim()) {
+      Alert.alert('Enter email first', 'Enter your email above, then tap Use security code.');
+      return;
+    }
+    setRecoveryOptionsLoading(true);
+    try {
+      const res = await authApi.checkRecoveryOptions(email.trim().toLowerCase());
+      const { canUseSecurityCode, lockedUntil } = res.data || {};
+      if (lockedUntil && new Date(lockedUntil) > new Date()) {
+        Alert.alert('Account locked', `Try again after ${new Date(lockedUntil).toLocaleString()}.`);
+        return;
+      }
+      if (!canUseSecurityCode) {
+        Alert.alert('Not available', 'Security code recovery is not set up for this account. Use code from primary device.');
+        return;
+      }
+      setForgotCodeMode('security');
+      setForgotCode('');
+      setForgotStep(1);
+    } catch (e) {
+      Alert.alert('Error', e?.response?.data?.message || 'Could not check recovery options.');
+    } finally {
+      setRecoveryOptionsLoading(false);
+    }
+  };
+
   const showWaiting = visible && !!pendingMfa;
+
+  const authThemeValue = { theme: themeLight, isDark: false, preference: 'light', setThemePreference: () => {} };
 
   return (
     <Modal
@@ -116,6 +174,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
       onRequestClose={onClose}
       statusBarTranslucent
     >
+      <ThemeContext.Provider value={authThemeValue}>
       <View style={styles.overlay}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
@@ -150,7 +209,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                     onPress={() => setMode('login')}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.switchButtonText, mode === 'login' && styles.switchButtonTextActive, { color: mode === 'login' ? BK : theme.colors.textSecondary }]}>
+                    <Text style={[styles.switchButtonText, mode === 'login' && styles.switchButtonTextActive, { color: mode === 'login' ? theme.colors.text : theme.colors.textSecondary }]}>
                       Sign in
                     </Text>
                   </TouchableOpacity>
@@ -159,7 +218,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                     onPress={() => setMode('register')}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.switchButtonText, mode === 'register' && styles.switchButtonTextActive, { color: mode === 'register' ? BK : theme.colors.textSecondary }]}>
+                    <Text style={[styles.switchButtonText, mode === 'register' && styles.switchButtonTextActive, { color: mode === 'register' ? theme.colors.text : theme.colors.textSecondary }]}>
                       Create account
                     </Text>
                   </TouchableOpacity>
@@ -169,7 +228,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
 
             <ScrollView
               style={styles.scrollView}
-              contentContainerStyle={styles.scrollContent}
+              contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(safeBottom, 24) + 80 }]}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={true}
             >
@@ -228,9 +287,9 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                         activeOpacity={0.85}
                       >
                         {loading ? (
-                          <ActivityIndicator color={BK} />
+                          <ActivityIndicator color={theme.colors.text} />
                         ) : (
-                          <Text style={[styles.primaryButtonText, { color: BK }]}>Submit code</Text>
+                          <Text style={[styles.primaryButtonText, { color: theme.colors.text }]}>Submit code</Text>
                         )}
                       </TouchableOpacity>
                       <TouchableOpacity
@@ -248,7 +307,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                     {showForgotPassword ? (
                       <>
                         <View style={[styles.forgotBackRow, { marginBottom: spacing.lg }]}>
-                          <TouchableOpacity onPress={() => { setShowForgotPassword(false); setForgotCode(''); setForgotCodeFromDevice(false); setNewPassword(''); setConfirmPassword(''); }} hitSlop={8}>
+                          <TouchableOpacity onPress={() => { setShowForgotPassword(false); setForgotCode(''); setForgotCodeMode('device'); setForgotStep(1); setNewPassword(''); setConfirmPassword(''); }} hitSlop={8}>
                             <MaterialCommunityIcons name="arrow-left" size={22} color={theme.colors.accent} />
                           </TouchableOpacity>
                           <Text style={[styles.forgotTitle, { color: theme.colors.text }]}>Reset password</Text>
@@ -263,64 +322,100 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                           autoCapitalize="none"
                           editable={!forgotLoading}
                         />
+                        <Text style={[styles.forgotSectionLabel, { color: theme.colors.textMuted }]}>Choose recovery method</Text>
+                        <TouchableOpacity
+                          style={[styles.forgotOptionCard, { backgroundColor: theme.colors.surface, borderColor: forgotCodeMode === 'device' ? theme.colors.accent : theme.colors.border }]}
+                          onPress={() => { setForgotCodeMode('device'); setForgotCode(''); setForgotStep(1); }}
+                          activeOpacity={0.7}
+                        >
+                          <MaterialCommunityIcons name="cellphone-check" size={22} color={theme.colors.accent} style={styles.forgotOptionIcon} />
+                          <View style={styles.forgotOptionBody}>
+                            <Text style={[styles.forgotOptionTitle, { color: theme.colors.text }]}>Code from primary device</Text>
+                            <Text style={[styles.forgotOptionHint, { color: theme.colors.textSecondary }]}>
+                              You have multiple devices. Open QSafe on your primary device (Device 1 – the first one you registered), go to Settings → Activity → Generate password reset code. Enter the 6-digit code here. Valid for 10 minutes.
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.forgotOptionCard, { backgroundColor: theme.colors.surface, borderColor: forgotCodeMode === 'security' ? theme.colors.accent : theme.colors.border }]}
+                          onPress={handleUseSecurityCode}
+                          disabled={recoveryOptionsLoading}
+                          activeOpacity={0.7}
+                        >
+                          <MaterialCommunityIcons name="shield-account-outline" size={22} color={theme.colors.accent} style={styles.forgotOptionIcon} />
+                          <View style={styles.forgotOptionBody}>
+                            <Text style={[styles.forgotOptionTitle, { color: theme.colors.text }]}>
+                              {recoveryOptionsLoading ? 'Checking...' : 'Security code'}
+                            </Text>
+                            <Text style={[styles.forgotOptionHint, { color: theme.colors.textSecondary }]}>
+                              You only have one device or your primary device is the one with the problem. Enter the 4–6 digit security code you set at registration.
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
                         <Input
-                          label={forgotCodeFromDevice ? 'Code from primary device' : 'Backup code'}
+                          label={forgotCodeMode === 'security' ? 'Security code' : 'Code from primary device'}
                           icon="numeric"
-                          placeholder={forgotCodeFromDevice ? '6-digit code from Settings' : '6-digit code from authenticator'}
+                          placeholder={forgotCodeMode === 'security' ? '4–6 digit code you set at registration' : '6-digit code from Settings'}
                           value={forgotCode}
                           onChangeText={(t) => setForgotCode(t.replace(/\D/g, '').slice(0, 6))}
                           keyboardType="number-pad"
-                          hint={forgotCodeFromDevice ? 'On your primary device (Device 1): Settings → Activity → Generate password reset code. The code is valid for 10 minutes.' : 'Only have this device? Use the 6-digit code from the authenticator where you added the backup during registration (e.g. Google Authenticator on this phone). The code changes every 30 seconds.'}
+                          hint={forgotCodeMode === 'security' ? 'Your security code from when you created the account.' : 'Generate the code on your primary device, then enter it here.'}
                         />
-                        <TouchableOpacity
-                          style={styles.forgotCodeHelp}
-                          onPress={() => setForgotCodeFromDevice((v) => !v)}
-                          hitSlop={8}
-                        >
-                          <Text style={[styles.forgotCodeHelpText, { color: theme.colors.accent }]}>
-                            {forgotCodeFromDevice ? 'Use backup code from authenticator instead' : "Don't have a backup code? Use code from primary device"}
-                          </Text>
-                        </TouchableOpacity>
-                        {forgotCodeFromDevice && (
+                        {forgotStep === 1 ? (
                           <TouchableOpacity
-                            style={styles.forgotCodeHelp}
-                            onPress={() => Alert.alert(
-                              "Don't have your primary device?",
-                              "You need either:\n\n• Backup code from the authenticator where you added it during registration (e.g. Google Authenticator on this phone), or\n• A one-time code from your primary device: Settings → Activity → Generate password reset code\n\nOnly one device? Use the backup code. If you didn't add the backup to another app, you may need to create a new account.",
-                              [{ text: 'OK' }]
-                            )}
-                            hitSlop={8}
+                            style={[styles.primaryButtonWrapper, { backgroundColor: theme.colors.accent }]}
+                            onPress={() => {
+                              const valid = forgotCodeMode === 'security'
+                                ? forgotCode.length >= 4 && forgotCode.length <= 6
+                                : forgotCode.length === 6;
+                              if (!valid) {
+                                Alert.alert('Validation', forgotCodeMode === 'security' ? 'Enter your 4–6 digit security code.' : 'Enter the 6-digit code from your primary device.');
+                                return;
+                              }
+                              setForgotStep(2);
+                            }}
+                            disabled={!email.trim() || (forgotCodeMode === 'security' ? forgotCode.length < 4 : forgotCode.length !== 6)}
+                            activeOpacity={0.85}
                           >
-                            <Text style={[styles.forgotCodeHelpText, { color: theme.colors.textMuted, fontSize: 13 }]}>
-                              Don't have access to your primary device?
-                            </Text>
+                            <Text style={[styles.primaryButtonText, { color: theme.colors.text }]}>Continue</Text>
                           </TouchableOpacity>
+                        ) : (
+                          <>
+                            <TouchableOpacity
+                              style={[styles.forgotBackStep, { marginBottom: spacing.md }]}
+                              onPress={() => setForgotStep(1)}
+                              hitSlop={8}
+                            >
+                              <MaterialCommunityIcons name="arrow-left" size={20} color={theme.colors.accent} />
+                              <Text style={[styles.forgotBackStepText, { color: theme.colors.accent }]}>Change code</Text>
+                            </TouchableOpacity>
+                            <PasswordInput
+                              label="New password"
+                              placeholder="Create a new password"
+                              value={newPassword}
+                              onChangeText={setNewPassword}
+                              hint={PASSWORD_REQUIREMENTS}
+                            />
+                            <PasswordInput
+                              label="Confirm password"
+                              placeholder="Re-enter new password"
+                              value={confirmPassword}
+                              onChangeText={setConfirmPassword}
+                            />
+                            <TouchableOpacity
+                              style={[styles.primaryButtonWrapper, { backgroundColor: theme.colors.accent }]}
+                              onPress={handleForgotPasswordSubmit}
+                              disabled={forgotLoading || !newPassword || !confirmPassword}
+                              activeOpacity={0.85}
+                            >
+                              {forgotLoading ? (
+                                <ActivityIndicator color={theme.colors.text} />
+                              ) : (
+                                <Text style={[styles.primaryButtonText, { color: theme.colors.text }]}>Reset password</Text>
+                              )}
+                            </TouchableOpacity>
+                          </>
                         )}
-                        <PasswordInput
-                          label="New password"
-                          placeholder="Create a new password"
-                          value={newPassword}
-                          onChangeText={setNewPassword}
-                          hint={PASSWORD_REQUIREMENTS}
-                        />
-                        <PasswordInput
-                          label="Confirm password"
-                          placeholder="Re-enter new password"
-                          value={confirmPassword}
-                          onChangeText={setConfirmPassword}
-                        />
-                        <TouchableOpacity
-                          style={[styles.primaryButtonWrapper, { backgroundColor: theme.colors.accent }]}
-                          onPress={handleForgotPasswordSubmit}
-                          disabled={forgotLoading || !email.trim() || forgotCode.length !== 6 || !newPassword || !confirmPassword}
-                          activeOpacity={0.85}
-                        >
-                          {forgotLoading ? (
-                            <ActivityIndicator color={BK} />
-                          ) : (
-                            <Text style={[styles.primaryButtonText, { color: BK }]}>Reset password</Text>
-                          )}
-                        </TouchableOpacity>
                       </>
                     ) : (
                       <>
@@ -353,6 +448,18 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                       onChangeText={setPassword}
                       hint={mode === 'register' ? PASSWORD_REQUIREMENTS : undefined}
                     />
+
+                    {mode === 'register' && (
+                      <Input
+                        label="Security code (for recovery)"
+                        icon="shield-account-outline"
+                        placeholder="4–6 digits"
+                        value={securityCode}
+                        onChangeText={(t) => setSecurityCode(t.replace(/\D/g, '').slice(0, 6))}
+                        keyboardType="number-pad"
+                        hint={SECURITY_CODE_HINT}
+                      />
+                    )}
 
                     {mode === 'login' && (
                       <TouchableOpacity
@@ -387,13 +494,13 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                     <TouchableOpacity
                       style={[styles.primaryButtonWrapper, { backgroundColor: theme.colors.accent }]}
                       onPress={handleSubmit}
-                      disabled={loading}
+                      disabled={loading || (mode === 'register' && securityCode.length < 4)}
                       activeOpacity={0.85}
                     >
                       {loading ? (
                         <ActivityIndicator color={theme.colors.bg} />
                       ) : (
-                        <Text style={[styles.primaryButtonText, { color: BK }]}>
+                        <Text style={[styles.primaryButtonText, { color: theme.colors.text }]}>
                           {mode === 'register' ? 'Create account' : 'Sign in'}
                         </Text>
                       )}
@@ -420,6 +527,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
           </View>
         </KeyboardAvoidingView>
       </View>
+      </ThemeContext.Provider>
     </Modal>
   );
 };
@@ -445,7 +553,6 @@ const styles = StyleSheet.create({
     minHeight: 320,
   },
   scrollContent: {
-    flexGrow: 1,
     paddingBottom: spacing.xl,
   },
   header: {
@@ -648,12 +755,43 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  forgotCodeHelp: {
-    alignSelf: 'flex-start',
-    marginTop: spacing.sm,
+  forgotSectionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     marginBottom: spacing.sm,
   },
-  forgotCodeHelpText: {
+  forgotOptionCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: spacing.md,
+    borderRadius: radii.md,
+    marginBottom: spacing.sm,
+    borderWidth: 2,
+  },
+  forgotOptionIcon: {
+    marginRight: spacing.md,
+  },
+  forgotOptionBody: {
+    flex: 1,
+  },
+  forgotOptionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  forgotOptionHint: {
+    fontSize: 13,
+    lineHeight: 18,
+    opacity: 0.9,
+  },
+  forgotBackStep: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  forgotBackStepText: {
     fontSize: 14,
     fontWeight: '600',
   },

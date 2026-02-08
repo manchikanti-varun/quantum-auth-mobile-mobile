@@ -1,5 +1,7 @@
 /**
- * MFA hook – polls for pending challenges, resolves with PQC signature (approve/deny).
+ * MFA hook. Polls for pending login challenges; resolves with PQC signature (approve/deny).
+ * Bursts polling when app becomes active.
+ * @module hooks/useMfa
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Alert, AppState } from 'react-native';
@@ -21,7 +23,6 @@ export const useMfa = (deviceId, token) => {
       const response = await mfaApi.getPending(deviceId);
       const challenge = response.data?.challenge;
       if (challenge?.challengeId) {
-        if (__DEV__) console.log('[MFA] Got pending challenge, showing approve/deny');
         setPendingChallenge({
           challengeId: challenge.challengeId,
           context: challenge.context || {},
@@ -31,20 +32,12 @@ export const useMfa = (deviceId, token) => {
         setPendingChallenge(null);
       }
     } catch (e) {
-      const status = e?.response?.status;
-      const msg = e?.response?.data?.message || e?.message;
-      if (__DEV__) {
-        pollErrorCountRef.current += 1;
-        if (pollErrorCountRef.current % 20 === 1) {
-          console.warn('[MFA] Poll error:', status, msg, status === 404 ? '→ Device not registered? Log out and log in again on this device.' : '');
-        }
-      }
+      pollErrorCountRef.current += 1;
     } finally {
       pollInProgressRef.current = false;
     }
   }, [deviceId, token]);
 
-  // Single poll interval – no duplicates; burst when app becomes active
   useEffect(() => {
     if (!deviceId || !token) return;
 
@@ -94,7 +87,6 @@ export const useMfa = (deviceId, token) => {
         Alert.alert('Login denied', 'The login request was blocked.');
       }
     } catch (e) {
-      if (__DEV__) console.log('MFA resolve error', e);
       Alert.alert('Error', e?.response?.data?.message || 'Failed to process MFA decision');
     }
   };

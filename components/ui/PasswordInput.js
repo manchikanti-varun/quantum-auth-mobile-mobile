@@ -1,5 +1,6 @@
 /**
- * PasswordInput – Password field with show/hide toggle (eye icon).
+ * Password field with show/hide toggle.
+ * @module components/ui/PasswordInput
  */
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';

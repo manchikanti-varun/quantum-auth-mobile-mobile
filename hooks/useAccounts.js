@@ -1,5 +1,7 @@
 /**
- * Accounts hook – load/save TOTP accounts, generate codes every 1s, favorites, folders, order.
+ * Accounts hook. Loads and persists TOTP accounts; generates codes every second.
+ * Manages favorites, folders, sort order, and last-used timestamps.
+ * @module hooks/useAccounts
  */
 import { useState, useEffect } from 'react';
 import { generateTOTP, generateTOTPWithAdjacent, getTimeRemainingInWindow } from '../services/totp';
@@ -56,7 +58,6 @@ export const useAccounts = (token, uid) => {
           updated[key] = current;
           adjacentUpdated[key] = { prev, next };
         } catch (e) {
-          if (__DEV__) console.warn('TOTP failed for', acc.label, e?.message || e);
           updated[key] = '------';
           adjacentUpdated[key] = { prev: '------', next: '------' };
         }

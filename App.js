@@ -1,5 +1,8 @@
 /**
- * QSafe – Main app entry. Handles auth flow, app lock, modals, and routing.
+ * QSafe Mobile – Main application component.
+ * Orchestrates authentication, app lock, biometric gate, modals, and screen routing.
+ * Wraps content in ThemeProvider, ToastProvider, and SafeAreaProvider.
+ * @module App
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Alert, AppState, Linking } from 'react-native';
@@ -101,8 +104,6 @@ function AppContent() {
     if (firstTime || migration) setShowAppLockPrompt(true);
   }, [token, appLockConfig]);
 
-  // Screen capture prevention removed - add back for production: npm install expo-screen-capture, then uncomment the useEffect
-
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (
@@ -168,13 +169,11 @@ function AppContent() {
       return;
     }
 
-    // No biometric: show PIN gate directly (don't call authenticate — it would auto-allow)
     if (!hasBiometric) {
       setBiometricChecking(false);
-      return; // BiometricGate will show PIN
+      return;
     }
 
-    // Has biometric: try it first; on fail, BiometricGate shows with "Use PIN instead"
     const { success } = await biometricService.authenticate(
       'Verify identity to open QSafe',
     );
@@ -268,17 +267,13 @@ function AppContent() {
   const handleLogin = async (email, password, rememberDevice = true) => {
     try {
       await login(email, password, rememberDevice);
-    } catch (e) {
-      // Error handled in hook
-    }
+    } catch (e) {}
   };
 
-  const handleRegister = async (email, password, displayName, rememberDevice = true) => {
+  const handleRegister = async (email, password, displayName, rememberDevice = true, securityCode = '') => {
     try {
-      await register(email, password, displayName, rememberDevice);
-    } catch (e) {
-      // Error handled in hook
-    }
+      await register(email, password, displayName, rememberDevice, securityCode);
+    } catch (e) {}
   };
 
   const handleQrScan = async (data, options) => {
@@ -309,7 +304,6 @@ function AppContent() {
       setShowScanner(false);
       showToast(`${label} added`);
     } catch (e) {
-      if (__DEV__) console.warn('Add account error', e);
       if (e?.message?.includes('SecureStore') || e?.message?.includes('2048')) {
         Alert.alert('Storage full', 'Could not save. Please remove an account or clear app data, then try again.');
       } else {
@@ -500,7 +494,6 @@ function AppContent() {
             />
           )}
 
-          {/* App lock setup: first time or migration (old users with biometric only) - shows on top of lock */}
           <AppLockPromptModal
             visible={showAppLockPrompt}
             hasBiometric={hasBiometric}
@@ -509,7 +502,6 @@ function AppContent() {
             onSkip={handleAppLockPromptSkip}
           />
 
-          {/* MFA approve/deny: show even when app locked (on top of lock screen) */}
           <MfaModal
             visible={!!pendingChallenge}
             challenge={pendingChallenge}

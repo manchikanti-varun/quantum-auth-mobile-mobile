@@ -4,12 +4,12 @@
     "slug": "qsafe-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/qsafe-logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "scheme": "otpauth",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/qsafe-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#05070d"
     },
@@ -18,7 +18,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/qsafe-logo.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -42,14 +42,14 @@
       ]
     },
     "notification": {
-      "icon": "./assets/icon.png",
+      "icon": "./assets/qsafe-logo.png",
       "color": "#00e5ff"
     },
     "plugins": [
       "expo-notifications"
     ],
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/qsafe-logo.png"
     },
     "extra": {
       "eas": {

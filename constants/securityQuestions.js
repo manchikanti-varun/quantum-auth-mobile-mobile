@@ -1,6 +1,6 @@
 /**
- * Security questions for one-device password reset.
- * Must match backend constants.
+ * Security question options for account recovery. Must match backend constants.
+ * @module constants/securityQuestions
  */
 export const SECURITY_QUESTIONS = [
   { id: 'mother_maiden', text: "What is your mother's maiden name?" },
