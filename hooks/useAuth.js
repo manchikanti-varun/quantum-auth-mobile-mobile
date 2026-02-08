@@ -43,7 +43,7 @@ export const useAuth = (deviceId, onSuccess) => {
           setToken(data.token);
           await storage.saveToken(data.token);
           updateApiToken(data.token);
-          setUser(data.email ? { email: data.email, displayName: data.displayName ?? null } : null);
+          setUser(data.email ? { uid: data.uid, email: data.email, displayName: data.displayName ?? null } : null);
           setPendingMfa(null);
           onSuccess?.();
           await registerDevice(data.uid, pendingMfa.deviceId, pendingMfa.rememberDevice ?? true);
@@ -87,7 +87,7 @@ export const useAuth = (deviceId, onSuccess) => {
           try {
             const res = await authApi.getMe();
             if (res.data?.email) {
-              setUser({ email: res.data.email, displayName: res.data.displayName ?? null });
+              setUser({ uid: res.data.uid, email: res.data.email, displayName: res.data.displayName ?? null });
             }
           } catch (e) {
             // Token may be expired; user will be null
@@ -131,7 +131,7 @@ export const useAuth = (deviceId, onSuccess) => {
       setToken(newToken);
       await storage.saveToken(newToken);
       updateApiToken(newToken);
-      setUser(response.data.email ? { email: response.data.email, displayName: response.data.displayName ?? null } : null);
+      setUser(response.data.email ? { uid: response.data.uid, email: response.data.email, displayName: response.data.displayName ?? null } : null);
       await registerDevice(response.data.uid, deviceId, rememberDevice);
       onSuccess?.();
       return response.data;
@@ -161,7 +161,7 @@ export const useAuth = (deviceId, onSuccess) => {
       setToken(newToken);
       await storage.saveToken(newToken);
       updateApiToken(newToken);
-      setUser(response.data.email ? { email: response.data.email, displayName: response.data.displayName ?? null } : null);
+      setUser(response.data.email ? { uid: response.data.uid, email: response.data.email, displayName: response.data.displayName ?? null } : null);
       await registerDevice(response.data.uid, deviceId, rememberDevice);
       onSuccess?.();
       return response.data;
@@ -196,13 +196,7 @@ export const useAuth = (deviceId, onSuccess) => {
   };
 
   const logout = async () => {
-    try {
-      if (deviceId && token) {
-        await deviceApi.revoke(deviceId);
-      }
-    } catch (e) {
-      if (__DEV__) console.log('Revoke on logout failed:', e?.message);
-    }
+    // Don't revoke on logout – keeps device trusted so user can login again with just email/password
     await clearAuth();
   };
 
@@ -220,7 +214,7 @@ export const useAuth = (deviceId, onSuccess) => {
       setToken(data.token);
       await storage.saveToken(data.token);
       updateApiToken(data.token);
-      setUser(data.email ? { email: data.email, displayName: data.displayName ?? null } : null);
+      setUser(data.email ? { uid: data.uid, email: data.email, displayName: data.displayName ?? null } : null);
       await registerDevice(data.uid, deviceId, rememberDevice);
       setPendingMfa(null);
       onSuccess?.();

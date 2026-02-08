@@ -19,6 +19,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AppLogo } from './AppLogo';
 import { Input, PasswordInput } from './ui';
+import { authApi } from '../services/api';
 import { useLayout } from '../hooks/useLayout';
 import { useTheme } from '../context/ThemeContext';
 import { themeDark } from '../constants/themes';
@@ -36,6 +37,11 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
   const [rememberDevice, setRememberDevice] = useState(true);
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [otpCode, setOtpCode] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotCode, setForgotCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   useEffect(() => {
     if (pendingMfa) {
@@ -45,14 +51,46 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
   }, [pendingMfa?.challengeId]);
 
   const handleSubmit = async () => {
-    if (mode === 'login') {
-      await onLogin(email, password, rememberDevice);
-    } else {
-      await onRegister(email, password, displayName, rememberDevice);
+    let success = false;
+    try {
+      if (mode === 'login') {
+        const res = await onLogin(email, password, rememberDevice);
+        success = !!res;
+      } else {
+        const res = await onRegister(email, password, displayName, rememberDevice);
+        success = !!res;
+      }
+    } catch (_) {
+      success = false;
     }
-    setEmail('');
-    setPassword('');
-    setDisplayName('');
+    if (success) {
+      setEmail('');
+      setPassword('');
+      setDisplayName('');
+    }
+  };
+
+  const handleForgotPasswordSubmit = async () => {
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+    const pwResult = require('../utils/validation').validatePassword(newPassword);
+    if (!pwResult.valid) {
+      Alert.alert('Validation', pwResult.message);
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      await authApi.forgotPassword(email.trim().toLowerCase(), forgotCode, newPassword);
+      Alert.alert('Success', 'Password updated. You can now sign in.', [
+        { text: 'OK', onPress: () => { setShowForgotPassword(false); setForgotCode(''); setNewPassword(''); setConfirmPassword(''); } },
+      ]);
+    } catch (e) {
+      Alert.alert('Error', e?.response?.data?.message || 'Could not reset password. Check your email and backup code.');
+    } finally {
+      setForgotLoading(false);
+    }
   };
 
   const showWaiting = visible && !!pendingMfa;
@@ -194,6 +232,61 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                 </View>
               ) : (
                 <View style={styles.form}>
+                    {showForgotPassword ? (
+                      <>
+                        <View style={[styles.forgotBackRow, { marginBottom: themeDark.spacing.lg }]}>
+                          <TouchableOpacity onPress={() => { setShowForgotPassword(false); setForgotCode(''); setNewPassword(''); setConfirmPassword(''); }} hitSlop={8}>
+                            <MaterialCommunityIcons name="arrow-left" size={22} color={theme.colors.accent} />
+                          </TouchableOpacity>
+                          <Text style={[styles.forgotTitle, { color: theme.colors.text }]}>Reset password</Text>
+                        </View>
+                        <Input
+                          label="Email"
+                          icon="email-outline"
+                          placeholder="you@example.com"
+                          value={email}
+                          onChangeText={setEmail}
+                          keyboardType="email-address"
+                          autoCapitalize="none"
+                          editable={!forgotLoading}
+                        />
+                        <Input
+                          label="Backup code"
+                          icon="numeric"
+                          placeholder="6-digit code from authenticator"
+                          value={forgotCode}
+                          onChangeText={(t) => setForgotCode(t.replace(/\D/g, '').slice(0, 6))}
+                          keyboardType="number-pad"
+                          hint="Use the backup entry you added at registration"
+                        />
+                        <PasswordInput
+                          label="New password"
+                          placeholder="Create a new password"
+                          value={newPassword}
+                          onChangeText={setNewPassword}
+                          hint={PASSWORD_REQUIREMENTS}
+                        />
+                        <PasswordInput
+                          label="Confirm password"
+                          placeholder="Re-enter new password"
+                          value={confirmPassword}
+                          onChangeText={setConfirmPassword}
+                        />
+                        <TouchableOpacity
+                          style={[styles.primaryButtonWrapper, { backgroundColor: theme.colors.accent }]}
+                          onPress={handleForgotPasswordSubmit}
+                          disabled={forgotLoading || !email.trim() || forgotCode.length !== 6 || !newPassword || !confirmPassword}
+                          activeOpacity={0.85}
+                        >
+                          {forgotLoading ? (
+                            <ActivityIndicator color={theme.colors.bg} />
+                          ) : (
+                            <Text style={[styles.primaryButtonText, { color: theme.colors.bg }]}>Reset password</Text>
+                          )}
+                        </TouchableOpacity>
+                      </>
+                    ) : (
+                      <>
                     {mode === 'register' && (
                       <Input
                         label="Display name"
@@ -223,6 +316,16 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                       onChangeText={setPassword}
                       hint={mode === 'register' ? PASSWORD_REQUIREMENTS : undefined}
                     />
+
+                    {mode === 'login' && (
+                      <TouchableOpacity
+                        style={styles.forgotLink}
+                        onPress={() => setShowForgotPassword(true)}
+                        hitSlop={8}
+                      >
+                        <Text style={[styles.forgotLinkText, { color: theme.colors.accent }]}>Forgot password?</Text>
+                      </TouchableOpacity>
+                    )}
 
                     <TouchableOpacity
                       style={[styles.rememberRow, { borderColor: theme.colors.border }]}
@@ -272,6 +375,8 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                       <MaterialCommunityIcons name="google" size={22} color={theme.colors.textMuted} />
                       <Text style={[styles.socialButtonText, { color: theme.colors.textMuted }]}>Sign in with Google — Coming soon</Text>
                     </TouchableOpacity>
+                      </>
+                    )}
                   </View>
               )}
             </ScrollView>
@@ -498,6 +603,23 @@ const styles = StyleSheet.create({
     minWidth: 160,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  forgotLink: {
+    alignSelf: 'flex-start',
+    marginTop: themeDark.spacing.sm,
+  },
+  forgotLinkText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  forgotBackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: themeDark.spacing.sm,
+  },
+  forgotTitle: {
+    fontSize: 18,
+    fontWeight: '700',
   },
   cancelWaitingButton: {
     paddingVertical: themeDark.spacing.md,

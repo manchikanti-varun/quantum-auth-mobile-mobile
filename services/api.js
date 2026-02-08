@@ -66,6 +66,9 @@ export const authApi = {
   getMe: () => api.get('/api/auth/me'),
   changePassword: (currentPassword, newPassword) =>
     api.post('/api/auth/change-password', { currentPassword, newPassword }),
+
+  forgotPassword: (email, code, newPassword) =>
+    api.post('/api/auth/forgot-password', { email, code, newPassword }),
 };
 
 export const deviceApi = {

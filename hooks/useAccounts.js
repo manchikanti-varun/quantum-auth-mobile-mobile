@@ -5,15 +5,34 @@ import { useState, useEffect } from 'react';
 import { generateTOTP, generateTOTPWithAdjacent, getTimeRemainingInWindow } from '../services/totp';
 import { storage } from '../services/storage';
 
-export const useAccounts = () => {
+export const useAccounts = (token, uid) => {
   const [accounts, setAccounts] = useState([]);
   const [totpCodes, setTotpCodes] = useState({});
   const [totpAdjacent, setTotpAdjacent] = useState({});
   const [totpSecondsRemaining, setTotpSecondsRemaining] = useState(0);
 
   useEffect(() => {
+    if (!token || !uid) {
+      setAccounts([]);
+      return;
+    }
     loadAccounts();
-  }, []);
+  }, [token, uid]);
+
+  const loadAccounts = async () => {
+    if (!uid) return;
+    const loaded = await storage.getAccounts(uid);
+    const migrated = loaded.map((a, i) => ({
+      ...a,
+      favorite: a.favorite ?? false,
+      folder: a.folder ?? 'Personal',
+      notes: a.notes ?? '',
+      lastUsed: a.lastUsed ?? 0,
+      order: a.order ?? i,
+    }));
+    migrated.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    setAccounts(migrated);
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -49,27 +68,13 @@ export const useAccounts = () => {
     return () => clearInterval(interval);
   }, [accounts]);
 
-  const loadAccounts = async () => {
-    const loaded = await storage.getAccounts();
-    const migrated = loaded.map((a, i) => ({
-      ...a,
-      favorite: a.favorite ?? false,
-      folder: a.folder ?? 'Personal',
-      notes: a.notes ?? '',
-      lastUsed: a.lastUsed ?? 0,
-      order: a.order ?? i,
-    }));
-    migrated.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-    setAccounts(migrated);
-  };
-
   const addAccount = async (account) => {
     const maxOrder = accounts.reduce((m, a) => Math.max(m, a.order ?? 0), -1);
     const withMeta = { ...account, favorite: false, folder: account.folder ?? 'Personal', notes: account.notes ?? '', lastUsed: Date.now(), order: maxOrder + 1 };
     const next = [...accounts, withMeta];
     setAccounts(next);
     try {
-      await storage.saveAccounts(next);
+      await storage.saveAccounts(next, uid);
     } catch (e) {
       setAccounts(accounts);
       throw e;
@@ -85,31 +90,31 @@ export const useAccounts = () => {
     });
     const filtered = next.filter((acc) => acc.id !== accountId);
     setAccounts(filtered);
-    await storage.saveAccounts(filtered);
+    await storage.saveAccounts(filtered, uid);
   };
 
   const toggleFavorite = async (accountId) => {
     const next = accounts.map((a) => (a.id === accountId ? { ...a, favorite: !a.favorite } : a));
     setAccounts(next);
-    await storage.saveAccounts(next);
+    await storage.saveAccounts(next, uid);
   };
 
   const updateAccount = async (accountId, updates) => {
     const next = accounts.map((a) => (a.id === accountId ? { ...a, ...updates } : a));
     setAccounts(next);
-    await storage.saveAccounts(next);
+    await storage.saveAccounts(next, uid);
   };
 
   const setLastUsed = async (accountId) => {
     const next = accounts.map((a) => (a.id === accountId ? { ...a, lastUsed: Date.now() } : a));
     setAccounts(next);
-    await storage.saveAccounts(next);
+    await storage.saveAccounts(next, uid);
   };
 
   const reorderAccounts = async (reordered) => {
     const next = reordered.map((a, i) => ({ ...a, order: i }));
     setAccounts(next);
-    await storage.saveAccounts(next);
+    await storage.saveAccounts(next, uid);
   };
 
   return {

@@ -30,6 +30,7 @@ import { AutoLockModal } from './components/AutoLockModal';
 import { ProfileModal } from './components/ProfileModal';
 import { FoldersModal } from './components/FoldersModal';
 import { AppLockPromptModal } from './components/AppLockPromptModal';
+import { IntroModal } from './components/IntroModal';
 import { storage } from './services/storage';
 import { verifyPin } from './utils/pinHash';
 
@@ -51,15 +52,23 @@ function AppContent() {
   const [hasBiometric, setHasBiometric] = useState(false);
   const [showAppLockPrompt, setShowAppLockPrompt] = useState(false);
   const [showFolders, setShowFolders] = useState(false);
+  const [showIntro, setShowIntro] = useState(null);
   const { theme } = useTheme();
+
+  useEffect(() => {
+    (async () => {
+      const seen = await storage.getIntroSeen();
+      setShowIntro(!seen);
+    })();
+  }, []);
 
   const { token, user, loading, login, register, logout, pendingMfa, cancelPendingMfa, loginWithOtp } = useAuth(deviceId, () => {
     setShowAuth(false);
   });
 
   const [mfaResolving, setMfaResolving] = useState(null); // 'approve' | 'deny' | null
-  const { accounts, totpCodes, totpAdjacent, totpSecondsRemaining, addAccount, removeAccount, toggleFavorite, updateAccount, setLastUsed, reloadAccounts } = useAccounts();
-  const { folders, addFolder, renameFolder, removeFolder, refreshFolders } = useFolders();
+  const { accounts, totpCodes, totpAdjacent, totpSecondsRemaining, addAccount, removeAccount, toggleFavorite, updateAccount, setLastUsed, reloadAccounts } = useAccounts(token, user?.uid);
+  const { folders, addFolder, renameFolder, removeFolder, refreshFolders } = useFolders(token, user?.uid);
   const { pendingChallenge, resolveChallenge, checkForPendingChallenges } = useMfa(deviceId, token);
 
   const appState = useRef(AppState.currentState);
@@ -87,6 +96,10 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
+    if (appLockConfig?.pinHash || (appLockConfig && !appLockConfig?.enabled)) {
+      setShowAppLockPrompt(false);
+      return;
+    }
     const firstTime = token && !appLockConfig;
     const migration = token && appLockConfig?.enabled && !appLockConfig?.pinHash; // old users: enabled with biometric only
     if (firstTime || migration) setShowAppLockPrompt(true);
@@ -225,12 +238,12 @@ function AppContent() {
   };
 
   const handleExport = async () => {
-    const accounts = await storage.getAccounts();
+    const accounts = await storage.getAccounts(user?.uid);
     return JSON.stringify(accounts, null, 2);
   };
 
   const handleImport = async (imported) => {
-    const existing = await storage.getAccounts();
+    const existing = await storage.getAccounts(user?.uid);
     const merged = [...existing];
     for (const a of imported) {
       const exists = merged.some((x) => x.issuer === a.issuer && x.label === a.label);
@@ -245,7 +258,7 @@ function AppContent() {
         });
       }
     }
-    await storage.saveAccounts(merged);
+    await storage.saveAccounts(merged, user?.uid);
     reloadAccounts?.();
   };
 
@@ -392,6 +405,18 @@ function AppContent() {
         <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
           {!appLock || biometricUnlocked ? (
             <>
+          {showIntro && !token && (
+            <IntroModal
+              visible={showIntro}
+              onComplete={async () => {
+                await storage.setIntroSeen();
+                setShowIntro(false);
+                setShowAuth(true);
+              }}
+            />
+          )}
+          {!(showIntro && !token) && (
+          <>
           <HomeScreen
             token={token}
             user={user}
@@ -418,6 +443,8 @@ function AppContent() {
                 else Alert.alert('Authentication failed', 'Could not verify identity');
               }}
             />
+          )}
+          </>
           )}
 
           <AuthModal

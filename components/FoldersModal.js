@@ -11,6 +11,10 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -120,50 +124,56 @@ export const FoldersModal = ({
 
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
-        <View style={[styles.content, { backgroundColor: theme.colors.bgElevated }]}>
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <View style={[styles.headerIconWrap, { backgroundColor: theme.colors.surface }]}>
-                <MaterialCommunityIcons name="folder-multiple" size={24} color={theme.colors.accent} />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.overlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.keyboardAvoid}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+          >
+            <View style={[styles.content, { backgroundColor: theme.colors.bgElevated }]}>
+              <View style={styles.header}>
+                <View style={styles.headerLeft}>
+                  <View style={[styles.headerIconWrap, { backgroundColor: theme.colors.surface }]}>
+                    <MaterialCommunityIcons name="folder-multiple" size={24} color={theme.colors.accent} />
+                  </View>
+                  <View>
+                    <Text style={[styles.title, { color: theme.colors.text }]}>Manage folders</Text>
+                    <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>
+                      Organize your accounts
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity onPress={onClose} hitSlop={12} style={[styles.closeBtn, { backgroundColor: theme.colors.surface }]}>
+                  <MaterialCommunityIcons name="close" size={22} color={theme.colors.textSecondary} />
+                </TouchableOpacity>
               </View>
-              <View>
-                <Text style={[styles.title, { color: theme.colors.text }]}>Manage folders</Text>
-                <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>
-                  Organize your accounts
-                </Text>
+
+              <View style={[styles.addSection, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Add folder</Text>
+                <View style={styles.addRow}>
+                <TextInput
+                  style={[styles.input, { backgroundColor: theme.colors.bgElevated, borderColor: theme.colors.border, color: theme.colors.text }]}
+                  placeholder="Folder name..."
+                  placeholderTextColor={theme.colors.textMuted}
+                  value={newFolderName}
+                  onChangeText={setNewFolderName}
+                  onSubmitEditing={handleAddFolder}
+                />
+                <TouchableOpacity
+                  style={[styles.addBtn, { backgroundColor: theme.colors.accent }]}
+                  onPress={handleAddFolder}
+                >
+                  <Text style={styles.addBtnText}>Add</Text>
+                </TouchableOpacity>
+                </View>
               </View>
-            </View>
-            <TouchableOpacity onPress={onClose} hitSlop={12} style={[styles.closeBtn, { backgroundColor: theme.colors.surface }]}>
-              <MaterialCommunityIcons name="close" size={22} color={theme.colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
 
-          <View style={[styles.addSection, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-            <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Add folder</Text>
-            <View style={styles.addRow}>
-              <TextInput
-                style={[styles.input, { backgroundColor: theme.colors.bgElevated, borderColor: theme.colors.border, color: theme.colors.text }]}
-                placeholder="Folder name..."
-                placeholderTextColor={theme.colors.textMuted}
-                value={newFolderName}
-                onChangeText={setNewFolderName}
-                onSubmitEditing={handleAddFolder}
-              />
-              <TouchableOpacity
-                style={[styles.addBtn, { backgroundColor: theme.colors.accent }]}
-                onPress={handleAddFolder}
-              >
-                <Text style={styles.addBtnText}>Add</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <Text style={[styles.sectionLabel, styles.listLabel, { color: theme.colors.textSecondary }]}>
-            All folders
-          </Text>
-          <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
+              <Text style={[styles.sectionLabel, styles.listLabel, { color: theme.colors.textSecondary }]}>
+                All folders
+              </Text>
+              <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
             {folders.map((f) => (
               <View
                 key={f}
@@ -214,8 +224,10 @@ export const FoldersModal = ({
               </View>
             ))}
           </ScrollView>
+            </View>
+          </KeyboardAvoidingView>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 };
@@ -224,11 +236,14 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
+  },
+  keyboardAvoid: {
+    width: '100%',
   },
   content: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     padding: 24,
     paddingBottom: 40,
     maxHeight: '85%',

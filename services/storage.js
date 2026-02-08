@@ -3,7 +3,7 @@
  * Uses expo-secure-store (Keychain / Keystore). PQC keypair chunked when > 2KB.
  */
 import * as SecureStore from 'expo-secure-store';
-import { ACCOUNTS_KEY, DEVICE_KEY, PQC_KEYPAIR_KEY, AUTH_TOKEN_KEY, PREFERENCES_KEY, APP_LOCK_KEY, CUSTOM_FOLDERS_KEY, AUTO_LOCK_KEY } from '../constants/config';
+import { ACCOUNTS_KEY, ACCOUNTS_KEY_PREFIX, CUSTOM_FOLDERS_KEY, CUSTOM_FOLDERS_KEY_PREFIX, DEVICE_KEY, PQC_KEYPAIR_KEY, AUTH_TOKEN_KEY, PREFERENCES_KEY, APP_LOCK_KEY, AUTO_LOCK_KEY, INTRO_SEEN_KEY } from '../constants/config';
 
 export const storage = {
   async getToken() {
@@ -17,20 +17,37 @@ export const storage = {
       await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
     }
   },
-  async getAccounts() {
+  _accountsKey(uid) {
+    return uid ? `${ACCOUNTS_KEY_PREFIX}${uid}` : ACCOUNTS_KEY;
+  },
+
+  async getAccounts(uid) {
+    const key = this._accountsKey(uid);
     try {
-      const raw = await SecureStore.getItemAsync(ACCOUNTS_KEY);
-      return raw ? JSON.parse(raw) : [];
+      const raw = await SecureStore.getItemAsync(key);
+      if (raw) return JSON.parse(raw);
+      if (uid) {
+        const legacy = await SecureStore.getItemAsync(ACCOUNTS_KEY);
+        if (legacy) {
+          const parsed = JSON.parse(legacy);
+          await SecureStore.setItemAsync(key, legacy);
+          await SecureStore.deleteItemAsync(ACCOUNTS_KEY);
+          return parsed;
+        }
+        return [];
+      }
+      return [];
     } catch (e) {
       if (__DEV__) console.log('Failed to load accounts', e);
       return [];
     }
   },
 
-  async saveAccounts(accounts) {
+  async saveAccounts(accounts, uid) {
+    const key = this._accountsKey(uid);
     try {
       const data = JSON.stringify(accounts);
-      await SecureStore.setItemAsync(ACCOUNTS_KEY, data);
+      await SecureStore.setItemAsync(key, data);
       return true;
     } catch (e) {
       if (__DEV__) console.log('Failed to save accounts', e);
@@ -124,20 +141,36 @@ export const storage = {
     }
   },
 
-  async getCustomFolders() {
+  _foldersKey(uid) {
+    return uid ? `${CUSTOM_FOLDERS_KEY_PREFIX}${uid}` : CUSTOM_FOLDERS_KEY;
+  },
+
+  async getCustomFolders(uid) {
+    const key = this._foldersKey(uid);
     try {
-      const raw = await SecureStore.getItemAsync(CUSTOM_FOLDERS_KEY);
-      return raw ? JSON.parse(raw) : null;
+      const raw = await SecureStore.getItemAsync(key);
+      if (raw) return JSON.parse(raw);
+      if (uid) {
+        const legacy = await SecureStore.getItemAsync(CUSTOM_FOLDERS_KEY);
+        if (legacy) {
+          await SecureStore.setItemAsync(key, legacy);
+          await SecureStore.deleteItemAsync(CUSTOM_FOLDERS_KEY);
+          return JSON.parse(legacy);
+        }
+        return null;
+      }
+      return null;
     } catch (e) {
       return null;
     }
   },
 
-  async saveCustomFolders(folders) {
+  async saveCustomFolders(folders, uid) {
+    const key = this._foldersKey(uid);
     if (folders && Array.isArray(folders)) {
-      await SecureStore.setItemAsync(CUSTOM_FOLDERS_KEY, JSON.stringify(folders));
+      await SecureStore.setItemAsync(key, JSON.stringify(folders));
     } else {
-      await SecureStore.deleteItemAsync(CUSTOM_FOLDERS_KEY);
+      await SecureStore.deleteItemAsync(key);
     }
   },
 
@@ -152,5 +185,18 @@ export const storage = {
 
   async saveAutoLockMinutes(minutes) {
     await SecureStore.setItemAsync(AUTO_LOCK_KEY, String(minutes));
+  },
+
+  async getIntroSeen() {
+    try {
+      const v = await SecureStore.getItemAsync(INTRO_SEEN_KEY);
+      return v === 'true';
+    } catch (e) {
+      return false;
+    }
+  },
+
+  async setIntroSeen() {
+    await SecureStore.setItemAsync(INTRO_SEEN_KEY, 'true');
   },
 };
