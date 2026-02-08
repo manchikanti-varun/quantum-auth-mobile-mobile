@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { authApi, deviceApi, setOnUnauthorized } from '../services/api';
+import { validateRegister, validateLogin } from '../utils/validation';
 import { storage } from '../services/storage';
 import { deviceService } from '../services/device';
 import { getExpoPushTokenAsync } from '../services/pushNotifications';
@@ -40,9 +41,9 @@ export const useAuth = (deviceId, onSuccess) => {
           await storage.saveToken(data.token);
           updateApiToken(data.token);
           setUser(data.email ? { email: data.email, displayName: data.displayName ?? null } : null);
-          await registerDevice(data.uid, pendingMfa.deviceId, pendingMfa.rememberDevice ?? true);
           setPendingMfa(null);
           onSuccess?.();
+          registerDevice(data.uid, pendingMfa.deviceId, pendingMfa.rememberDevice ?? true);
           return;
         }
         if (status === 'denied' || status === 'expired') {
@@ -54,7 +55,16 @@ export const useAuth = (deviceId, onSuccess) => {
           return;
         }
       } catch (e) {
-        // Keep polling on network error; stop only on approved/denied/expired
+        const status = e?.response?.status;
+        if (status === 403 || status === 404 || status === 429) {
+          setPendingMfa(null);
+          const msg = status === 429
+            ? 'Too many requests. Tap Cancel and try again in a moment.'
+            : status === 403
+              ? 'Device mismatch. Cancel and log in again.'
+              : 'Challenge not found. It may have expired.';
+          Alert.alert('Error', msg);
+        }
       }
     };
 
@@ -94,8 +104,9 @@ export const useAuth = (deviceId, onSuccess) => {
   };
 
   const login = async (email, password, rememberDevice = true) => {
-    if (!email || !password) {
-      Alert.alert('Validation', 'Email and password are required');
+    const loginErrors = validateLogin({ email, password });
+    if (loginErrors.length > 0) {
+      Alert.alert('Validation', loginErrors[0]);
       return;
     }
     if (!deviceId) {
@@ -133,12 +144,9 @@ export const useAuth = (deviceId, onSuccess) => {
   };
 
   const register = async (email, password, displayName, rememberDevice = true) => {
-    if (!email || !password) {
-      Alert.alert('Validation', 'Email and password are required');
-      return;
-    }
-    if (password.length < 8) {
-      Alert.alert('Validation', 'Password must be at least 8 characters');
+    const registerErrors = validateRegister({ email, password, displayName });
+    if (registerErrors.length > 0) {
+      Alert.alert('Validation', registerErrors[0]);
       return;
     }
 

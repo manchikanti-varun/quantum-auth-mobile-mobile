@@ -10,6 +10,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
@@ -17,7 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AppLogo } from './AppLogo';
 import { useLayout } from '../hooks/useLayout';
-import { themeDark } from '../constants/themes';
+import { useTheme } from '../context/ThemeContext';
 import { mfaApi } from '../services/api';
 
 const maskIp = (ip) => {
@@ -37,12 +38,14 @@ export const MfaModal = ({
   onDenySuspicious,
   resolving,
 }) => {
+  const { theme } = useTheme();
   const { horizontalPadding, contentMaxWidth } = useLayout();
   const [generatingCode, setGeneratingCode] = useState(false);
   if (!challenge) return null;
 
   const disabled = !!resolving;
   const ctx = challenge.context || {};
+  const minsLeft = Math.max(0, Math.ceil((new Date(challenge.expiresAt || 0) - Date.now()) / 60000));
 
   const handleGenerateCode = async () => {
     if (!challenge?.challengeId) return;
@@ -74,88 +77,48 @@ export const MfaModal = ({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <View style={[styles.overlay, { padding: horizontalPadding }]}>
-        <View style={[styles.content, { maxWidth: contentMaxWidth }]}>
-          <View style={styles.iconWrap}>
-            <AppLogo size="md" />
+      <View style={[styles.overlay, { padding: horizontalPadding, backgroundColor: theme.colors.bg === '#05070d' ? 'rgba(5, 7, 13, 0.94)' : 'rgba(0, 0, 0, 0.6)' }]}>
+        <View style={[styles.content, { maxWidth: contentMaxWidth, backgroundColor: theme.colors.bgElevated, borderColor: theme.colors.border }]}>
+          <View style={[styles.headerBadge, { backgroundColor: theme.colors.surface }]}>
+            <MaterialCommunityIcons name="shield-check" size={28} color={theme.colors.accent} />
+            <Text style={[styles.badgeText, { color: theme.colors.accent }]}>Login verification</Text>
           </View>
-          <Text style={styles.title}>Login Request</Text>
-          <Text style={styles.subtitle}>
-            Someone is trying to sign in. Approve to allow or deny to block.
+
+          <Text style={[styles.title, { color: theme.colors.text }]}>Approve sign in?</Text>
+          <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
+            A new device is trying to sign in to your account. Tap Approve to allow or Deny to block.
           </Text>
 
           {(ctx.ip || ctx.timestamp || challenge.createdAt || challenge.expiresAt) && (
-            <View style={styles.info}>
-              {ctx.ip && (
-                <>
-                  <Text style={styles.infoLabel}>Location</Text>
-                  <Text style={styles.infoValue}>{maskIp(ctx.ip)}</Text>
-                </>
-              )}
-              {(ctx.timestamp || challenge.createdAt) && (
-                <>
-                  <Text style={styles.infoLabel}>Time</Text>
-                  <Text style={styles.infoValue}>
-                    {new Date(ctx.timestamp || challenge.createdAt).toLocaleString()}
-                  </Text>
-                </>
-              )}
+            <View style={[styles.infoCard, { backgroundColor: theme.colors.bgCard, borderColor: theme.colors.border }]}>
+              <View style={styles.infoRow}>
+                {ctx.ip && (
+                  <View style={styles.infoItem}>
+                    <MaterialCommunityIcons name="map-marker" size={18} color={theme.colors.textMuted} />
+                    <Text style={[styles.infoValue, { color: theme.colors.text }]}>{maskIp(ctx.ip)}</Text>
+                  </View>
+                )}
+                {(ctx.timestamp || challenge.createdAt) && (
+                  <View style={styles.infoItem}>
+                    <MaterialCommunityIcons name="clock-outline" size={18} color={theme.colors.textMuted} />
+                    <Text style={[styles.infoValue, { color: theme.colors.text }]}>
+                      {new Date(ctx.timestamp || challenge.createdAt).toLocaleString()}
+                    </Text>
+                  </View>
+                )}
+              </View>
               {challenge.expiresAt && (
-                <>
-                  <Text style={styles.infoLabel}>Expires</Text>
-                  <Text style={styles.infoValue}>
-                    {new Date(challenge.expiresAt).toLocaleTimeString()} ({Math.max(0, Math.ceil((new Date(challenge.expiresAt) - Date.now()) / 60000))} min left)
+                <View style={[styles.expiryBadge, { backgroundColor: theme.colors.surface }]}>
+                  <MaterialCommunityIcons name="timer-outline" size={16} color={theme.colors.textMuted} />
+                  <Text style={[styles.expiryText, { color: theme.colors.textMuted }]}>
+                    Expires in {minsLeft} min
                   </Text>
-                </>
+                </View>
               )}
             </View>
           )}
 
-          <TouchableOpacity
-            style={[styles.generateCodeButton, { borderColor: themeDark.colors.accent }]}
-            onPress={handleGenerateCode}
-            disabled={disabled || generatingCode}
-          >
-            {generatingCode ? (
-              <ActivityIndicator size="small" color={themeDark.colors.accent} />
-            ) : (
-              <>
-                <MaterialCommunityIcons name="numeric" size={20} color={themeDark.colors.accent} style={styles.buttonIcon} />
-                <Text style={[styles.generateCodeText, { color: themeDark.colors.accent }]}>
-                  Generate code for other device
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.buttonRow}>
-            <View style={styles.denyColumn}>
-              <TouchableOpacity
-                style={[styles.buttonDeny, disabled && styles.buttonDisabled]}
-                onPress={onDeny}
-                disabled={disabled}
-                activeOpacity={0.8}
-              >
-                {resolving === 'deny' ? (
-                  <ActivityIndicator size="small" color={themeDark.colors.error} />
-                ) : (
-                  <>
-                    <MaterialCommunityIcons name="close-circle" size={22} color={themeDark.colors.error} style={styles.buttonIcon} />
-                    <Text style={[styles.buttonText, { color: themeDark.colors.error }]}>Deny</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-              {onDenySuspicious && (
-                <TouchableOpacity
-                  style={[styles.suspiciousLink, disabled && styles.buttonDisabled]}
-                  onPress={() => onDenySuspicious()}
-                  disabled={disabled}
-                >
-                  <MaterialCommunityIcons name="alert-octagon" size={16} color={themeDark.colors.warning} />
-                  <Text style={styles.suspiciousText}>Mark suspicious</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+          <View style={styles.primaryButtons}>
             <TouchableOpacity
               style={[styles.buttonApproveWrapper, disabled && styles.buttonDisabled]}
               onPress={onApprove}
@@ -163,22 +126,68 @@ export const MfaModal = ({
               activeOpacity={0.85}
             >
               <LinearGradient
-                colors={[themeDark.colors.success, themeDark.colors.successDark]}
+                colors={[theme.colors.success, theme.colors.successDark || theme.colors.success]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.buttonApprove}
               >
                 {resolving === 'approve' ? (
-                  <ActivityIndicator size="small" color={themeDark.colors.bg} />
+                  <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <>
-                    <MaterialCommunityIcons name="check-circle" size={22} color={themeDark.colors.bg} style={styles.buttonIcon} />
+                    <MaterialCommunityIcons name="check-circle" size={24} color={theme.colors.bg} style={styles.buttonIcon} />
                     <Text style={styles.buttonApproveText}>Approve</Text>
                   </>
                 )}
               </LinearGradient>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.buttonDeny, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }, disabled && styles.buttonDisabled]}
+              onPress={onDeny}
+              disabled={disabled}
+              activeOpacity={0.8}
+            >
+              {resolving === 'deny' ? (
+                <ActivityIndicator size="small" color={theme.colors.error} />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="close-circle-outline" size={24} color={theme.colors.error} style={styles.buttonIcon} />
+                  <Text style={[styles.buttonDenyText, { color: theme.colors.error }]}>Deny</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
+
+          {onDenySuspicious && (
+            <TouchableOpacity
+              style={[styles.suspiciousLink, disabled && styles.buttonDisabled]}
+              onPress={() => onDenySuspicious()}
+              disabled={disabled}
+            >
+              <MaterialCommunityIcons name="alert-octagon-outline" size={18} color={theme.colors.warning} />
+              <Text style={[styles.suspiciousText, { color: theme.colors.warning }]}>Mark as suspicious</Text>
+            </TouchableOpacity>
+          )}
+
+          <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+
+          <TouchableOpacity
+            style={[styles.generateCodeButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+            onPress={handleGenerateCode}
+            disabled={disabled || generatingCode}
+          >
+            {generatingCode ? (
+              <ActivityIndicator size="small" color={theme.colors.accent} />
+            ) : (
+              <>
+                <MaterialCommunityIcons name="numeric" size={20} color={theme.colors.accent} style={styles.buttonIcon} />
+                <Text style={[styles.generateCodeText, { color: theme.colors.accent }]}>
+                  Generate code for other device
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
         </View>
       </View>
     </Modal>
@@ -188,133 +197,151 @@ export const MfaModal = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(5, 7, 13, 0.92)',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: themeDark.spacing.lg,
+    padding: 24,
   },
   content: {
-    backgroundColor: themeDark.colors.bgElevated,
-    borderRadius: themeDark.radii.xxl,
-    padding: themeDark.spacing.xl,
+    borderRadius: 24,
+    padding: 28,
     width: '100%',
     borderWidth: 1,
-    borderColor: themeDark.colors.border,
     alignItems: 'center',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 24 },
+      android: { elevation: 12 },
+    }),
   },
-  iconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: themeDark.colors.surface,
-    borderWidth: 1,
-    borderColor: themeDark.colors.border,
+  headerBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: themeDark.spacing.lg,
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  badgeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   title: {
-    ...themeDark.typography.h1,
-    color: themeDark.colors.text,
-    marginBottom: themeDark.spacing.sm,
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
-    ...themeDark.typography.bodySm,
-    color: themeDark.colors.textMuted,
+    fontSize: 15,
+    lineHeight: 22,
     textAlign: 'center',
-    marginBottom: themeDark.spacing.xl,
+    marginBottom: 24,
+    paddingHorizontal: 8,
   },
-  info: {
-    backgroundColor: themeDark.colors.bgCard,
-    borderRadius: themeDark.radii.md,
-    padding: themeDark.spacing.md,
-    marginBottom: themeDark.spacing.xl,
+  infoCard: {
     width: '100%',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 24,
     borderWidth: 1,
-    borderColor: themeDark.colors.border,
-    gap: themeDark.spacing.sm,
   },
-  denyColumn: {
-    flex: 1,
+  infoRow: {
+    gap: 12,
+  },
+  infoItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: themeDark.spacing.xs,
+    gap: 10,
+    marginBottom: 4,
+  },
+  infoValue: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  expiryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    marginTop: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  expiryText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  primaryButtons: {
+    width: '100%',
+    flexDirection: 'column',
+    gap: 12,
+    marginBottom: 8,
+  },
+  buttonApproveWrapper: {
+    width: '100%',
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  buttonApprove: {
+    flexDirection: 'row',
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonApproveText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  buttonDeny: {
+    flexDirection: 'row',
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    width: '100%',
+  },
+  buttonDenyText: {
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonIcon: {
+    marginRight: 10,
   },
   suspiciousLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 8,
+    marginBottom: 20,
+    paddingVertical: 8,
   },
   suspiciousText: {
-    fontSize: 12,
-    color: themeDark.colors.warning,
+    fontSize: 14,
     fontWeight: '600',
   },
-  infoLabel: {
-    ...themeDark.typography.caption,
-    color: themeDark.colors.textMuted,
-    marginBottom: 4,
-  },
-  infoValue: {
-    ...themeDark.typography.body,
-    color: themeDark.colors.text,
-    ...themeDark.typography.mono,
+  divider: {
+    width: '100%',
+    height: 1,
+    marginBottom: 20,
   },
   generateCodeButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: themeDark.spacing.md,
-    paddingHorizontal: themeDark.spacing.lg,
-    borderRadius: themeDark.radii.md,
-    borderWidth: 2,
-    marginBottom: themeDark.spacing.lg,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
     width: '100%',
   },
   generateCodeText: {
     fontSize: 15,
     fontWeight: '600',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: themeDark.spacing.md,
-    width: '100%',
-  },
-  buttonDeny: {
-    flex: 1,
-    flexDirection: 'row',
-    paddingVertical: themeDark.spacing.lg,
-    borderRadius: themeDark.radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: themeDark.colors.surface,
-    borderWidth: 2,
-    borderColor: themeDark.colors.error,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonIcon: {
-    marginRight: themeDark.spacing.sm,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  buttonApproveWrapper: {
-    flex: 1,
-    borderRadius: themeDark.radii.md,
-    overflow: 'hidden',
-  },
-  buttonApprove: {
-    flexDirection: 'row',
-    paddingVertical: themeDark.spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonApproveText: {
-    color: themeDark.colors.text,
-    fontSize: 16,
-    fontWeight: '700',
   },
 });

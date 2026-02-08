@@ -59,7 +59,8 @@ export const authApi = {
   loginWithOtp: (challengeId, deviceId, code) =>
     api.post('/api/auth/login-with-otp', { challengeId, deviceId, code }),
 
-  getLoginHistory: () => api.get('/api/auth/login-history'),
+  getLoginHistory: (deviceId) =>
+    api.get(`/api/auth/login-history${deviceId ? `?deviceId=${encodeURIComponent(deviceId)}` : ''}`),
   deleteLoginHistoryEntry: (id, deviceId) =>
     api.delete(`/api/auth/login-history/${id}`, { data: { deviceId } }),
   getMe: () => api.get('/api/auth/me'),

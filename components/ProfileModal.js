@@ -19,6 +19,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { authApi } from '../services/api';
+import { validatePassword } from '../utils/validation';
 import { themeDark } from '../constants/themes';
 
 export const ProfileModal = ({ visible, user, onClose, onPasswordChanged }) => {
@@ -33,8 +34,9 @@ export const ProfileModal = ({ visible, user, onClose, onPasswordChanged }) => {
       Alert.alert('Required', 'Fill in all fields');
       return;
     }
-    if (newPassword.length < 8) {
-      Alert.alert('Invalid', 'New password must be at least 8 characters');
+    const pwResult = validatePassword(newPassword);
+    if (!pwResult.valid) {
+      Alert.alert('Invalid', pwResult.message);
       return;
     }
     if (newPassword !== confirmPassword) {

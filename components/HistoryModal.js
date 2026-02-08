@@ -45,7 +45,7 @@ export const HistoryModal = ({ visible, mode, deviceId, onClose }) => {
     if (!visible || !mode) return;
     setLoading(true);
     setError(null);
-    const fetch = mode === 'loginHistory' ? authApi.getLoginHistory : mfaApi.getHistory;
+    const fetch = mode === 'loginHistory' ? () => authApi.getLoginHistory(deviceId) : mfaApi.getHistory;
     fetch()
       .then((res) => {
         setItems(res.data?.history || []);

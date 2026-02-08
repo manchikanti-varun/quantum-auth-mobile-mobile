@@ -19,11 +19,13 @@ export const deviceService = {
   async ensureDeviceIdentity() {
     try {
       let deviceId = await storage.getDeviceId();
+      // Migrate: device-com.* was from applicationId (same on all devices) – regenerate
+      if (deviceId && deviceId.startsWith('device-com.')) {
+        await storage.saveDeviceId(null);
+        deviceId = null;
+      }
       if (!deviceId) {
-        const baseId =
-          Application.androidId ||
-          Application.applicationId ||
-          uuidv4();
+        const baseId = Application.androidId || uuidv4();
         deviceId = `device-${baseId}`;
         await storage.saveDeviceId(deviceId);
       }

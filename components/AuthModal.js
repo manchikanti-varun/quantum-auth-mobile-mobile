@@ -21,6 +21,7 @@ import { AppLogo } from './AppLogo';
 import { useLayout } from '../hooks/useLayout';
 import { useTheme } from '../context/ThemeContext';
 import { themeDark } from '../constants/themes';
+import { PASSWORD_REQUIREMENTS } from '../utils/validation';
 
 const KEYBOARD_VERTICAL_OFFSET_ANDROID = Platform.OS === 'android' ? (StatusBar?.currentHeight ?? 0) : 0;
 
@@ -130,13 +131,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                         Open QSafe on your other device and tap Approve or Deny. This usually takes a few seconds.
                       </Text>
                       <Text style={[styles.waitingHint, { color: theme.colors.textMuted }]}>
-                        Can't approve on other device? Use OTP instead:
-                      </Text>
-                      <Text style={[styles.waitingHintSmall, { color: theme.colors.textMuted }]}>
-                        • One-time code from Device 1 (tap "Generate code" on approve screen)
-                      </Text>
-                      <Text style={[styles.waitingHintSmall, { color: theme.colors.textMuted }]}>
-                        • Or TOTP from backup (QR you added at registration)
+                        Can't approve on other device? Use TOTP from your backup authenticator:
                       </Text>
                       <TouchableOpacity
                         style={[styles.useOtpButton, { borderColor: theme.colors.accent }]}
@@ -157,7 +152,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                     <>
                       <Text style={styles.waitingTitle}>Enter OTP code</Text>
                       <Text style={styles.waitingSubtitle}>
-                        Use either: (1) 6-digit code from Device 1 ("Generate code" on approve screen), or (2) TOTP from your backup authenticator (QR added at registration).
+                        Enter the 6-digit code from your backup authenticator (QR added at registration).
                       </Text>
                       <TextInput
                         style={[styles.otpInput, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
@@ -217,15 +212,20 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                       onChangeText={setEmail}
                     />
 
-                    <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Password{mode === 'register' ? ' (min 8 chars)' : ''}</Text>
+                    <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Password</Text>
                     <TextInput
                       style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
-                      placeholder={mode === 'register' ? 'Min 8 characters' : '••••••••'}
+                      placeholder={mode === 'register' ? 'Min 8 chars, upper, lower, number, symbol' : '••••••••'}
                       placeholderTextColor={theme.colors.textMuted}
                       secureTextEntry
                       value={password}
                       onChangeText={setPassword}
                     />
+                    {mode === 'register' && (
+                      <Text style={[styles.passwordHint, { color: theme.colors.textMuted }]}>
+                        {PASSWORD_REQUIREMENTS}
+                      </Text>
+                    )}
 
                     <TouchableOpacity
                       style={[styles.rememberRow, { borderColor: theme.colors.border }]}
@@ -394,6 +394,12 @@ const styles = StyleSheet.create({
     marginBottom: themeDark.spacing.sm,
     marginTop: themeDark.spacing.md,
     fontWeight: '500',
+  },
+  passwordHint: {
+    fontSize: 11,
+    marginTop: 6,
+    marginBottom: 4,
+    lineHeight: 16,
   },
   input: {
     borderRadius: themeDark.radii.md,
