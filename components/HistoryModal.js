@@ -51,7 +51,7 @@ export const HistoryModal = ({ visible, mode, deviceId, onClose }) => {
         setItems(res.data?.history || []);
         setFirstDeviceId(res.data?.firstDeviceId ?? null);
       })
-      .catch((e) => setError(e?.response?.data?.message || 'Failed to load'))
+      .catch((e) => setError(e?.response?.data?.message || e?.message || 'Failed to load'))
       .finally(() => setLoading(false));
   };
 

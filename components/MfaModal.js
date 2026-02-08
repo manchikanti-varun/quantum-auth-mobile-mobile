@@ -72,6 +72,7 @@ export const MfaModal = ({
       animationType="fade"
       transparent={true}
       onRequestClose={onClose}
+      statusBarTranslucent
     >
       <View style={[styles.overlay, { padding: horizontalPadding }]}>
         <View style={[styles.content, { maxWidth: contentMaxWidth }]}>

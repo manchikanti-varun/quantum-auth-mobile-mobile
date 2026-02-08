@@ -69,10 +69,11 @@ export const authApi = {
 
 export const deviceApi = {
   register: (data) => api.post('/api/devices/register', data),
+  revoke: (deviceId) => api.post('/api/devices/revoke', { deviceId }),
 };
 
 export const mfaApi = {
-  getPending: (deviceId) => api.get(`/api/mfa/pending?deviceId=${deviceId}`),
+  getPending: (deviceId) => api.get(`/api/mfa/pending?deviceId=${encodeURIComponent(deviceId)}`),
   resolve: (data) => api.post('/api/mfa/resolve', data),
   generateCode: (challengeId) => api.post('/api/mfa/generate-code', { challengeId }),
   getHistory: () => api.get('/api/mfa/history'),

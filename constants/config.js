@@ -1,9 +1,14 @@
 /**
  * App configuration – API URL, storage keys, default folders, auto-lock options.
- * Set EXPO_PUBLIC_API_URL in .env or eas.json for production.
+ * Set EXPO_PUBLIC_API_URL in .env or eas.json.
+ * Default: always use Railway so both devices hit same backend (critical for MFA poll).
  */
 const PRODUCTION_API_URL = 'https://quantum-auth-mobile-backend-production-c4a5.up.railway.app';
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || (__DEV__ ? 'http://localhost:4000' : PRODUCTION_API_URL);
+export const API_BASE_URL = (process.env.EXPO_PUBLIC_API_URL || PRODUCTION_API_URL).trim();
+if (__DEV__) {
+  const host = (API_BASE_URL || '').replace(/^https?:\/\//, '').split('/')[0];
+  console.log('[QSafe] Backend:', host || 'not set – MFA poll will fail');
+}
 export const ACCOUNTS_KEY = 'QSAFE_TOTP_ACCOUNTS';
 export const DEVICE_KEY = 'QSAFE_DEVICE_ID';
 export const PQC_KEYPAIR_KEY = 'QSAFE_PQC_KEYPAIR';

@@ -56,7 +56,7 @@ function AppContent() {
 
   const [mfaResolving, setMfaResolving] = useState(null); // 'approve' | 'deny' | null
   const { accounts, totpCodes, totpAdjacent, totpSecondsRemaining, addAccount, removeAccount, toggleFavorite, updateAccount, setLastUsed, reloadAccounts } = useAccounts();
-  const { pendingChallenge, resolveChallenge } = useMfa(deviceId, token);
+  const { pendingChallenge, resolveChallenge, checkForPendingChallenges } = useMfa(deviceId, token);
 
   const appState = useRef(AppState.currentState);
   const handleQrScanRef = useRef(null);
@@ -435,6 +435,7 @@ function AppContent() {
             hasBiometric={hasBiometric}
             onAutoLockChange={() => setShowAutoLockPicker(true)}
             autoLockMinutes={autoLockMinutes}
+            onCheckMfa={token ? checkForPendingChallenges : undefined}
             onExportImport={(mode) => {
               if (mode === 'loginHistory' || mode === 'mfaHistory') {
                 setHistoryMode(mode);

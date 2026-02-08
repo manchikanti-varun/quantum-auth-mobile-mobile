@@ -183,8 +183,15 @@ export const useAuth = (deviceId, onSuccess) => {
     }
   };
 
-  const logout = () => {
-    clearAuth();
+  const logout = async () => {
+    try {
+      if (deviceId && token) {
+        await deviceApi.revoke(deviceId);
+      }
+    } catch (e) {
+      if (__DEV__) console.log('Revoke on logout failed:', e?.message);
+    }
+    await clearAuth();
   };
 
   const cancelPendingMfa = () => setPendingMfa(null);

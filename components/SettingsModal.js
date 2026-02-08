@@ -23,7 +23,7 @@ const THEME_OPTIONS = [
   { id: 'system', icon: 'cellphone', label: 'System' },
 ];
 
-export const SettingsModal = ({ visible, onClose, user, appLock, onAppLockChange, onExportImport, appLockConfig, onPinSetup, onAutoLockChange, autoLockMinutes, onProfilePress, hasBiometric }) => {
+export const SettingsModal = ({ visible, onClose, user, appLock, onAppLockChange, onExportImport, appLockConfig, onPinSetup, onAutoLockChange, autoLockMinutes, onProfilePress, hasBiometric, onCheckMfa }) => {
   const { theme, preference, setThemePreference } = useTheme();
   const [showPinSetup, setShowPinSetup] = useState(false);
 
@@ -159,6 +159,16 @@ export const SettingsModal = ({ visible, onClose, user, appLock, onAppLockChange
           </TouchableOpacity>
 
           <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Activity</Text>
+          {onCheckMfa && (
+            <TouchableOpacity
+              style={[styles.optionRow, { backgroundColor: theme.colors.surface }]}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onCheckMfa(); }}
+            >
+              <MaterialCommunityIcons name="cellphone-check" size={24} color={theme.colors.accent} />
+              <Text style={[styles.optionRowText, { color: theme.colors.text }]}>Check for login requests</Text>
+              <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.textMuted} />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={[styles.optionRow, { backgroundColor: theme.colors.surface }]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onExportImport?.('loginHistory'); }}

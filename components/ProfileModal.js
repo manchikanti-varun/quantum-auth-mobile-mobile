@@ -138,14 +138,15 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-start',
+    justifyContent: 'flex-end',
   },
   content: {
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     padding: 24,
     paddingBottom: 40,
-    maxHeight: '90%',
+    maxHeight: '85%',
+    minHeight: 280,
   },
   header: {
     flexDirection: 'row',
@@ -171,12 +172,15 @@ const styles = StyleSheet.create({
   },
   keyboardAvoid: {
     flex: 1,
+    minHeight: 0,
   },
   scrollView: {
     flex: 1,
+    minHeight: 0,
   },
   scrollContent: {
     paddingBottom: 40,
+    flexGrow: 1,
   },
   input: {
     borderRadius: themeDark.radii.md,
