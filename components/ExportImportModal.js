@@ -18,6 +18,7 @@ import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { themeDark } from '../constants/themes';
+import { spacing, radii } from '../constants/designTokens';
 
 export const ExportImportModal = ({ visible, mode, onClose, onExport, onImport }) => {
   const { theme } = useTheme();
@@ -62,49 +63,71 @@ export const ExportImportModal = ({ visible, mode, onClose, onExport, onImport }
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={[styles.content, { backgroundColor: theme.colors.bgElevated }]}>
           <View style={styles.header}>
-            <Text style={[styles.title, { color: theme.colors.text }]}>
-              {mode === 'export' ? 'Export accounts' : 'Import accounts'}
-            </Text>
-            <TouchableOpacity onPress={onClose} hitSlop={12}>
-              <MaterialCommunityIcons name="close" size={24} color={theme.colors.textMuted} />
+            <View style={styles.headerLeft}>
+              <View style={[styles.headerIconWrap, { backgroundColor: theme.colors.surface }]}>
+                <MaterialCommunityIcons
+                  name={mode === 'export' ? 'export' : 'import'}
+                  size={24}
+                  color={theme.colors.accent}
+                />
+              </View>
+              <View>
+                <Text style={[styles.title, { color: theme.colors.text }]}>
+                  {mode === 'export' ? 'Export accounts' : 'Import accounts'}
+                </Text>
+                <Text style={[styles.headerSubtitle, { color: theme.colors.textMuted }]}>
+                  {mode === 'export' ? 'Share or save your backup' : 'Restore from a backup file'}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity onPress={onClose} hitSlop={12} style={[styles.closeButton, { backgroundColor: theme.colors.surface }]}>
+              <MaterialCommunityIcons name="close" size={22} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
-          {mode === 'export' ? (
-            <>
-              <Text style={[styles.hint, { color: theme.colors.textSecondary }]}>
-                Export creates a backup of all accounts. Share or save it somewhere safe. Do not share with others.
-              </Text>
-              <TouchableOpacity
-                style={[styles.primaryButton, { backgroundColor: theme.colors.accent }]}
-                onPress={handleExport}
-              >
-                <Text style={[styles.primaryButtonText, { color: theme.colors.bg }]}>Export & Share</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <Text style={[styles.hint, { color: theme.colors.textSecondary }]}>
-                Paste your QSafe backup (JSON) below.
-              </Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
-                placeholder='Paste your backup JSON here'
-                placeholderTextColor={theme.colors.textMuted}
-                value={importData}
-                onChangeText={setImportData}
-                multiline
-                numberOfLines={8}
-              />
-              <TouchableOpacity
-                style={[styles.primaryButton, { backgroundColor: theme.colors.accent }]}
-                onPress={handleImport}
-                disabled={!importData.trim()}
-              >
-                <Text style={[styles.primaryButtonText, { color: theme.colors.bg }]}>Import</Text>
-              </TouchableOpacity>
-            </>
-          )}
+          <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            {mode === 'export' ? (
+              <>
+                <View style={[styles.hintRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                  <MaterialCommunityIcons name="information-outline" size={20} color={theme.colors.accent} />
+                  <Text style={[styles.hint, { color: theme.colors.textSecondary }]}>
+                    Export creates a backup of all accounts. Share or save it somewhere safe. Do not share with others.
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.primaryButton, { backgroundColor: theme.colors.accent }]}
+                  onPress={handleExport}
+                >
+                  <Text style={[styles.primaryButtonText, { color: theme.colors.bg }]}>Export & Share</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <View style={[styles.hintRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                  <MaterialCommunityIcons name="information-outline" size={20} color={theme.colors.accent} />
+                  <Text style={[styles.hint, { color: theme.colors.textSecondary }]}>
+                    Paste your QSafe backup (JSON) below.
+                  </Text>
+                </View>
+                <TextInput
+                  style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
+                  placeholder='Paste your backup JSON here'
+                  placeholderTextColor={theme.colors.textMuted}
+                  value={importData}
+                  onChangeText={setImportData}
+                  multiline
+                  numberOfLines={8}
+                />
+                <TouchableOpacity
+                  style={[styles.primaryButton, { backgroundColor: theme.colors.accent }]}
+                  onPress={handleImport}
+                  disabled={!importData.trim()}
+                >
+                  <Text style={[styles.primaryButtonText, { color: theme.colors.bg }]}>Import</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -118,38 +141,77 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   content: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
+    maxHeight: '70%',
+    borderTopLeftRadius: radii.xxl,
+    borderTopRightRadius: radii.xxl,
+    padding: spacing.xl,
+    paddingBottom: spacing.xxl + 8,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: themeDark.spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  headerIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
   },
+  headerSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scroll: {
+    flexGrow: 1,
+  },
+  scrollContent: {
+    paddingBottom: spacing.xl,
+  },
+  hintRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: spacing.md,
+    borderRadius: radii.md,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    gap: spacing.md,
+  },
   hint: {
+    flex: 1,
     fontSize: 14,
-    marginBottom: themeDark.spacing.xl,
     lineHeight: 20,
   },
   input: {
-    borderRadius: themeDark.radii.md,
-    padding: themeDark.spacing.md,
+    borderRadius: radii.md,
+    padding: spacing.md,
     borderWidth: 1,
     fontSize: 14,
     fontFamily: 'monospace',
     minHeight: 120,
-    marginBottom: themeDark.spacing.xl,
+    marginBottom: spacing.xl,
   },
   primaryButton: {
-    paddingVertical: themeDark.spacing.lg,
-    borderRadius: themeDark.radii.md,
+    paddingVertical: spacing.lg,
+    borderRadius: radii.md,
     alignItems: 'center',
   },
   primaryButtonText: {

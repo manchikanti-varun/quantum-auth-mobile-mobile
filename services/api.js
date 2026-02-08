@@ -64,14 +64,20 @@ export const authApi = {
   deleteLoginHistoryEntry: (id, deviceId) =>
     api.delete(`/api/auth/login-history/${id}`, { data: { deviceId } }),
   getMe: () => api.get('/api/auth/me'),
+  updatePreferences: (preferences) =>
+    api.patch('/api/auth/preferences', preferences),
   changePassword: (currentPassword, newPassword) =>
     api.post('/api/auth/change-password', { currentPassword, newPassword }),
 
   forgotPassword: (email, code, newPassword) =>
     api.post('/api/auth/forgot-password', { email, code, newPassword }),
+
+  requestPasswordResetCode: (deviceId) =>
+    api.post('/api/auth/request-password-reset-code', deviceId ? { deviceId } : {}),
 };
 
 export const deviceApi = {
+  list: () => api.get('/api/devices'),
   register: (data) => api.post('/api/devices/register', data),
   revoke: (deviceId) => api.post('/api/devices/revoke', { deviceId }),
 };

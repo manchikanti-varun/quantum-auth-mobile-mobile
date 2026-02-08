@@ -22,13 +22,18 @@ import { Input, PasswordInput } from './ui';
 import { authApi } from '../services/api';
 import { useLayout } from '../hooks/useLayout';
 import { useTheme } from '../context/ThemeContext';
-import { themeDark } from '../constants/themes';
+import { useToast } from '../context/ToastContext';
+import { themeLight } from '../constants/themes';
+import { spacing, radii, typography } from '../constants/designTokens';
 import { PASSWORD_REQUIREMENTS } from '../utils/validation';
+
+const BK = '#0f172a'; // dark text on accent buttons
 
 const KEYBOARD_VERTICAL_OFFSET_ANDROID = Platform.OS === 'android' ? (StatusBar?.currentHeight ?? 0) : 0;
 
 export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pendingMfa, onCancelPendingMfa, onLoginWithOtp }) => {
-  const { theme } = useTheme();
+  const theme = themeLight; // white screen for all devices
+  const { showToast } = useToast();
   const { horizontalPadding, safeBottom, safeTop } = useLayout();
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
@@ -39,6 +44,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
   const [otpCode, setOtpCode] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotCode, setForgotCode] = useState('');
+  const [forgotCodeFromDevice, setForgotCodeFromDevice] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
@@ -67,27 +73,34 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
       setEmail('');
       setPassword('');
       setDisplayName('');
+    } else {
+      // On error: keep email and display name visible; clear password only
+      setPassword('');
     }
   };
 
   const handleForgotPasswordSubmit = async () => {
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert('Passwords do not match', 'Please make sure both password fields are the same.');
       return;
     }
     const pwResult = require('../utils/validation').validatePassword(newPassword);
     if (!pwResult.valid) {
-      Alert.alert('Validation', pwResult.message);
+      Alert.alert('Password requirements', pwResult.message);
       return;
     }
     setForgotLoading(true);
     try {
       await authApi.forgotPassword(email.trim().toLowerCase(), forgotCode, newPassword);
-      Alert.alert('Success', 'Password updated. You can now sign in.', [
-        { text: 'OK', onPress: () => { setShowForgotPassword(false); setForgotCode(''); setNewPassword(''); setConfirmPassword(''); } },
-      ]);
+      setShowForgotPassword(false);
+      setForgotCode('');
+      setForgotCodeFromDevice(false);
+      setNewPassword('');
+      setConfirmPassword('');
+      showToast('Password updated! Sign in with your new password.');
     } catch (e) {
-      Alert.alert('Error', e?.response?.data?.message || 'Could not reset password. Check your email and backup code.');
+      const msg = e?.response?.data?.message || 'Check your email and code, then try again.';
+      Alert.alert('Could not reset password', msg);
     } finally {
       setForgotLoading(false);
     }
@@ -109,7 +122,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
           style={styles.keyboardView}
           keyboardVerticalOffset={KEYBOARD_VERTICAL_OFFSET_ANDROID}
         >
-          <View style={[styles.content, { paddingHorizontal: horizontalPadding, paddingTop: Math.max(safeTop, 16) + 16, paddingBottom: Math.max(safeBottom, 24) + 24, backgroundColor: theme.colors.bgElevated, borderColor: theme.colors.border }]}>
+          <View style={[styles.content, { paddingHorizontal: horizontalPadding, paddingTop: Math.max(safeTop, 16) + 20, paddingBottom: Math.max(safeBottom, 24) + 28, backgroundColor: theme.colors.bgElevated }]}>
             <View style={styles.header}>
               <View style={styles.headerLeft}>
                 <AppLogo size="sm" />
@@ -119,14 +132,14 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                 <TouchableOpacity
                   onPress={onClose}
                   style={[styles.closeButton, { backgroundColor: theme.colors.surface }]}
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  hitSlop={16}
                 >
-                  <MaterialCommunityIcons name="close" size={22} color={theme.colors.textSecondary} />
+                  <MaterialCommunityIcons name="close" size={20} color={theme.colors.textMuted} />
                 </TouchableOpacity>
               )}
             </View>
 
-            {!showWaiting && (
+            {!showWaiting && !showForgotPassword && (
               <>
                 <Text style={[styles.welcomeText, { color: theme.colors.textSecondary }]}>
                   {mode === 'login' ? 'Welcome back' : 'Create your account'}
@@ -137,8 +150,8 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                     onPress={() => setMode('login')}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.switchButtonText, mode === 'login' && styles.switchButtonTextActive, { color: mode === 'login' ? theme.colors.bg : theme.colors.textSecondary }]}>
-                      Login
+                    <Text style={[styles.switchButtonText, mode === 'login' && styles.switchButtonTextActive, { color: mode === 'login' ? BK : theme.colors.textSecondary }]}>
+                      Sign in
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -146,8 +159,8 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                     onPress={() => setMode('register')}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.switchButtonText, mode === 'register' && styles.switchButtonTextActive, { color: mode === 'register' ? theme.colors.bg : theme.colors.textSecondary }]}>
-                      Register
+                    <Text style={[styles.switchButtonText, mode === 'register' && styles.switchButtonTextActive, { color: mode === 'register' ? BK : theme.colors.textSecondary }]}>
+                      Create account
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -215,9 +228,9 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                         activeOpacity={0.85}
                       >
                         {loading ? (
-                          <ActivityIndicator color={theme.colors.bg} />
+                          <ActivityIndicator color={BK} />
                         ) : (
-                          <Text style={[styles.primaryButtonText, { color: theme.colors.bg }]}>Submit code</Text>
+                          <Text style={[styles.primaryButtonText, { color: BK }]}>Submit code</Text>
                         )}
                       </TouchableOpacity>
                       <TouchableOpacity
@@ -234,8 +247,8 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                 <View style={styles.form}>
                     {showForgotPassword ? (
                       <>
-                        <View style={[styles.forgotBackRow, { marginBottom: themeDark.spacing.lg }]}>
-                          <TouchableOpacity onPress={() => { setShowForgotPassword(false); setForgotCode(''); setNewPassword(''); setConfirmPassword(''); }} hitSlop={8}>
+                        <View style={[styles.forgotBackRow, { marginBottom: spacing.lg }]}>
+                          <TouchableOpacity onPress={() => { setShowForgotPassword(false); setForgotCode(''); setForgotCodeFromDevice(false); setNewPassword(''); setConfirmPassword(''); }} hitSlop={8}>
                             <MaterialCommunityIcons name="arrow-left" size={22} color={theme.colors.accent} />
                           </TouchableOpacity>
                           <Text style={[styles.forgotTitle, { color: theme.colors.text }]}>Reset password</Text>
@@ -251,14 +264,38 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                           editable={!forgotLoading}
                         />
                         <Input
-                          label="Backup code"
+                          label={forgotCodeFromDevice ? 'Code from primary device' : 'Backup code'}
                           icon="numeric"
-                          placeholder="6-digit code from authenticator"
+                          placeholder={forgotCodeFromDevice ? '6-digit code from Settings' : '6-digit code from authenticator'}
                           value={forgotCode}
                           onChangeText={(t) => setForgotCode(t.replace(/\D/g, '').slice(0, 6))}
                           keyboardType="number-pad"
-                          hint="Use the backup entry you added at registration"
+                          hint={forgotCodeFromDevice ? 'On your primary device (Device 1): Settings → Activity → Generate password reset code. The code is valid for 10 minutes.' : 'Only have this device? Use the 6-digit code from the authenticator where you added the backup during registration (e.g. Google Authenticator on this phone). The code changes every 30 seconds.'}
                         />
+                        <TouchableOpacity
+                          style={styles.forgotCodeHelp}
+                          onPress={() => setForgotCodeFromDevice((v) => !v)}
+                          hitSlop={8}
+                        >
+                          <Text style={[styles.forgotCodeHelpText, { color: theme.colors.accent }]}>
+                            {forgotCodeFromDevice ? 'Use backup code from authenticator instead' : "Don't have a backup code? Use code from primary device"}
+                          </Text>
+                        </TouchableOpacity>
+                        {forgotCodeFromDevice && (
+                          <TouchableOpacity
+                            style={styles.forgotCodeHelp}
+                            onPress={() => Alert.alert(
+                              "Don't have your primary device?",
+                              "You need either:\n\n• Backup code from the authenticator where you added it during registration (e.g. Google Authenticator on this phone), or\n• A one-time code from your primary device: Settings → Activity → Generate password reset code\n\nOnly one device? Use the backup code. If you didn't add the backup to another app, you may need to create a new account.",
+                              [{ text: 'OK' }]
+                            )}
+                            hitSlop={8}
+                          >
+                            <Text style={[styles.forgotCodeHelpText, { color: theme.colors.textMuted, fontSize: 13 }]}>
+                              Don't have access to your primary device?
+                            </Text>
+                          </TouchableOpacity>
+                        )}
                         <PasswordInput
                           label="New password"
                           placeholder="Create a new password"
@@ -279,9 +316,9 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                           activeOpacity={0.85}
                         >
                           {forgotLoading ? (
-                            <ActivityIndicator color={theme.colors.bg} />
+                            <ActivityIndicator color={BK} />
                           ) : (
-                            <Text style={[styles.primaryButtonText, { color: theme.colors.bg }]}>Reset password</Text>
+                            <Text style={[styles.primaryButtonText, { color: BK }]}>Reset password</Text>
                           )}
                         </TouchableOpacity>
                       </>
@@ -356,8 +393,8 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                       {loading ? (
                         <ActivityIndicator color={theme.colors.bg} />
                       ) : (
-                        <Text style={[styles.primaryButtonText, { color: theme.colors.bg }]}>
-                          {mode === 'register' ? 'Create account' : 'Login'}
+                        <Text style={[styles.primaryButtonText, { color: BK }]}>
+                          {mode === 'register' ? 'Create account' : 'Sign in'}
                         </Text>
                       )}
                     </TouchableOpacity>
@@ -390,7 +427,7 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(5, 7, 13, 0.92)',
+    backgroundColor: themeLight.colors.bgElevated,
     justifyContent: 'flex-start',
   },
   keyboardView: {
@@ -399,10 +436,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    borderBottomLeftRadius: themeDark.radii.xxl,
-    borderBottomRightRadius: themeDark.radii.xxl,
-    borderWidth: 1,
-    borderTopWidth: 0,
+    borderTopLeftRadius: radii.xxl,
+    borderTopRightRadius: radii.xxl,
+    overflow: 'hidden',
   },
   scrollView: {
     flex: 1,
@@ -410,40 +446,40 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: themeDark.spacing.xl,
+    paddingBottom: spacing.xl,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: themeDark.spacing.lg,
+    marginBottom: spacing.lg,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: themeDark.spacing.sm,
+    gap: spacing.sm,
   },
   title: {
-    ...themeDark.typography.h1,
+    ...typography.h1,
   },
   closeButton: {
-    padding: themeDark.spacing.sm,
-    borderRadius: themeDark.radii.sm,
+    padding: spacing.sm,
+    borderRadius: radii.sm,
   },
   welcomeText: {
-    ...themeDark.typography.bodySm,
-    marginBottom: themeDark.spacing.sm,
+    ...typography.bodySm,
+    marginBottom: spacing.sm,
   },
   switchRow: {
     flexDirection: 'row',
-    borderRadius: themeDark.radii.lg,
+    borderRadius: radii.lg,
     padding: 4,
-    marginBottom: themeDark.spacing.lg,
+    marginBottom: spacing.lg,
   },
   switchButton: {
     flex: 1,
-    paddingVertical: themeDark.spacing.md,
-    borderRadius: themeDark.radii.md,
+    paddingVertical: spacing.md,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -455,14 +491,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   form: {
-    marginTop: themeDark.spacing.sm,
+    marginTop: spacing.sm,
   },
   rememberRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: themeDark.spacing.sm,
-    marginTop: themeDark.spacing.lg,
-    paddingVertical: themeDark.spacing.sm,
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+    paddingVertical: spacing.sm,
   },
   rememberTextWrap: {
     flex: 1,
@@ -479,8 +515,8 @@ const styles = StyleSheet.create({
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: themeDark.spacing.xl,
-    gap: themeDark.spacing.md,
+    marginTop: spacing.xl,
+    gap: spacing.md,
   },
   dividerLine: {
     flex: 1,
@@ -494,37 +530,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: themeDark.spacing.sm,
-    paddingVertical: themeDark.spacing.md,
-    borderRadius: themeDark.radii.lg,
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    borderRadius: radii.lg,
     borderWidth: 1,
-    marginTop: themeDark.spacing.lg,
+    marginTop: spacing.lg,
   },
   socialButtonText: {
     fontSize: 16,
     fontWeight: '600',
   },
   inputFirst: {
-    marginTop: themeDark.spacing.sm,
+    marginTop: spacing.sm,
   },
   label: {
     fontSize: 14,
-    marginBottom: themeDark.spacing.sm,
-    marginTop: themeDark.spacing.md,
+    marginBottom: spacing.sm,
+    marginTop: spacing.md,
     fontWeight: '500',
   },
   input: {
-    borderRadius: themeDark.radii.md,
-    paddingHorizontal: themeDark.spacing.lg,
-    paddingVertical: themeDark.spacing.md,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     borderWidth: 1,
     fontSize: 16,
     minHeight: 48,
   },
   primaryButtonWrapper: {
-    marginTop: themeDark.spacing.xl,
-    paddingVertical: themeDark.spacing.lg,
-    borderRadius: themeDark.radii.lg,
+    marginTop: spacing.xl,
+    paddingVertical: spacing.lg,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -534,7 +570,7 @@ const styles = StyleSheet.create({
   },
   waitingBlock: {
     alignItems: 'center',
-    paddingVertical: themeDark.spacing.xl,
+    paddingVertical: spacing.xl,
   },
   waitingIconWrap: {
     width: 72,
@@ -542,42 +578,42 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: themeDark.spacing.md,
+    marginBottom: spacing.md,
   },
   waitingSpinner: {
-    marginBottom: themeDark.spacing.lg,
+    marginBottom: spacing.lg,
   },
   waitingTitle: {
-    ...themeDark.typography.h2,
-    color: themeDark.colors.text,
-    marginBottom: themeDark.spacing.sm,
+    ...typography.h2,
+    color: themeLight.colors.text,
+    marginBottom: spacing.sm,
     textAlign: 'center',
   },
   waitingSubtitle: {
-    ...themeDark.typography.bodySm,
-    color: themeDark.colors.textMuted,
+    ...typography.bodySm,
+    color: themeLight.colors.textMuted,
     textAlign: 'center',
-    marginBottom: themeDark.spacing.sm,
-    paddingHorizontal: themeDark.spacing.md,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   waitingHint: {
-    ...themeDark.typography.caption,
+    ...typography.caption,
     textAlign: 'center',
-    marginBottom: themeDark.spacing.sm,
-    paddingHorizontal: themeDark.spacing.md,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   waitingHintSmall: {
     fontSize: 12,
     textAlign: 'center',
     marginBottom: 4,
-    paddingHorizontal: themeDark.spacing.md,
+    paddingHorizontal: spacing.md,
   },
   useOtpButton: {
-    paddingVertical: themeDark.spacing.md,
-    paddingHorizontal: themeDark.spacing.xl,
-    borderRadius: themeDark.radii.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: radii.md,
     borderWidth: 2,
-    marginBottom: themeDark.spacing.sm,
+    marginBottom: spacing.sm,
     alignItems: 'center',
   },
   useOtpButtonText: {
@@ -585,46 +621,55 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   otpInput: {
-    borderRadius: themeDark.radii.md,
-    paddingHorizontal: themeDark.spacing.md,
-    paddingVertical: themeDark.spacing.lg,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
     borderWidth: 1,
     fontSize: 24,
     letterSpacing: 8,
     textAlign: 'center',
-    marginBottom: themeDark.spacing.md,
+    marginBottom: spacing.md,
     minWidth: 160,
   },
   submitOtpButton: {
-    borderRadius: themeDark.radii.md,
-    paddingVertical: themeDark.spacing.md,
-    paddingHorizontal: themeDark.spacing.xl,
-    marginBottom: themeDark.spacing.sm,
+    borderRadius: radii.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    marginBottom: spacing.sm,
     minWidth: 160,
     alignItems: 'center',
     justifyContent: 'center',
   },
   forgotLink: {
     alignSelf: 'flex-start',
-    marginTop: themeDark.spacing.sm,
+    marginTop: spacing.sm,
   },
   forgotLinkText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  forgotCodeHelp: {
+    alignSelf: 'flex-start',
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  forgotCodeHelpText: {
     fontSize: 14,
     fontWeight: '600',
   },
   forgotBackRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: themeDark.spacing.sm,
+    gap: spacing.sm,
   },
   forgotTitle: {
     fontSize: 18,
     fontWeight: '700',
   },
   cancelWaitingButton: {
-    paddingVertical: themeDark.spacing.md,
-    paddingHorizontal: themeDark.spacing.xl,
-    borderRadius: themeDark.radii.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: radii.md,
     borderWidth: 1,
     alignItems: 'center',
   },

@@ -22,6 +22,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Input } from './ui';
 import { themeDark } from '../constants/themes';
+import { spacing, radii } from '../constants/designTokens';
 
 const useNativeScanner = CameraView?.isModernBarcodeScannerAvailable === true;
 
@@ -65,8 +66,8 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(
-        'Permission needed',
-        'Allow access to photos to scan a QR from an image.',
+        'Photo access needed',
+        'Allow access to photos to scan a QR code from an image.',
         [{ text: 'OK' }],
       );
       return;
@@ -89,8 +90,8 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
       } catch (scanErr) {
         setScanningPhoto(false);
         Alert.alert(
-          'Scan failed',
-          'Could not read QR from this image. Try taking a clearer screenshot or use Manual entry and paste the key from Google.',
+          'Could not read QR code',
+          'Try a clearer image or use Manual entry to paste the setup key from your service\'s security settings.',
           [{ text: 'OK' }],
         );
         return;
@@ -356,7 +357,7 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
                 )}
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.manualLink, { position: 'relative', marginTop: themeDark.spacing.lg }]}
+                style={[styles.manualLink, { position: 'relative', marginTop: spacing.lg }]}
                 onPress={() => setMode('manual')}
                 activeOpacity={0.7}
               >
@@ -419,7 +420,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: themeDark.spacing.lg,
+    padding: spacing.lg,
     backgroundColor: themeDark.colors.bgElevated,
     borderBottomWidth: 1,
     borderBottomColor: themeDark.colors.border,
@@ -429,7 +430,7 @@ const styles = StyleSheet.create({
     color: themeDark.colors.text,
   },
   closeButton: {
-    padding: themeDark.spacing.xs,
+    padding: spacing.xs,
   },
   close: {
     fontSize: 28,
@@ -440,21 +441,21 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: themeDark.spacing.xl,
+    padding: spacing.xl,
   },
   placeholderText: {
     color: themeDark.colors.textSecondary,
-    marginBottom: themeDark.spacing.xl,
+    marginBottom: spacing.xl,
     fontSize: 16,
     textAlign: 'center',
   },
   buttonWrapper: {
-    borderRadius: themeDark.radii.md,
+    borderRadius: radii.md,
     overflow: 'hidden',
   },
   button: {
-    paddingVertical: themeDark.spacing.lg,
-    paddingHorizontal: themeDark.spacing.xxl,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xxl,
     alignItems: 'center',
   },
   buttonText: {
@@ -464,16 +465,16 @@ const styles = StyleSheet.create({
   },
   orText: {
     color: themeDark.colors.textMuted,
-    marginVertical: themeDark.spacing.md,
+    marginVertical: spacing.md,
     fontSize: 14,
   },
   buttonWrapperOutline: {
-    borderRadius: themeDark.radii.md,
+    borderRadius: radii.md,
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: themeDark.colors.accent,
-    paddingVertical: themeDark.spacing.md,
-    paddingHorizontal: themeDark.spacing.xl,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
     alignItems: 'center',
   },
   buttonTextOutline: {
@@ -507,21 +508,21 @@ const styles = StyleSheet.create({
   hint: {
     ...themeDark.typography.caption,
     color: themeDark.colors.textMuted,
-    marginTop: themeDark.spacing.xl,
+    marginTop: spacing.xl,
     letterSpacing: 1,
   },
   scanActions: {
     position: 'absolute',
-    bottom: themeDark.spacing.xl,
+    bottom: spacing.xl,
     left: 0,
     right: 0,
     alignItems: 'center',
-    gap: themeDark.spacing.md,
+    gap: spacing.md,
   },
   scanFromPhotoButton: {
-    paddingVertical: themeDark.spacing.md,
-    paddingHorizontal: themeDark.spacing.xl,
-    borderRadius: themeDark.radii.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: radii.md,
     borderWidth: 2,
     borderColor: themeDark.colors.accent,
   },
@@ -541,24 +542,24 @@ const styles = StyleSheet.create({
   flex1: { flex: 1 },
   manualScroll: { flex: 1 },
   manualContent: {
-    padding: themeDark.spacing.lg,
-    paddingBottom: themeDark.spacing.xxl,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   manualHint: {
     color: themeDark.colors.textSecondary,
     fontSize: 14,
-    marginBottom: themeDark.spacing.lg,
+    marginBottom: spacing.lg,
     lineHeight: 20,
   },
   input: {
     backgroundColor: themeDark.colors.bgElevated,
     borderWidth: 1,
     borderColor: themeDark.colors.border,
-    borderRadius: themeDark.radii.md,
-    padding: themeDark.spacing.md,
+    borderRadius: radii.md,
+    padding: spacing.md,
     color: themeDark.colors.text,
     fontSize: 16,
-    marginBottom: themeDark.spacing.md,
+    marginBottom: spacing.md,
     minHeight: 48,
   },
   inputLarge: {
@@ -567,18 +568,18 @@ const styles = StyleSheet.create({
   folderLabel: {
     fontSize: 14,
     fontWeight: '600',
-    marginBottom: themeDark.spacing.sm,
+    marginBottom: spacing.sm,
   },
   folderChipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: themeDark.spacing.sm,
-    marginBottom: themeDark.spacing.lg,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
   folderChip: {
-    paddingVertical: themeDark.spacing.sm,
-    paddingHorizontal: themeDark.spacing.md,
-    borderRadius: themeDark.radii.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
     borderWidth: 1,
   },
   folderChipText: {

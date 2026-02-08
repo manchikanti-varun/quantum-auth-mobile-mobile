@@ -16,6 +16,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useFolders } from '../hooks/useFolders';
 import { ICON_PICKER_OPTIONS } from '../utils/issuerIcons';
 import { themeDark } from '../constants/themes';
+import { spacing, radii } from '../constants/designTokens';
 
 export const AccountEditModal = ({ visible, account, folders: foldersProp, accounts = [], onClose, onSave }) => {
   const { theme } = useTheme();
@@ -159,16 +160,16 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   content: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
+    borderTopLeftRadius: radii.xxl,
+    borderTopRightRadius: radii.xxl,
+    padding: spacing.xl,
+    paddingBottom: spacing.xxl + 8,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: themeDark.spacing.xl,
+    marginBottom: spacing.xl,
   },
   title: {
     fontSize: 20,
@@ -177,30 +178,30 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    marginBottom: themeDark.spacing.sm,
+    marginBottom: spacing.sm,
   },
   folderRow: {
     flexDirection: 'row',
-    gap: themeDark.spacing.sm,
-    marginBottom: themeDark.spacing.sm,
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
   addFolderRow: {
     flexDirection: 'row',
-    gap: themeDark.spacing.sm,
-    marginBottom: themeDark.spacing.xl,
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
   },
   folderInput: {
     flex: 1,
-    paddingHorizontal: themeDark.spacing.md,
-    paddingVertical: themeDark.spacing.sm,
-    borderRadius: themeDark.radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
     borderWidth: 1,
     fontSize: 14,
   },
   addFolderBtn: {
-    paddingHorizontal: themeDark.spacing.lg,
-    paddingVertical: themeDark.spacing.sm,
-    borderRadius: themeDark.radii.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
     justifyContent: 'center',
   },
   addFolderBtnText: {
@@ -209,23 +210,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   iconScroll: {
-    marginBottom: themeDark.spacing.xl,
+    marginBottom: spacing.xl,
   },
   iconChip: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radii.full,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: themeDark.spacing.sm,
+    marginRight: spacing.sm,
   },
   folderChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: themeDark.spacing.xs,
-    paddingVertical: themeDark.spacing.sm,
-    paddingHorizontal: themeDark.spacing.md,
-    borderRadius: themeDark.radii.md,
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
   },
   folderChipIcon: {
     marginRight: 2,
@@ -238,17 +239,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   input: {
-    borderRadius: themeDark.radii.md,
-    paddingHorizontal: themeDark.spacing.lg,
-    paddingVertical: themeDark.spacing.md,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     borderWidth: 1,
     fontSize: 16,
     minHeight: 80,
-    marginBottom: themeDark.spacing.xl,
+    marginBottom: spacing.xl,
   },
   saveButton: {
-    paddingVertical: themeDark.spacing.lg,
-    borderRadius: themeDark.radii.md,
+    paddingVertical: spacing.lg,
+    borderRadius: radii.md,
     alignItems: 'center',
   },
   saveButtonText: {

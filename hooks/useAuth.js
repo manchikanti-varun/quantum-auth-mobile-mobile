@@ -43,7 +43,7 @@ export const useAuth = (deviceId, onSuccess) => {
           setToken(data.token);
           await storage.saveToken(data.token);
           updateApiToken(data.token);
-          setUser(data.email ? { uid: data.uid, email: data.email, displayName: data.displayName ?? null } : null);
+          setUser(data.email ? { uid: data.uid, email: data.email, displayName: data.displayName ?? null, preferences: { allowMultipleDevices: true } } : null);
           setPendingMfa(null);
           onSuccess?.();
           await registerDevice(data.uid, pendingMfa.deviceId, pendingMfa.rememberDevice ?? true);
@@ -87,7 +87,12 @@ export const useAuth = (deviceId, onSuccess) => {
           try {
             const res = await authApi.getMe();
             if (res.data?.email) {
-              setUser({ uid: res.data.uid, email: res.data.email, displayName: res.data.displayName ?? null });
+              setUser({
+                uid: res.data.uid,
+                email: res.data.email,
+                displayName: res.data.displayName ?? null,
+                preferences: res.data.preferences ?? { allowMultipleDevices: true },
+              });
             }
           } catch (e) {
             // Token may be expired; user will be null
@@ -138,9 +143,14 @@ export const useAuth = (deviceId, onSuccess) => {
     } catch (err) {
       const msg = err?.response?.data?.message;
       const status = err?.response?.status;
-      const networkMsg = !err?.response ? 'Cannot reach server. Check internet and backend URL (Railway).' : null;
-      const message = msg || networkMsg || `Something went wrong${status ? ` (${status})` : ''}. Try again.`;
-      Alert.alert('Error', message);
+      let message = msg;
+      if (!message) {
+        if (!err?.response) message = 'Unable to connect. Please check your internet connection and try again.';
+        else if (status === 401) message = 'Invalid email or password. Please try again.';
+        else if (status === 429) message = 'Too many attempts. Please wait a moment and try again.';
+        else message = 'Something went wrong. Please try again.';
+      }
+      Alert.alert('Sign in failed', message);
       throw err;
     } finally {
       setLoading(false);
@@ -161,15 +171,19 @@ export const useAuth = (deviceId, onSuccess) => {
       setToken(newToken);
       await storage.saveToken(newToken);
       updateApiToken(newToken);
-      setUser(response.data.email ? { uid: response.data.uid, email: response.data.email, displayName: response.data.displayName ?? null } : null);
+      setUser(response.data.email ? { uid: response.data.uid, email: response.data.email, displayName: response.data.displayName ?? null, preferences: { allowMultipleDevices: true } } : null);
       await registerDevice(response.data.uid, deviceId, rememberDevice);
       onSuccess?.();
       return response.data;
     } catch (err) {
       const msg = err?.response?.data?.message;
-      const networkMsg = !err?.response ? 'Cannot reach server. Check internet connection.' : null;
-      const message = msg || networkMsg || 'Something went wrong. Please try again.';
-      Alert.alert('Error', message);
+      let message = msg;
+      if (!message) {
+        if (!err?.response) message = 'Unable to connect. Please check your internet connection and try again.';
+        else if (err?.response?.status === 409) message = 'An account with this email already exists. Try signing in instead.';
+        else message = 'Something went wrong. Please try again.';
+      }
+      Alert.alert('Registration failed', message);
       throw err;
     } finally {
       setLoading(false);
@@ -202,6 +216,23 @@ export const useAuth = (deviceId, onSuccess) => {
 
   const cancelPendingMfa = () => setPendingMfa(null);
 
+  const refreshUser = async () => {
+    if (!token) return;
+    try {
+      const res = await authApi.getMe();
+      if (res.data?.email) {
+        setUser({
+          uid: res.data.uid,
+          email: res.data.email,
+          displayName: res.data.displayName ?? null,
+          preferences: res.data.preferences ?? { allowMultipleDevices: true },
+        });
+      }
+    } catch (e) {
+      if (__DEV__) console.log('refreshUser failed', e);
+    }
+  };
+
   const loginWithOtp = async (challengeId, deviceId, code, rememberDevice = true) => {
     if (!challengeId || !deviceId || !code) {
       Alert.alert('Validation', 'Enter the 6-digit code');
@@ -214,13 +245,13 @@ export const useAuth = (deviceId, onSuccess) => {
       setToken(data.token);
       await storage.saveToken(data.token);
       updateApiToken(data.token);
-      setUser(data.email ? { uid: data.uid, email: data.email, displayName: data.displayName ?? null } : null);
+      setUser(data.email ? { uid: data.uid, email: data.email, displayName: data.displayName ?? null, preferences: { allowMultipleDevices: true } } : null);
       await registerDevice(data.uid, deviceId, rememberDevice);
       setPendingMfa(null);
       onSuccess?.();
     } catch (err) {
-      const message = err?.response?.data?.message || 'Invalid code or request. Try again.';
-      Alert.alert('Error', message);
+      const message = err?.response?.data?.message || 'Invalid or expired code. Please try again with a fresh 6-digit code.';
+      Alert.alert('Could not sign in', message);
     } finally {
       setLoading(false);
     }
@@ -236,5 +267,6 @@ export const useAuth = (deviceId, onSuccess) => {
     pendingMfa,
     cancelPendingMfa,
     loginWithOtp,
+    refreshUser,
   };
 };

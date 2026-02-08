@@ -17,6 +17,7 @@ import { PinPad } from './PinPad';
 import { useLayout } from '../hooks/useLayout';
 import { useTheme } from '../context/ThemeContext';
 import { themeDark } from '../constants/themes';
+import { spacing, radii } from '../constants/designTokens';
 
 export const BiometricGate = ({ onUnlock, onPinUnlock, loading, hasPinFallback, hasBiometric = true }) => {
   const { theme } = useTheme();
@@ -32,16 +33,18 @@ export const BiometricGate = ({ onUnlock, onPinUnlock, loading, hasPinFallback, 
   return (
     <View style={[styles.container, { paddingHorizontal: horizontalPadding }]}>
       <View style={[styles.content, { maxWidth: contentMaxWidth }]}>
-        <View style={[styles.iconWrap, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderBright }]}>
+        <View style={[styles.iconWrap, { backgroundColor: theme.colors.bgCard }]}>
           <AppLogo size="lg" />
         </View>
-        <Text style={[styles.title, { color: theme.colors.text }]}>QSafe</Text>
-        <Text style={[styles.tagline, { color: theme.colors.textMuted }]}>Secure Authenticator</Text>
+        <Text style={[styles.title, { color: theme.colors.text }]}>Welcome back</Text>
+        <Text style={[styles.tagline, { color: theme.colors.textMuted }]}>
+          Unlock to access your codes
+        </Text>
 
         {showPinPad || !hasBiometric ? (
           <>
             <Text style={[styles.pinHint, { color: theme.colors.textSecondary }]}>
-              Enter your PIN to unlock
+              Enter your 6-digit PIN
             </Text>
             <PinPad
               title="Enter PIN"
@@ -63,7 +66,7 @@ export const BiometricGate = ({ onUnlock, onPinUnlock, loading, hasPinFallback, 
         ) : (
           <>
             <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
-              {loading ? 'Verifying...' : 'Tap to unlock with your fingerprint or face'}
+              {loading ? 'Verifying...' : 'Tap to unlock with biometric'}
             </Text>
             <TouchableOpacity
               style={styles.buttonWrapper}
@@ -115,13 +118,12 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   iconWrap: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    borderWidth: 2,
+    width: 96,
+    height: 96,
+    borderRadius: radii.xxl,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: themeDark.spacing.lg,
+    marginBottom: spacing.xl,
   },
   title: {
     ...themeDark.typography.h1,
@@ -129,22 +131,23 @@ const styles = StyleSheet.create({
   },
   tagline: {
     ...themeDark.typography.caption,
-    marginBottom: themeDark.spacing.xxl,
+    marginBottom: spacing.xxl,
     letterSpacing: 0.5,
   },
   pinHint: {
     ...themeDark.typography.bodySm,
     textAlign: 'center',
-    marginBottom: themeDark.spacing.md,
+    marginBottom: spacing.md,
   },
   subtitle: {
     ...themeDark.typography.bodySm,
     textAlign: 'center',
-    marginBottom: themeDark.spacing.xxl,
+    marginBottom: spacing.xxl,
   },
   buttonWrapper: {
     width: '100%',
-    borderRadius: themeDark.radii.md,
+    maxWidth: 280,
+    borderRadius: radii.lg,
     overflow: 'hidden',
     ...Platform.select({
       ios: themeDark.shadow.glowSubtle,
@@ -155,8 +158,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: themeDark.spacing.sm,
-    paddingVertical: themeDark.spacing.lg,
+    gap: spacing.sm,
+    paddingVertical: spacing.xl,
   },
   buttonText: {
     color: themeDark.colors.bg,
@@ -168,10 +171,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginTop: themeDark.spacing.lg,
-    paddingVertical: themeDark.spacing.md,
-    paddingHorizontal: themeDark.spacing.xl,
-    borderRadius: themeDark.radii.md,
+    marginTop: spacing.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: radii.md,
     borderWidth: 2,
     width: '100%',
   },
@@ -183,7 +186,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: themeDark.spacing.lg,
+    marginTop: spacing.lg,
   },
   useBiometricText: {
     fontSize: 15,

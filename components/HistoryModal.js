@@ -15,6 +15,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { authApi, mfaApi } from '../services/api';
 import { themeDark } from '../constants/themes';
+import { spacing, radii } from '../constants/designTokens';
 
 const formatDate = (iso) => {
   try {
@@ -177,26 +178,26 @@ const styles = StyleSheet.create({
   },
   content: {
     maxHeight: '70%',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
+    borderTopLeftRadius: radii.xxl,
+    borderTopRightRadius: radii.xxl,
+    padding: spacing.xl,
+    paddingBottom: spacing.xxl + 8,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: themeDark.spacing.lg,
+    marginBottom: spacing.lg,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: themeDark.spacing.md,
+    gap: spacing.md,
   },
   headerIconWrap: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radii.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -209,14 +210,17 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeButton: {
-    padding: themeDark.spacing.sm,
-    borderRadius: themeDark.radii.sm,
+    width: 40,
+    height: 40,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   centerContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 48,
-    gap: themeDark.spacing.md,
+    paddingVertical: spacing.xxl,
+    gap: spacing.md,
   },
   loadingText: {
     fontSize: 14,
@@ -234,16 +238,16 @@ const styles = StyleSheet.create({
   emptyIconWrap: {
     width: 80,
     height: 80,
-    borderRadius: 40,
+    borderRadius: radii.full,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    marginBottom: themeDark.spacing.lg,
+    marginBottom: spacing.lg,
   },
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: themeDark.spacing.sm,
+    marginBottom: spacing.sm,
   },
   emptyText: {
     textAlign: 'center',
@@ -256,17 +260,17 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 8,
+    padding: spacing.md,
+    borderRadius: radii.md,
+    marginBottom: spacing.sm,
     borderWidth: 1,
-    gap: 12,
+    gap: spacing.md,
   },
   rowContent: {
     flex: 1,
   },
   deleteBtn: {
-    padding: 8,
+    padding: spacing.sm,
     justifyContent: 'center',
     alignItems: 'center',
   },

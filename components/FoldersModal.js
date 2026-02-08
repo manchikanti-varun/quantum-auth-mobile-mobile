@@ -21,6 +21,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { DEFAULT_FOLDERS } from '../constants/config';
 import { themeDark } from '../constants/themes';
+import { spacing, radii } from '../constants/designTokens';
 
 export const FoldersModal = ({
   visible,
@@ -242,27 +243,27 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   content: {
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
+    borderBottomLeftRadius: radii.xxl,
+    borderBottomRightRadius: radii.xxl,
+    padding: spacing.xl,
+    paddingBottom: spacing.xxl + 8,
     maxHeight: '85%',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: themeDark.spacing.xl,
+    marginBottom: spacing.xl,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: themeDark.spacing.md,
+    gap: spacing.md,
   },
   headerIconWrap: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radii.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -275,39 +276,39 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeBtn: {
-    padding: themeDark.spacing.sm,
-    borderRadius: themeDark.radii.sm,
+    padding: spacing.sm,
+    borderRadius: radii.sm,
   },
   addSection: {
-    padding: themeDark.spacing.md,
-    borderRadius: themeDark.radii.md,
+    padding: spacing.md,
+    borderRadius: radii.md,
     borderWidth: 1,
-    marginBottom: themeDark.spacing.lg,
+    marginBottom: spacing.lg,
   },
   sectionLabel: {
     fontSize: 13,
     fontWeight: '600',
-    marginBottom: themeDark.spacing.sm,
+    marginBottom: spacing.sm,
   },
   listLabel: {
-    marginBottom: themeDark.spacing.sm,
+    marginBottom: spacing.sm,
   },
   addRow: {
     flexDirection: 'row',
-    gap: themeDark.spacing.sm,
+    gap: spacing.sm,
   },
   input: {
     flex: 1,
-    paddingHorizontal: themeDark.spacing.md,
-    paddingVertical: themeDark.spacing.sm,
-    borderRadius: themeDark.radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
     borderWidth: 1,
     fontSize: 16,
   },
   addBtn: {
-    paddingHorizontal: themeDark.spacing.lg,
-    paddingVertical: themeDark.spacing.sm,
-    borderRadius: themeDark.radii.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
     justifyContent: 'center',
   },
   addBtnText: {
@@ -322,15 +323,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: themeDark.spacing.md,
-    borderRadius: themeDark.radii.md,
+    padding: spacing.md,
+    borderRadius: radii.md,
     borderWidth: 1,
-    marginBottom: themeDark.spacing.sm,
+    marginBottom: spacing.sm,
   },
   folderInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: themeDark.spacing.sm,
+    gap: spacing.sm,
     flex: 1,
   },
   folderName: {
@@ -339,9 +340,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   countBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.sm,
   },
   countText: {
     fontSize: 12,
@@ -349,23 +350,23 @@ const styles = StyleSheet.create({
   },
   rowActions: {
     flexDirection: 'row',
-    gap: themeDark.spacing.xs,
+    gap: spacing.xs,
   },
   iconBtn: {
-    padding: themeDark.spacing.sm,
-    borderRadius: themeDark.radii.sm,
+    padding: spacing.sm,
+    borderRadius: radii.sm,
   },
   editRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: themeDark.spacing.sm,
+    gap: spacing.sm,
     flex: 1,
   },
   editInput: {
     flex: 1,
-    paddingHorizontal: themeDark.spacing.md,
-    paddingVertical: themeDark.spacing.sm,
-    borderRadius: themeDark.radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
     borderWidth: 1,
     fontSize: 16,
   },

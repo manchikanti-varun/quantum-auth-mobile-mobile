@@ -20,6 +20,7 @@ import { useLayout } from '../hooks/useLayout';
 import { useTheme } from '../context/ThemeContext';
 import { useFolders } from '../hooks/useFolders';
 import { themeDark } from '../constants/themes';
+import { spacing, radii } from '../constants/designTokens';
 
 export const HomeScreen = ({
   token,
@@ -101,36 +102,32 @@ export const HomeScreen = ({
   if (!token) {
     return (
       <View style={[styles.authPrompt, { paddingHorizontal: horizontalPadding }]}>
-        <View style={styles.logoContainer}>
-          <View style={[styles.logoRing, { borderColor: theme.colors.borderBright }]}>
-            <AppLogo size="lg" />
-          </View>
+        <View style={[styles.logoRing, { backgroundColor: theme.colors.bgCard, borderWidth: 2, borderColor: theme.colors.accentGlow || 'rgba(56, 189, 248, 0.3)' }]}>
+          <AppLogo size="lg" />
         </View>
         <Text style={[styles.authPromptTitle, { color: theme.colors.text }]}>QSafe</Text>
         <Text style={[styles.authPromptSubtitle, { color: theme.colors.textSecondary }]}>
-          Quantum-Safe Authentication
+          Your secure authenticator
         </Text>
         <Text style={[styles.authPromptTagline, { color: theme.colors.textMuted }]}>
-          Sign in to manage your 2FA codes and approve logins
+          Store 2FA codes, approve logins on new devices, and keep your accounts secure
         </Text>
-        <TouchableOpacity
-          style={styles.authPromptButtonWrapper}
-          onPress={onScanPress}
-          activeOpacity={0.85}
-        >
-          <LinearGradient
-            colors={theme.gradients.accent}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.authPromptButton}
-          >
-            <MaterialCommunityIcons name="login" size={22} color={themeDark.colors.bg} />
-            <Text style={styles.authPromptButtonText}>Sign in</Text>
+        <View style={[styles.authPromptCta, { backgroundColor: theme.colors.bgCard }]}>
+          <MaterialCommunityIcons name="shield-check" size={20} color={theme.colors.accent} />
+          <Text style={[styles.authPromptCtaText, { color: theme.colors.textSecondary }]}>One app for all your codes</Text>
+        </View>
+        <TouchableOpacity style={styles.authPromptButtonWrapper} onPress={onScanPress} activeOpacity={0.85}>
+          <LinearGradient colors={theme.gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.authPromptButton}>
+            <MaterialCommunityIcons name="login" size={22} color="#0f172a" />
+            <Text style={styles.authPromptButtonText}>Sign in to get started</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
     );
   }
+
+  const displayName = user?.displayName || (user?.email ? user.email.split('@')[0] : '') || 'User';
+  const initials = displayName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
     <ScrollView
@@ -147,40 +144,43 @@ export const HomeScreen = ({
       ]}
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.header}>
-        <View>
-          <Text style={[styles.greeting, { color: theme.colors.textMuted }]}>
-            Hello {user?.displayName || (user?.email ? user.email.split('@')[0] : '') || 'User'}
-          </Text>
-          <Text style={[styles.headerTitle, { color: theme.colors.text }]}>My Accounts</Text>
-          <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>
-            {accounts.length} {accounts.length === 1 ? 'account' : 'accounts'}
-          </Text>
+      <View style={[styles.header, { backgroundColor: theme.colors.bgCard, borderWidth: 1, borderColor: theme.colors.border }]}>
+        <View style={styles.headerLeft}>
+          <LinearGradient colors={theme.gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatar}>
+            <Text style={[styles.avatarText, { color: '#0f172a' }]}>{initials}</Text>
+          </LinearGradient>
+          <View>
+            <Text style={[styles.greeting, { color: theme.colors.textMuted }]}>Welcome back</Text>
+            <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{displayName}</Text>
+            <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>
+              {accounts.length} {accounts.length === 1 ? 'account' : 'accounts'} secured
+            </Text>
+          </View>
         </View>
         <View style={styles.headerActions}>
           {onSettingsPress && (
             <TouchableOpacity
-              style={[styles.iconButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+              style={[styles.iconButton, { backgroundColor: theme.colors.surface }]}
               onPress={onSettingsPress}
               activeOpacity={0.7}
             >
-              <MaterialCommunityIcons name="cog" size={22} color={theme.colors.textSecondary} />
+              <MaterialCommunityIcons name="cog-outline" size={22} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           )}
           <TouchableOpacity
-            style={[styles.logoutButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+            style={[styles.iconButton, { backgroundColor: theme.colors.surface }]}
             onPress={onLogout}
             activeOpacity={0.7}
           >
-            <Text style={[styles.logoutButtonText, { color: theme.colors.textSecondary }]}>Logout</Text>
+            <MaterialCommunityIcons name="logout" size={20} color={theme.colors.textSecondary} />
           </TouchableOpacity>
         </View>
       </View>
 
       {accounts.length > 0 && (
         <>
-          <View style={[styles.searchWrap, { backgroundColor: theme.colors.bgCard, borderColor: theme.colors.border }]}>
-            <MaterialCommunityIcons name="magnify" size={20} color={theme.colors.textMuted} style={styles.searchIcon} />
+          <View style={[styles.searchWrap, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }]}>
+            <MaterialCommunityIcons name="magnify" size={22} color={theme.colors.textMuted} style={styles.searchIcon} />
             <TextInput
               style={[styles.searchInput, { color: theme.colors.text }]}
               placeholder="Search accounts..."
@@ -190,64 +190,71 @@ export const HomeScreen = ({
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8}>
-                <MaterialCommunityIcons name="close-circle" size={20} color={theme.colors.textMuted} />
+                <MaterialCommunityIcons name="close-circle" size={22} color={theme.colors.textMuted} />
               </TouchableOpacity>
             )}
           </View>
-          <View style={[styles.filtersRow, { borderColor: theme.colors.border }]}>
-            <TouchableOpacity
-              style={[styles.filterChip, showFavoritesOnly && { backgroundColor: theme.colors.accent }]}
-              onPress={() => setShowFavoritesOnly(!showFavoritesOnly)}
-            >
-              <MaterialCommunityIcons name="star" size={16} color={showFavoritesOnly ? theme.colors.bg : theme.colors.textMuted} />
-              <Text style={[styles.filterChipText, { color: showFavoritesOnly ? theme.colors.bg : theme.colors.textSecondary }]}>Favorites</Text>
-            </TouchableOpacity>
-            {folders.map((f) => {
-              const count = folderCounts[f] ?? 0;
-              return (
-                <TouchableOpacity
-                  key={f}
-                  style={[styles.filterChip, folderFilter === f && { backgroundColor: theme.colors.surface, borderColor: theme.colors.accent, borderWidth: 1 }]}
-                  onPress={() => setFolderFilter(folderFilter === f ? 'all' : f)}
-                >
-                  <MaterialCommunityIcons
-                    name="folder-outline"
-                    size={14}
-                    color={folderFilter === f ? theme.colors.accent : theme.colors.textMuted}
-                    style={styles.folderChipIcon}
-                  />
-                  <Text style={[styles.filterChipText, { color: folderFilter === f ? theme.colors.accent : theme.colors.textSecondary }]}>{f}</Text>
-                  <Text style={[styles.filterChipCount, { color: folderFilter === f ? theme.colors.accent : theme.colors.textMuted }]}>{count}</Text>
-                </TouchableOpacity>
-              );
-            })}
-            {['order', 'issuer', 'label', 'lastUsed'].map((opt) => (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
+            <View style={[styles.filtersRow, { backgroundColor: 'transparent' }]}>
               <TouchableOpacity
-                key={opt}
-                style={[styles.filterChip, sortBy === opt && { backgroundColor: theme.colors.surface, borderColor: theme.colors.accent }]}
-                onPress={() => setSortBy(opt)}
+                style={[styles.filterChip, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }, showFavoritesOnly && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }]}
+                onPress={() => setShowFavoritesOnly(!showFavoritesOnly)}
               >
-                <Text style={[styles.filterChipText, { color: sortBy === opt ? theme.colors.accent : theme.colors.textSecondary }]}>
-                  {opt === 'lastUsed' ? 'Recent' : opt === 'order' ? 'Custom' : opt.charAt(0).toUpperCase() + opt.slice(1)}
-                </Text>
+                <MaterialCommunityIcons name="star" size={16} color={showFavoritesOnly ? theme.colors.bg : theme.colors.textMuted} />
+                <Text style={[styles.filterChipText, { color: showFavoritesOnly ? theme.colors.bg : theme.colors.textSecondary }]}>Favorites</Text>
               </TouchableOpacity>
-            ))}
-          </View>
+              {folders.map((f) => {
+                const count = folderCounts[f] ?? 0;
+                const isActive = folderFilter === f;
+                return (
+                  <TouchableOpacity
+                    key={f}
+                    style={[styles.filterChip, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }, isActive && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }]}
+                    onPress={() => setFolderFilter(isActive ? 'all' : f)}
+                  >
+                    <MaterialCommunityIcons name="folder-outline" size={14} color={isActive ? theme.colors.bg : theme.colors.textMuted} />
+                    <Text style={[styles.filterChipText, { color: isActive ? theme.colors.bg : theme.colors.textSecondary }]}>{f}</Text>
+                    <Text style={[styles.filterChipCount, { color: isActive ? theme.colors.bg : theme.colors.textMuted }]}>{count}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+              {['order', 'issuer', 'label', 'lastUsed'].map((opt) => {
+                const isActive = sortBy === opt;
+                return (
+                  <TouchableOpacity
+                    key={opt}
+                    style={[styles.filterChip, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }, isActive && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }]}
+                    onPress={() => setSortBy(opt)}
+                  >
+                    <Text style={[styles.filterChipText, { color: isActive ? theme.colors.bg : theme.colors.textSecondary }]}>
+                      {opt === 'lastUsed' ? 'Recent' : opt === 'order' ? 'Custom' : opt.charAt(0).toUpperCase() + opt.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </ScrollView>
         </>
       )}
 
       {accounts.length === 0 ? (
         <View style={styles.emptyState}>
-          <View style={[styles.emptyIconWrap, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-            <MaterialCommunityIcons name="qrcode-scan" size={36} color={theme.colors.accent} />
+          <View style={[styles.emptyIconWrap, { backgroundColor: theme.colors.bgCard, borderWidth: 2, borderColor: theme.colors.border }]}>
+            <MaterialCommunityIcons name="shield-plus-outline" size={52} color={theme.colors.accent} />
           </View>
-          <Text style={[styles.emptyStateTitle, { color: theme.colors.text }]}>No accounts yet</Text>
-          <Text style={[styles.emptyStateText, { color: theme.colors.textMuted }]}>
-            Tap the + button below to scan a QR code{'\n'}or enter a setup key manually
+          <Text style={[styles.emptyStateTitle, { color: theme.colors.text }]}>Add your first account</Text>
+          <Text style={[styles.emptyStateText, { color: theme.colors.textSecondary }]}>
+            Tap the + button below to scan a QR code from your service’s security settings
           </Text>
           <Text style={[styles.emptyStateHint, { color: theme.colors.textMuted }]}>
-            Add accounts from Google, GitHub, or any service that supports 2FA
+            Works with Google, GitHub, Microsoft, and any app that supports 2FA
           </Text>
+          <View style={[styles.emptyTips, { backgroundColor: theme.colors.surface }]}>
+            <MaterialCommunityIcons name="lightbulb-on-outline" size={20} color={theme.colors.accent} />
+            <Text style={[styles.emptyTipText, { color: theme.colors.textSecondary }]}>
+              Look for “Two-factor authentication” or “2FA” in your account settings
+            </Text>
+          </View>
         </View>
       ) : (
         <View style={styles.accountsList}>
@@ -259,16 +266,14 @@ export const HomeScreen = ({
               return (
                 <View key={folderName} style={styles.folderGroup}>
                   <TouchableOpacity
-                    style={[styles.folderGroupHeader, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                    style={[styles.folderGroupHeader, { backgroundColor: theme.colors.surface }]}
                     onPress={() => toggleFolderCollapse(folderName)}
                   >
-                    <MaterialCommunityIcons
-                      name={isCollapsed ? 'chevron-right' : 'chevron-down'}
-                      size={20}
-                      color={theme.colors.textMuted}
-                    />
+                    <MaterialCommunityIcons name={isCollapsed ? 'chevron-right' : 'chevron-down'} size={20} color={theme.colors.textSecondary} />
                     <Text style={[styles.folderGroupTitle, { color: theme.colors.text }]}>{folderName}</Text>
-                    <Text style={[styles.folderGroupCount, { color: theme.colors.textMuted }]}>{accs.length}</Text>
+                    <View style={[styles.folderBadge, { backgroundColor: theme.colors.bgCard }]}>
+                      <Text style={[styles.folderGroupCount, { color: theme.colors.textSecondary }]}>{accs.length}</Text>
+                    </View>
                   </TouchableOpacity>
                   {!isCollapsed && accs.map((acc, index) => {
                     const codeKey = acc.id || `fallback-${acc.issuer}-${acc.label}-${index}`;
@@ -333,93 +338,122 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: themeDark.spacing.lg,
-    paddingBottom: themeDark.spacing.xl,
+    padding: spacing.lg,
+    borderRadius: radii.lg,
+    marginBottom: spacing.lg,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  avatarText: {
+    fontSize: 18,
+    fontWeight: '700',
   },
   greeting: {
-    ...themeDark.typography.bodySm,
+    fontSize: 13,
     marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   headerTitle: {
-    ...themeDark.typography.h1,
-    marginBottom: 4,
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 2,
   },
   headerSubtitle: {
-    ...themeDark.typography.bodySm,
-    letterSpacing: 0.5,
+    fontSize: 14,
+    opacity: 0.85,
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: themeDark.spacing.sm,
+    gap: spacing.sm,
   },
   iconButton: {
-    padding: themeDark.spacing.sm,
-    borderRadius: themeDark.radii.full,
-    borderWidth: 1,
-  },
-  logoutButton: {
-    paddingHorizontal: themeDark.spacing.md,
-    paddingVertical: themeDark.spacing.sm,
-    borderRadius: themeDark.radii.full,
-    borderWidth: 1,
-  },
-  logoutButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    width: 44,
+    height: 44,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyState: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 80,
+    paddingVertical: 60,
+    paddingHorizontal: themeDark.spacing.lg,
   },
   emptyIconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: themeDark.radii.xl,
-    borderWidth: 1,
+    width: 96,
+    height: 96,
+    borderRadius: radii.xxl,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: themeDark.spacing.lg,
+    marginBottom: spacing.xl,
   },
   emptyStateTitle: {
-    ...themeDark.typography.h2,
-    marginBottom: themeDark.spacing.sm,
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: spacing.sm,
+    textAlign: 'center',
   },
   emptyStateText: {
-    ...themeDark.typography.bodySm,
+    fontSize: 16,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 24,
+    marginBottom: spacing.sm,
   },
   emptyStateHint: {
-    ...themeDark.typography.caption,
+    fontSize: 14,
     textAlign: 'center',
-    marginTop: themeDark.spacing.md,
-    opacity: 0.8,
+    opacity: 0.85,
+  },
+  emptyTips: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.lg,
+    borderRadius: radii.md,
+    marginTop: spacing.xl,
+    maxWidth: 320,
+  },
+  emptyTipText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
   },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: themeDark.radii.md,
-    borderWidth: 1,
-    paddingHorizontal: themeDark.spacing.md,
-    marginBottom: themeDark.spacing.sm,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    minHeight: 52,
+  },
+  filtersScroll: {
+    marginBottom: spacing.lg,
+    marginHorizontal: -2,
   },
   filtersRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: themeDark.spacing.sm,
-    marginBottom: themeDark.spacing.lg,
+    gap: spacing.sm,
+    paddingVertical: 4,
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: themeDark.spacing.sm,
-    paddingHorizontal: themeDark.spacing.md,
-    borderRadius: themeDark.radii.full,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    gap: 6,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.full,
   },
   filterChipText: {
     fontSize: 13,
@@ -442,31 +476,36 @@ const styles = StyleSheet.create({
   },
   searchEmpty: {
     textAlign: 'center',
-    paddingVertical: themeDark.spacing.xl,
-    ...themeDark.typography.bodySm,
+    paddingVertical: spacing.xl,
+    fontSize: 14,
   },
   accountsList: {
-    gap: themeDark.spacing.md,
+    gap: spacing.md,
   },
   folderGroup: {
-    marginBottom: themeDark.spacing.md,
+    marginBottom: spacing.md,
   },
   folderGroupHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: themeDark.spacing.md,
-    borderRadius: themeDark.radii.md,
-    borderWidth: 1,
-    marginBottom: themeDark.spacing.sm,
+    padding: spacing.md,
+    borderRadius: radii.md,
+    marginBottom: spacing.sm,
   },
   folderGroupTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: themeDark.spacing.sm,
+    marginLeft: spacing.sm,
     flex: 1,
+  },
+  folderBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
   },
   folderGroupCount: {
     fontSize: 13,
+    fontWeight: '600',
   },
   authPrompt: {
     flex: 1,
@@ -474,18 +513,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: themeDark.spacing.xl,
   },
-  logoContainer: {
-    marginBottom: themeDark.spacing.lg,
-  },
   logoRing: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: themeDark.colors.surface,
-    borderWidth: 2,
-    borderColor: themeDark.colors.borderBright,
+    width: 100,
+    height: 100,
+    borderRadius: radii.xxl,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: spacing.xl,
   },
   authPromptTitle: {
     ...themeDark.typography.display,
@@ -499,14 +533,27 @@ const styles = StyleSheet.create({
     marginBottom: themeDark.spacing.xs,
   },
   authPromptTagline: {
-    ...themeDark.typography.caption,
+    fontSize: 14,
     color: themeDark.colors.textMuted,
     textAlign: 'center',
-    marginBottom: themeDark.spacing.xxl,
-    letterSpacing: 1,
+    marginBottom: spacing.lg,
+    letterSpacing: 0.5,
+  },
+  authPromptCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: radii.lg,
+    marginBottom: spacing.xl,
+  },
+  authPromptCtaText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
   authPromptButtonWrapper: {
-    borderRadius: themeDark.radii.lg,
+    borderRadius: radii.lg,
     overflow: 'hidden',
     ...Platform.select({
       ios: themeDark.shadow.glow,
@@ -517,10 +564,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: themeDark.spacing.sm,
-    paddingHorizontal: themeDark.spacing.xxl,
-    paddingVertical: themeDark.spacing.lg,
-    borderRadius: themeDark.radii.lg,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xxl,
+    paddingVertical: spacing.lg,
+    borderRadius: radii.lg,
     minWidth: 200,
   },
   authPromptButtonText: {

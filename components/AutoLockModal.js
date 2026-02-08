@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { AUTO_LOCK_OPTIONS } from '../constants/config';
 import { themeDark } from '../constants/themes';
+import { spacing, radii } from '../constants/designTokens';
 
 export const AutoLockModal = ({ visible, currentMinutes, onSelect, onClose }) => {
   const { theme } = useTheme();
@@ -69,21 +70,21 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   content: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
+    borderTopLeftRadius: radii.xxl,
+    borderTopRightRadius: radii.xxl,
+    padding: spacing.xl,
+    paddingBottom: spacing.xxl + 8,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: themeDark.spacing.md,
+    gap: spacing.md,
   },
   title: {
     fontSize: 20,
@@ -94,19 +95,19 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeButton: {
-    padding: themeDark.spacing.sm,
-    borderRadius: themeDark.radii.sm,
+    padding: spacing.sm,
+    borderRadius: radii.sm,
   },
   pickerHint: {
     fontSize: 14,
-    marginBottom: themeDark.spacing.md,
+    marginBottom: spacing.md,
   },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    borderRadius: 12,
+    padding: spacing.md,
+    borderRadius: radii.md,
     marginBottom: 8,
     borderWidth: 1,
   },

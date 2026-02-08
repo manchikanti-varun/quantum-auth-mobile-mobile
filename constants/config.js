@@ -23,9 +23,9 @@ export const AUTO_LOCK_KEY = 'QSAFE_AUTO_LOCK_MINUTES';
 export const INTRO_SEEN_KEY = 'QSAFE_INTRO_SEEN';
 export const DEFAULT_FOLDERS = ['Personal', 'Work', 'Banking'];
 export const AUTO_LOCK_OPTIONS = [
-  { value: 0, label: 'Never' },
-  { value: 1, label: '1 minute' },
-  { value: 5, label: '5 minutes' },
-  { value: 15, label: '15 minutes' },
-  { value: 30, label: '30 minutes' },
+  { value: 0, label: 'Never', icon: 'clock-outline' },
+  { value: 1, label: '1 minute', icon: 'timer-sand' },
+  { value: 5, label: '5 minutes', icon: 'timer-sand-empty' },
+  { value: 15, label: '15 minutes', icon: 'timer-outline' },
+  { value: 30, label: '30 minutes', icon: 'clock-alert-outline' },
 ];

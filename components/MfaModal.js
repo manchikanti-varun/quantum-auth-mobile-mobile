@@ -19,7 +19,9 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AppLogo } from './AppLogo';
 import { useLayout } from '../hooks/useLayout';
 import { useTheme } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 import { mfaApi } from '../services/api';
+import { spacing, radii } from '../constants/designTokens';
 
 export const MfaModal = ({
   visible,
@@ -31,6 +33,7 @@ export const MfaModal = ({
   resolving,
 }) => {
   const { theme } = useTheme();
+  const { showToast } = useToast();
   const { horizontalPadding, contentMaxWidth } = useLayout();
   const [generatingCode, setGeneratingCode] = useState(false);
   if (!challenge) return null;
@@ -48,14 +51,10 @@ export const MfaModal = ({
       if (code) {
         await Clipboard.setStringAsync(code);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert(
-          'Login code',
-          `Code copied! Enter it on the other device:\n\n${code}\n\nValid for 5 minutes.`,
-          [{ text: 'OK' }]
-        );
+        showToast('Code copied! Enter on other device');
       }
     } catch (e) {
-      Alert.alert('Error', e?.response?.data?.message || 'Could not generate code');
+      Alert.alert('Could not generate code', e?.response?.data?.message || 'Please try again.');
     } finally {
       setGeneratingCode(false);
     }
@@ -69,7 +68,7 @@ export const MfaModal = ({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <View style={[styles.overlay, { padding: horizontalPadding, backgroundColor: theme.colors.bg === '#05070d' ? 'rgba(5, 7, 13, 0.94)' : 'rgba(0, 0, 0, 0.6)' }]}>
+      <View style={[styles.overlay, { padding: horizontalPadding }]}>
         <View style={[styles.content, { maxWidth: contentMaxWidth, backgroundColor: theme.colors.bgElevated, borderColor: theme.colors.border }]}>
           <View style={[styles.headerBadge, { backgroundColor: theme.colors.surface }]}>
             <MaterialCommunityIcons name="shield-check" size={28} color={theme.colors.accent} />
@@ -185,11 +184,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: spacing.xl,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   content: {
-    borderRadius: 24,
-    padding: 28,
+    borderRadius: radii.xxl,
+    padding: spacing.xl + 4,
     width: '100%',
     borderWidth: 1,
     alignItems: 'center',
@@ -201,11 +201,11 @@ const styles = StyleSheet.create({
   headerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 20,
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
+    marginBottom: spacing.xl,
   },
   badgeText: {
     fontSize: 14,
@@ -215,21 +215,21 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 15,
     lineHeight: 22,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.xl,
     paddingHorizontal: 8,
   },
   infoCard: {
     width: '100%',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 24,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginBottom: spacing.xl,
     borderWidth: 1,
   },
   infoRow: {
@@ -250,10 +250,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     alignSelf: 'flex-start',
-    marginTop: 12,
+    marginTop: spacing.md,
     paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radii.sm,
   },
   expiryText: {
     fontSize: 13,
@@ -262,17 +262,17 @@ const styles = StyleSheet.create({
   primaryButtons: {
     width: '100%',
     flexDirection: 'column',
-    gap: 12,
+    gap: spacing.md,
     marginBottom: 8,
   },
   buttonApproveWrapper: {
     width: '100%',
-    borderRadius: 14,
+    borderRadius: radii.lg,
     overflow: 'hidden',
   },
   buttonApprove: {
     flexDirection: 'row',
-    paddingVertical: 16,
+    paddingVertical: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -283,8 +283,8 @@ const styles = StyleSheet.create({
   },
   buttonDeny: {
     flexDirection: 'row',
-    paddingVertical: 16,
-    borderRadius: 14,
+    paddingVertical: spacing.md,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -303,8 +303,8 @@ const styles = StyleSheet.create({
   suspiciousLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 20,
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
     paddingVertical: 8,
   },
   suspiciousText: {
@@ -314,15 +314,15 @@ const styles = StyleSheet.create({
   divider: {
     width: '100%',
     height: 1,
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
   generateCodeButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: spacing.md - 2,
+    paddingHorizontal: spacing.xl,
+    borderRadius: radii.md,
     borderWidth: 1,
     width: '100%',
   },

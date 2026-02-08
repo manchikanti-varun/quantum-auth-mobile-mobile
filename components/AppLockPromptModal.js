@@ -15,6 +15,7 @@ import { AppLogo } from './AppLogo';
 import { PinPad } from './PinPad';
 import { hashPin } from '../utils/pinHash';
 import { themeDark } from '../constants/themes';
+import { spacing, radii } from '../constants/designTokens';
 
 export const AppLockPromptModal = ({
   visible,
@@ -51,14 +52,14 @@ export const AppLockPromptModal = ({
           {showPinSetup ? (
             <>
               <Text style={styles.title}>
-                {isMigration ? 'Set PIN to continue' : 'Set your PIN'}
+                {isMigration ? 'Set your PIN' : 'Create a PIN'}
               </Text>
               <Text style={styles.subtitle}>
                 {isMigration
-                  ? 'Please set a 6-digit PIN as backup. You can then use fingerprint or face, with PIN when needed.'
+                  ? 'Use a 6-digit PIN as backup. You can unlock with fingerprint or face, and PIN when needed.'
                   : hasBiometric
-                    ? 'Set a 6-digit PIN. You\'ll use it as a backup when fingerprint or face isn\'t available.'
-                    : 'Set a 6-digit PIN to lock the app when you\'re not using it.'}
+                    ? 'Create a 6-digit PIN as backup. Use it when fingerprint or face isn\'t available.'
+                    : 'Create a 6-digit PIN to keep your codes secure when the app is closed.'}
               </Text>
               <PinPad
                 title="Set PIN (6 digits)"
@@ -70,12 +71,9 @@ export const AppLockPromptModal = ({
             </>
           ) : (
             <>
-              <Text style={styles.title}>Set up app lock?</Text>
+              <Text style={styles.title}>Keep your codes secure</Text>
               <Text style={styles.subtitle}>
-                Lock QSafe when you're not using it. You'll need to unlock next time you open the app.
-                {hasBiometric
-                  ? ' Set a PIN first — you can then use fingerprint or face, with PIN as backup.'
-                  : ' Set a PIN to secure your codes.'}
+                Lock QSafe when you're not using it. You'll unlock with {hasBiometric ? 'fingerprint, face, or PIN' : 'PIN'} when you return.
               </Text>
               <View style={styles.buttons}>
                 <TouchableOpacity
@@ -107,15 +105,15 @@ export const AppLockPromptModal = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(5, 7, 13, 0.92)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: themeDark.spacing.xl,
+    padding: spacing.xl,
   },
   content: {
     backgroundColor: themeDark.colors.bgElevated,
-    borderRadius: themeDark.radii.xxl,
-    padding: themeDark.spacing.xl,
+    borderRadius: radii.xxl,
+    padding: spacing.xl,
     width: '100%',
     maxWidth: 360,
     alignItems: 'center',
@@ -123,27 +121,27 @@ const styles = StyleSheet.create({
   title: {
     ...themeDark.typography.h2,
     color: themeDark.colors.text,
-    marginTop: themeDark.spacing.lg,
+    marginTop: spacing.lg,
     textAlign: 'center',
   },
   subtitle: {
     ...themeDark.typography.bodySm,
     color: themeDark.colors.textMuted,
     textAlign: 'center',
-    marginTop: themeDark.spacing.sm,
-    marginBottom: themeDark.spacing.xl,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xl,
   },
   buttons: {
     width: '100%',
-    gap: themeDark.spacing.md,
+    gap: spacing.md,
   },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: themeDark.spacing.lg,
-    borderRadius: themeDark.radii.lg,
-    gap: themeDark.spacing.sm,
+    paddingVertical: spacing.lg,
+    borderRadius: radii.lg,
+    gap: spacing.sm,
   },
   buttonPrimary: {
     backgroundColor: themeDark.colors.accent,

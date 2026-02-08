@@ -95,10 +95,10 @@ const styles = StyleSheet.create({
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: themeDark.radii.md,
-    borderWidth: 1,
+    borderRadius: themeDark.radii.lg,
+    borderWidth: 0,
     paddingHorizontal: themeDark.spacing.lg,
-    minHeight: 48,
+    minHeight: 52,
   },
   inputWrapMultiline: {
     alignItems: 'flex-start',

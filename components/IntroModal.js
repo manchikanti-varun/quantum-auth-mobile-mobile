@@ -1,7 +1,7 @@
 /**
- * IntroModal – First-time intro: what QSafe does, how it works.
+ * IntroModal – Modern onboarding with clear value proposition.
  */
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,27 +13,26 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { AppLogo } from './AppLogo';
 import { useTheme } from '../context/ThemeContext';
-import { themeDark } from '../constants/themes';
+import { spacing, radii } from '../constants/designTokens';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const SLIDES = [
   {
-    icon: 'shield-lock-outline',
-    title: 'Quantum-Safe 2FA',
-    body: 'Store your authenticator codes in one place. Generate TOTP codes for Google, GitHub, and any service that supports 2FA.',
+    icon: 'shield-account-outline',
+    title: 'All your 2FA codes in one place',
+    body: 'Store codes for Google, GitHub, and any service. Tap to copy and sign in.',
   },
   {
-    icon: 'cellphone-check',
-    title: 'Approve logins on your phone',
-    body: 'When you sign in on a new device, approve or deny from your phone. No more waiting for SMS codes.',
+    icon: 'cellphone-link',
+    title: 'Approve logins from your phone',
+    body: 'New device? Approve or deny from here. No SMS needed.',
   },
   {
-    icon: 'key-variant',
-    title: 'Ready to get started?',
-    body: 'Create an account or sign in to manage your 2FA codes and secure your logins.',
+    icon: 'rocket-launch-outline',
+    title: 'Let\'s get started',
+    body: 'Create an account or sign in to secure your logins.',
   },
 ];
 
@@ -53,19 +52,23 @@ export const IntroModal = ({ visible, onComplete }) => {
     }
   };
 
-  const onSkip = () => {
-    onComplete?.();
-  };
+  const onSkip = () => onComplete?.();
 
   const onScroll = (e) => {
     const i = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
     if (i !== index) setIndex(i);
   };
 
+  useEffect(() => {
+    if (!visible) return;
+    const timer = setTimeout(onNext, 3500);
+    return () => clearTimeout(timer);
+  }, [visible, index]);
+
   const renderSlide = ({ item }) => (
     <View style={[styles.slide, { width: SCREEN_WIDTH }]}>
-      <View style={[styles.iconWrap, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-        <MaterialCommunityIcons name={item.icon} size={48} color={theme.colors.accent} />
+      <View style={[styles.iconWrap, { backgroundColor: theme.colors.bgCard, borderWidth: 2, borderColor: theme.colors.border }]}>
+        <MaterialCommunityIcons name={item.icon} size={56} color={theme.colors.accent} />
       </View>
       <Text style={[styles.title, { color: theme.colors.text }]}>{item.title}</Text>
       <Text style={[styles.body, { color: theme.colors.textSecondary }]}>{item.body}</Text>
@@ -73,13 +76,15 @@ export const IntroModal = ({ visible, onComplete }) => {
   );
 
   return (
-    <LinearGradient colors={theme.gradients.hero} style={styles.container}>
-      <TouchableOpacity style={styles.skipButton} onPress={onSkip} hitSlop={16}>
+    <View style={[styles.container, { backgroundColor: theme.colors.bg }]}>
+      <TouchableOpacity style={styles.skipButton} onPress={onSkip} hitSlop={20}>
         <Text style={[styles.skipText, { color: theme.colors.textMuted }]}>Skip</Text>
       </TouchableOpacity>
 
-      <View style={styles.logoRow}>
-        <AppLogo size="md" />
+      <View style={styles.brandRow}>
+        <LinearGradient colors={theme.gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.logoBox}>
+          <MaterialCommunityIcons name="shield-check" size={28} color="#0f172a" />
+        </LinearGradient>
         <Text style={[styles.brand, { color: theme.colors.text }]}>QSafe</Text>
       </View>
 
@@ -104,15 +109,12 @@ export const IntroModal = ({ visible, onComplete }) => {
               style={[
                 styles.dot,
                 { backgroundColor: i === index ? theme.colors.accent : theme.colors.textMuted },
+                i === index && styles.dotActive,
               ]}
             />
           ))}
         </View>
-        <TouchableOpacity
-          style={styles.buttonWrapper}
-          onPress={onNext}
-          activeOpacity={0.85}
-        >
+        <TouchableOpacity style={styles.buttonWrapper} onPress={onNext} activeOpacity={0.9}>
           <LinearGradient
             colors={theme.gradients.accent}
             start={{ x: 0, y: 0 }}
@@ -122,60 +124,67 @@ export const IntroModal = ({ visible, onComplete }) => {
             <Text style={styles.buttonText}>
               {index === SLIDES.length - 1 ? 'Get started' : 'Next'}
             </Text>
-            <MaterialCommunityIcons name="arrow-right" size={20} color={themeDark.colors.bg} />
+            <MaterialCommunityIcons name="arrow-right" size={22} color="#0f172a" />
           </LinearGradient>
         </TouchableOpacity>
       </View>
-    </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: Platform.OS === 'ios' ? 60 : 48,
+    paddingTop: Platform.OS === 'ios' ? 56 : 44,
   },
   skipButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 48,
-    right: themeDark.spacing.lg,
+    top: Platform.OS === 'ios' ? 56 : 44,
+    right: spacing.lg,
     zIndex: 10,
   },
   skipText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
   },
-  logoRow: {
+  brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: themeDark.spacing.sm,
-    marginBottom: themeDark.spacing.xl,
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
+  },
+  logoBox: {
+    width: 44,
+    height: 44,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   brand: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 26,
+    fontWeight: '800',
   },
   slide: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: themeDark.spacing.xxl,
+    paddingHorizontal: spacing.xxl,
   },
   iconWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 112,
+    height: 112,
+    borderRadius: radii.xxl,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    marginBottom: themeDark.spacing.xl,
+    marginBottom: spacing.xl,
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: themeDark.spacing.md,
+    marginBottom: spacing.md,
+    lineHeight: 30,
   },
   body: {
     fontSize: 16,
@@ -184,35 +193,40 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   footer: {
-    paddingHorizontal: themeDark.spacing.xl,
-    paddingBottom: themeDark.spacing.xxl + 24,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxl + 32,
   },
   dots: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 8,
-    marginBottom: themeDark.spacing.xl,
+    gap: 10,
+    marginBottom: spacing.xl,
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
+    opacity: 0.5,
+  },
+  dotActive: {
+    width: 24,
+    opacity: 1,
   },
   buttonWrapper: {
-    borderRadius: themeDark.radii.lg,
+    borderRadius: radii.lg,
     overflow: 'hidden',
   },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: themeDark.spacing.sm,
-    paddingVertical: themeDark.spacing.lg,
-    paddingHorizontal: themeDark.spacing.xxl,
+    gap: spacing.sm,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xxl,
   },
   buttonText: {
     fontSize: 17,
     fontWeight: '700',
-    color: themeDark.colors.bg,
+    color: '#0f172a',
   },
 });

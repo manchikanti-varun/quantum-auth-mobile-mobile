@@ -3,12 +3,12 @@
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Alert, AppState, Linking } from 'react-native';
-import * as ScreenCapture from 'expo-screen-capture';
 import { v4 as uuidv4 } from 'uuid';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { ToastProvider, useToast } from './context/ToastContext';
 import { useAuth } from './hooks/useAuth';
 import { useAccounts } from './hooks/useAccounts';
 import { useFolders } from './hooks/useFolders';
@@ -26,9 +26,6 @@ import { ExportImportModal } from './components/ExportImportModal';
 import { HistoryModal } from './components/HistoryModal';
 import { FloatingActionButton } from './components/FloatingActionButton';
 import { BiometricGate } from './components/BiometricGate';
-import { AutoLockModal } from './components/AutoLockModal';
-import { ProfileModal } from './components/ProfileModal';
-import { FoldersModal } from './components/FoldersModal';
 import { AppLockPromptModal } from './components/AppLockPromptModal';
 import { IntroModal } from './components/IntroModal';
 import { storage } from './services/storage';
@@ -45,15 +42,14 @@ function AppContent() {
   const [showAuth, setShowAuth] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
   const [exportImportMode, setExportImportMode] = useState(null);
   const [historyMode, setHistoryMode] = useState(null);
   const [deviceId, setDeviceId] = useState(null);
   const [hasBiometric, setHasBiometric] = useState(false);
   const [showAppLockPrompt, setShowAppLockPrompt] = useState(false);
-  const [showFolders, setShowFolders] = useState(false);
   const [showIntro, setShowIntro] = useState(null);
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
+  const { showToast } = useToast();
 
   useEffect(() => {
     (async () => {
@@ -62,7 +58,7 @@ function AppContent() {
     })();
   }, []);
 
-  const { token, user, loading, login, register, logout, pendingMfa, cancelPendingMfa, loginWithOtp } = useAuth(deviceId, () => {
+  const { token, user, loading, login, register, logout, pendingMfa, cancelPendingMfa, loginWithOtp, refreshUser } = useAuth(deviceId, () => {
     setShowAuth(false);
   });
 
@@ -105,16 +101,7 @@ function AppContent() {
     if (firstTime || migration) setShowAppLockPrompt(true);
   }, [token, appLockConfig]);
 
-  useEffect(() => {
-    if (!appLock || biometricUnlocked) {
-      ScreenCapture.preventScreenCaptureAsync?.().catch(() => {});
-    } else {
-      ScreenCapture.allowScreenCaptureAsync?.().catch(() => {});
-    }
-    return () => {
-      ScreenCapture.allowScreenCaptureAsync?.().catch(() => {});
-    };
-  }, [appLock, biometricUnlocked]);
+  // Screen capture prevention removed - add back for production: npm install expo-screen-capture, then uncomment the useEffect
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
@@ -200,7 +187,7 @@ function AppContent() {
 
   const handleAppLockChange = async (enabled) => {
     if (enabled && !hasBiometric && !appLockConfig?.pinHash) {
-      Alert.alert('Set PIN required', 'No biometric on this device. Set a PIN to enable app lock.', [{ text: 'OK' }]);
+      Alert.alert('PIN required', 'Set a 6-digit PIN to enable app lock on this device.', [{ text: 'OK' }]);
       return;
     }
     setAppLock(enabled);
@@ -275,7 +262,7 @@ function AppContent() {
     const config = await storage.getAppLock();
     const valid = await verifyPin(pin, config?.pinHash);
     if (valid) setBiometricUnlocked(true);
-    else Alert.alert('Wrong PIN', 'Please try again.');
+    else Alert.alert('Incorrect PIN', 'Please try again.');
   };
 
   const handleLogin = async (email, password, rememberDevice = true) => {
@@ -306,10 +293,7 @@ function AppContent() {
         (acc) => acc.issuer === issuer && acc.label === label,
       );
       if (existingAccount) {
-        Alert.alert(
-          'Already added',
-          `${issuer}: ${label} is already enrolled in your accounts.`,
-        );
+        showToast('Already added');
         return;
       }
 
@@ -323,17 +307,13 @@ function AppContent() {
 
       await addAccount(account);
       setShowScanner(false);
-      Alert.alert(
-        'Account added',
-        `${label} added.`,
-        [{ text: 'OK' }],
-      );
+      showToast(`${label} added`);
     } catch (e) {
       if (__DEV__) console.warn('Add account error', e);
       if (e?.message?.includes('SecureStore') || e?.message?.includes('2048')) {
-        Alert.alert('Storage full', 'Could not save. Remove an account or clear app data and try again.');
+        Alert.alert('Storage full', 'Could not save. Please remove an account or clear app data, then try again.');
       } else {
-        Alert.alert('Error', 'Could not add account. Try manual entry and paste the exact key from Google.');
+        Alert.alert('Could not add account', 'Try manual entry and paste the setup key from your service\'s security settings.');
       }
     }
   };
@@ -397,7 +377,7 @@ function AppContent() {
 
   return (
     <>
-      <StatusBar style={theme.colors.bg === '#05070d' ? 'light' : 'dark'} />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <LinearGradient
         colors={theme.gradients.hero}
         style={styles.container}
@@ -440,7 +420,7 @@ function AppContent() {
                   'Verify identity to add accounts',
                 );
                 if (success) setShowScanner(true);
-                else Alert.alert('Authentication failed', 'Could not verify identity');
+                else Alert.alert('Verification required', 'Please verify your identity to add accounts.');
               }}
             />
           )}
@@ -469,14 +449,15 @@ function AppContent() {
             visible={showSettings}
             onClose={() => setShowSettings(false)}
             user={user}
-            onProfilePress={() => { setShowSettings(false); setShowProfile(true); }}
+            deviceId={deviceId}
+            onPreferencesChange={refreshUser}
             appLock={appLock}
             onAppLockChange={handleAppLockChange}
             appLockConfig={appLockConfig}
             onPinSetup={handlePinSetup}
-            hasBiometric={hasBiometric}
-            onAutoLockChange={() => setShowAutoLockPicker(true)}
+            onAutoLockSelect={handleAutoLockSelect}
             autoLockMinutes={autoLockMinutes}
+            hasBiometric={hasBiometric}
             onCheckMfa={token ? checkForPendingChallenges : undefined}
             onExportImport={(mode) => {
               if (mode === 'loginHistory' || mode === 'mfaHistory') {
@@ -485,12 +466,6 @@ function AppContent() {
                 setExportImportMode(mode);
               }
             }}
-            onFoldersPress={() => { setShowSettings(false); setShowFolders(true); }}
-          />
-
-          <FoldersModal
-            visible={showFolders}
-            onClose={() => setShowFolders(false)}
             folders={folders}
             accounts={accounts}
             addFolder={addFolder}
@@ -498,19 +473,6 @@ function AppContent() {
             removeFolder={removeFolder}
             updateAccount={updateAccount}
             refreshFolders={refreshFolders}
-          />
-
-          <AutoLockModal
-            visible={showAutoLockPicker}
-            currentMinutes={autoLockMinutes}
-            onSelect={handleAutoLockSelect}
-            onClose={() => setShowAutoLockPicker(false)}
-          />
-
-          <ProfileModal
-            visible={showProfile}
-            user={user}
-            onClose={() => setShowProfile(false)}
           />
 
           <ExportImportModal
@@ -567,7 +529,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <AppContent />
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

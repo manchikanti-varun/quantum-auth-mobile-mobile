@@ -1,15 +1,8 @@
 /**
- * Issuer icons – map issuer names to MaterialCommunityIcons; fallback: first letter.
- */
-/**
- * Issuer icons – map issuer names to MaterialCommunityIcons; fallback: first letter.
+ * Issuer icons and brand colors – Google, Microsoft, Authy style.
  */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-/**
- * Map issuer names to MaterialCommunityIcons. Fallback: first letter.
- * Keys are lowercase for matching.
- */
 const ICON_MAP = {
   google: 'google',
   instagram: 'instagram',
@@ -41,10 +34,35 @@ const ICON_MAP = {
   epic: 'gamepad-variant',
 };
 
+/** Brand colors for accounts (Microsoft Authenticator style) */
+const ISSUER_COLORS = {
+  google: { bg: '#4285F4', icon: '#fff' },
+  microsoft: { bg: '#00a4ef', icon: '#fff' },
+  github: { bg: '#24292e', icon: '#fff' },
+  facebook: { bg: '#1877f2', icon: '#fff' },
+  amazon: { bg: '#ff9900', icon: '#000' },
+  apple: { bg: '#000', icon: '#fff' },
+  instagram: { bg: '#e4405f', icon: '#fff' },
+  twitter: { bg: '#1da1f2', icon: '#fff' },
+  discord: { bg: '#5865f2', icon: '#fff' },
+  slack: { bg: '#4a154b', icon: '#fff' },
+  linkedin: { bg: '#0a66c2', icon: '#fff' },
+  dropbox: { bg: '#0061ff', icon: '#fff' },
+  paypal: { bg: '#00457c', icon: '#fff' },
+  spotify: { bg: '#1db954', icon: '#fff' },
+  netflix: { bg: '#e50914', icon: '#fff' },
+  steam: { bg: '#1b2838', icon: '#fff' },
+};
+
 export function getIssuerIcon(issuer) {
   const key = String(issuer || '').toLowerCase().trim();
   const iconName = ICON_MAP[key] || ICON_MAP[key.replace(/\s+/g, '')];
   return iconName || null;
+}
+
+export function getIssuerColor(issuer) {
+  const key = String(issuer || '').toLowerCase().trim();
+  return ISSUER_COLORS[key] || ISSUER_COLORS[key.replace(/\s+/g, '')] || null;
 }
 
 export const ICON_PICKER_OPTIONS = [

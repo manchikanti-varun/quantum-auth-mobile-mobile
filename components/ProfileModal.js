@@ -21,6 +21,7 @@ import { Input, PasswordInput } from './ui';
 import { authApi } from '../services/api';
 import { validatePassword } from '../utils/validation';
 import { themeDark } from '../constants/themes';
+import { spacing, radii } from '../constants/designTokens';
 
 export const ProfileModal = ({ visible, user, onClose, onPasswordChanged }) => {
   const { theme } = useTheme();
@@ -63,7 +64,7 @@ export const ProfileModal = ({ visible, user, onClose, onPasswordChanged }) => {
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { backgroundColor: theme.colors.bgElevated }]}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={[styles.content, { backgroundColor: theme.colors.bgElevated }]}>
           <View style={styles.header}>
@@ -142,32 +143,31 @@ export const ProfileModal = ({ visible, user, onClose, onPasswordChanged }) => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   content: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
-    maxHeight: '85%',
-    minHeight: 280,
+    borderTopLeftRadius: radii.xxl,
+    borderTopRightRadius: radii.xxl,
+    padding: spacing.xl,
+    paddingBottom: spacing.xxl + 8,
+    maxHeight: '95%',
+    minHeight: 520,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: themeDark.spacing.xl,
+    marginBottom: spacing.xl,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: themeDark.spacing.md,
+    gap: spacing.md,
   },
   headerIconWrap: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radii.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -180,21 +180,21 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeButton: {
-    padding: themeDark.spacing.sm,
-    borderRadius: themeDark.radii.sm,
+    padding: spacing.sm,
+    borderRadius: radii.sm,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: themeDark.spacing.sm,
+    marginBottom: spacing.sm,
   },
   sectionDesc: {
     fontSize: 14,
     lineHeight: 20,
-    marginBottom: themeDark.spacing.md,
+    marginBottom: spacing.md,
   },
   labelSection: {
-    marginTop: themeDark.spacing.xl,
+    marginTop: spacing.xl,
   },
   keyboardAvoid: {
     flex: 1,
@@ -209,32 +209,32 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   input: {
-    borderRadius: themeDark.radii.md,
-    paddingHorizontal: themeDark.spacing.lg,
-    paddingVertical: themeDark.spacing.md,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     borderWidth: 1,
     fontSize: 16,
-    marginBottom: themeDark.spacing.md,
+    marginBottom: spacing.md,
   },
   emailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: themeDark.spacing.lg,
-    paddingVertical: themeDark.spacing.md,
-    borderRadius: themeDark.radii.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: radii.md,
     borderWidth: 1,
-    marginBottom: themeDark.spacing.md,
-    gap: themeDark.spacing.sm,
+    marginBottom: spacing.md,
+    gap: spacing.sm,
   },
   emailText: {
     fontSize: 16,
     flex: 1,
   },
   button: {
-    paddingVertical: themeDark.spacing.lg,
-    borderRadius: themeDark.radii.md,
+    paddingVertical: spacing.lg,
+    borderRadius: radii.md,
     alignItems: 'center',
-    marginTop: themeDark.spacing.md,
+    marginTop: spacing.md,
   },
   buttonText: {
     fontSize: 16,
