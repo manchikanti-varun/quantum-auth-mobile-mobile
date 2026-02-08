@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { usePreventScreenCapture } from 'expo-screen-capture';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { useAuth } from './hooks/useAuth';
@@ -35,6 +36,7 @@ import { storage } from './services/storage';
 import { verifyPin } from './utils/pinHash';
 
 function AppContent() {
+  usePreventScreenCapture();
   const [biometricUnlocked, setBiometricUnlocked] = useState(false);
   const [biometricChecking, setBiometricChecking] = useState(true);
   const [appLock, setAppLock] = useState(true);
