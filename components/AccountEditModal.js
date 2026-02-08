@@ -17,7 +17,7 @@ import { useFolders } from '../hooks/useFolders';
 import { ICON_PICKER_OPTIONS } from '../utils/issuerIcons';
 import { themeDark } from '../constants/themes';
 
-export const AccountEditModal = ({ visible, account, folders: foldersProp, onClose, onSave }) => {
+export const AccountEditModal = ({ visible, account, folders: foldersProp, accounts = [], onClose, onSave }) => {
   const { theme } = useTheme();
   const { folders: foldersFromHook, addFolder } = useFolders();
   const baseFolders = foldersProp?.length > 0 ? foldersProp : foldersFromHook;
@@ -25,6 +25,14 @@ export const AccountEditModal = ({ visible, account, folders: foldersProp, onClo
     if (!account?.folder || baseFolders.includes(account.folder)) return baseFolders;
     return [account.folder, ...baseFolders];
   }, [baseFolders, account?.folder]);
+  const folderCounts = React.useMemo(() => {
+    const counts = {};
+    accounts.forEach((acc) => {
+      const f = acc.folder || 'Personal';
+      counts[f] = (counts[f] || 0) + 1;
+    });
+    return counts;
+  }, [accounts]);
   const [notes, setNotes] = useState('');
   const [folder, setFolder] = useState('Personal');
   const [newFolderName, setNewFolderName] = useState('');
@@ -85,15 +93,25 @@ export const AccountEditModal = ({ visible, account, folders: foldersProp, onClo
 
           <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Folder</Text>
           <View style={[styles.folderRow, { flexWrap: 'wrap' }]}>
-            {folders.map((f) => (
-              <TouchableOpacity
-                key={f}
-                style={[styles.folderChip, folder === f && { backgroundColor: theme.colors.accent }]}
-                onPress={() => setFolder(f)}
-              >
-                <Text style={[styles.folderChipText, { color: folder === f ? theme.colors.bg : theme.colors.textSecondary }]}>{f}</Text>
-              </TouchableOpacity>
-            ))}
+            {folders.map((f) => {
+              const count = folderCounts[f] ?? 0;
+              return (
+                <TouchableOpacity
+                  key={f}
+                  style={[styles.folderChip, folder === f && { backgroundColor: theme.colors.accent }]}
+                  onPress={() => setFolder(f)}
+                >
+                  <MaterialCommunityIcons
+                    name="folder-outline"
+                    size={16}
+                    color={folder === f ? theme.colors.bg : theme.colors.textMuted}
+                    style={styles.folderChipIcon}
+                  />
+                  <Text style={[styles.folderChipText, { color: folder === f ? theme.colors.bg : theme.colors.textSecondary }]}>{f}</Text>
+                  <Text style={[styles.folderChipCount, { color: folder === f ? theme.colors.bg : theme.colors.textMuted }]}>{count}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
           <View style={styles.addFolderRow}>
             <TextInput
@@ -202,13 +220,22 @@ const styles = StyleSheet.create({
     marginRight: themeDark.spacing.sm,
   },
   folderChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: themeDark.spacing.xs,
     paddingVertical: themeDark.spacing.sm,
     paddingHorizontal: themeDark.spacing.md,
     borderRadius: themeDark.radii.md,
   },
+  folderChipIcon: {
+    marginRight: 2,
+  },
   folderChipText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  folderChipCount: {
+    fontSize: 12,
   },
   input: {
     borderRadius: themeDark.radii.md,

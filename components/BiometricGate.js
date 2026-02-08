@@ -11,12 +11,15 @@ import {
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AppLogo } from './AppLogo';
 import { PinPad } from './PinPad';
 import { useLayout } from '../hooks/useLayout';
+import { useTheme } from '../context/ThemeContext';
 import { themeDark } from '../constants/themes';
 
 export const BiometricGate = ({ onUnlock, onPinUnlock, loading, hasPinFallback, hasBiometric = true }) => {
+  const { theme } = useTheme();
   const { horizontalPadding, contentMaxWidth } = useLayout();
   const [showPinPad, setShowPinPad] = useState(!hasBiometric);
 
@@ -26,23 +29,24 @@ export const BiometricGate = ({ onUnlock, onPinUnlock, loading, hasPinFallback, 
     await onUnlock();
   };
 
-  const handleBiometricFailed = () => {
-    if (hasPinFallback) setShowPinPad(true);
-  };
-
   return (
     <View style={[styles.container, { paddingHorizontal: horizontalPadding }]}>
       <View style={[styles.content, { maxWidth: contentMaxWidth }]}>
-        <View style={styles.iconWrap}>
+        <View style={[styles.iconWrap, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderBright }]}>
           <AppLogo size="lg" />
         </View>
-        <Text style={styles.title}>QSafe</Text>
+        <Text style={[styles.title, { color: theme.colors.text }]}>QSafe</Text>
+        <Text style={[styles.tagline, { color: theme.colors.textMuted }]}>Secure Authenticator</Text>
 
         {showPinPad || !hasBiometric ? (
           <>
+            <Text style={[styles.pinHint, { color: theme.colors.textSecondary }]}>
+              Enter your PIN to unlock
+            </Text>
             <PinPad
               title="Enter PIN"
               mode="verify"
+              minLength={6}
               onComplete={(pin) => onPinUnlock?.(pin)}
               onCancel={hasBiometric && hasPinFallback ? () => setShowPinPad(false) : undefined}
             />
@@ -51,14 +55,15 @@ export const BiometricGate = ({ onUnlock, onPinUnlock, loading, hasPinFallback, 
                 onPress={() => setShowPinPad(false)}
                 style={styles.useBiometric}
               >
-                <Text style={styles.useBiometricText}>Use biometric instead</Text>
+                <MaterialCommunityIcons name="fingerprint" size={20} color={theme.colors.accent} />
+                <Text style={[styles.useBiometricText, { color: theme.colors.accent }]}>Use fingerprint / face instead</Text>
               </TouchableOpacity>
             )}
           </>
         ) : (
           <>
-            <Text style={styles.subtitle}>
-              {loading ? 'Verifying...' : 'Verify identity to continue'}
+            <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
+              {loading ? 'Verifying...' : 'Tap to unlock with your fingerprint or face'}
             </Text>
             <TouchableOpacity
               style={styles.buttonWrapper}
@@ -67,21 +72,29 @@ export const BiometricGate = ({ onUnlock, onPinUnlock, loading, hasPinFallback, 
               activeOpacity={0.85}
             >
               <LinearGradient
-                colors={themeDark.gradients.accent}
+                colors={theme.gradients.accent}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.button}
               >
                 {loading ? (
-                  <ActivityIndicator color={themeDark.colors.bg} />
+                  <ActivityIndicator color={theme.colors.bg} />
                 ) : (
-                  <Text style={styles.buttonText}>Unlock</Text>
+                  <>
+                    <MaterialCommunityIcons name="fingerprint" size={24} color={theme.colors.bg} />
+                    <Text style={[styles.buttonText, { color: theme.colors.bg }]}>Unlock</Text>
+                  </>
                 )}
               </LinearGradient>
             </TouchableOpacity>
             {hasPinFallback && (
-              <TouchableOpacity onPress={() => setShowPinPad(true)} style={styles.usePin}>
-                <Text style={styles.usePinText}>Use PIN instead</Text>
+              <TouchableOpacity
+                onPress={() => setShowPinPad(true)}
+                style={[styles.usePinButton, { borderColor: theme.colors.border }]}
+                activeOpacity={0.8}
+              >
+                <MaterialCommunityIcons name="numeric" size={20} color={theme.colors.accent} />
+                <Text style={[styles.usePinText, { color: theme.colors.accent }]}>Use PIN instead</Text>
               </TouchableOpacity>
             )}
           </>
@@ -105,21 +118,27 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: themeDark.colors.surface,
     borderWidth: 2,
-    borderColor: themeDark.colors.borderBright,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: themeDark.spacing.lg,
   },
   title: {
     ...themeDark.typography.h1,
-    color: themeDark.colors.text,
-    marginBottom: themeDark.spacing.sm,
+    marginBottom: 2,
+  },
+  tagline: {
+    ...themeDark.typography.caption,
+    marginBottom: themeDark.spacing.xxl,
+    letterSpacing: 0.5,
+  },
+  pinHint: {
+    ...themeDark.typography.bodySm,
+    textAlign: 'center',
+    marginBottom: themeDark.spacing.md,
   },
   subtitle: {
     ...themeDark.typography.bodySm,
-    color: themeDark.colors.textMuted,
     textAlign: 'center',
     marginBottom: themeDark.spacing.xxl,
   },
@@ -133,31 +152,41 @@ const styles = StyleSheet.create({
     }),
   },
   button: {
-    paddingVertical: themeDark.spacing.lg,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: themeDark.spacing.sm,
+    paddingVertical: themeDark.spacing.lg,
   },
   buttonText: {
     color: themeDark.colors.bg,
     fontSize: 16,
     fontWeight: '700',
   },
-  usePin: {
+  usePinButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     marginTop: themeDark.spacing.lg,
+    paddingVertical: themeDark.spacing.md,
+    paddingHorizontal: themeDark.spacing.xl,
+    borderRadius: themeDark.radii.md,
+    borderWidth: 2,
+    width: '100%',
   },
   usePinText: {
-    color: themeDark.colors.accent,
     fontSize: 15,
     fontWeight: '600',
-    textDecorationLine: 'underline',
   },
   useBiometric: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginTop: themeDark.spacing.lg,
   },
   useBiometricText: {
-    color: themeDark.colors.accent,
     fontSize: 15,
     fontWeight: '600',
-    textDecorationLine: 'underline',
   },
 });

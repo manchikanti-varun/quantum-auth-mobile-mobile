@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { useAuth } from './hooks/useAuth';
 import { useAccounts } from './hooks/useAccounts';
+import { useFolders } from './hooks/useFolders';
 import { useMfa } from './hooks/useMfa';
 import { deviceService } from './services/device';
 import { qrParser } from './services/qrParser';
@@ -27,6 +28,7 @@ import { FloatingActionButton } from './components/FloatingActionButton';
 import { BiometricGate } from './components/BiometricGate';
 import { AutoLockModal } from './components/AutoLockModal';
 import { ProfileModal } from './components/ProfileModal';
+import { FoldersModal } from './components/FoldersModal';
 import { AppLockPromptModal } from './components/AppLockPromptModal';
 import { storage } from './services/storage';
 import { verifyPin } from './utils/pinHash';
@@ -48,6 +50,7 @@ function AppContent() {
   const [deviceId, setDeviceId] = useState(null);
   const [hasBiometric, setHasBiometric] = useState(false);
   const [showAppLockPrompt, setShowAppLockPrompt] = useState(false);
+  const [showFolders, setShowFolders] = useState(false);
   const { theme } = useTheme();
 
   const { token, user, loading, login, register, logout, pendingMfa, cancelPendingMfa, loginWithOtp } = useAuth(deviceId, () => {
@@ -56,6 +59,7 @@ function AppContent() {
 
   const [mfaResolving, setMfaResolving] = useState(null); // 'approve' | 'deny' | null
   const { accounts, totpCodes, totpAdjacent, totpSecondsRemaining, addAccount, removeAccount, toggleFavorite, updateAccount, setLastUsed, reloadAccounts } = useAccounts();
+  const { folders, addFolder, renameFolder, removeFolder, refreshFolders } = useFolders();
   const { pendingChallenge, resolveChallenge, checkForPendingChallenges } = useMfa(deviceId, token);
 
   const appState = useRef(AppState.currentState);
@@ -83,7 +87,9 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    if (token && !appLockConfig) setShowAppLockPrompt(true);
+    const firstTime = token && !appLockConfig;
+    const migration = token && appLockConfig?.enabled && !appLockConfig?.pinHash; // old users: enabled with biometric only
+    if (firstTime || migration) setShowAppLockPrompt(true);
   }, [token, appLockConfig]);
 
   useEffect(() => {
@@ -108,9 +114,15 @@ function AppContent() {
           return;
         }
         const elapsed = (Date.now() - lastActivityRef.current) / 60000;
-        if (autoLockMinutes > 0 && elapsed >= autoLockMinutes) {
-          setBiometricUnlocked(false);
+        const shouldLock = autoLockMinutes > 0 && elapsed >= autoLockMinutes;
+        if (shouldLock) setBiometricUnlocked(false);
+
+        if (!biometricUnlocked) {
           setBiometricChecking(true);
+          if (!hasBiometric) {
+            setBiometricChecking(false);
+            return; // BiometricGate shows PIN
+          }
           biometricService
             .authenticate('Verify identity to continue')
             .then(({ success }) => {
@@ -119,14 +131,6 @@ function AppContent() {
                 setBiometricUnlocked(true);
                 lastActivityRef.current = Date.now();
               }
-            });
-        } else if (!biometricUnlocked) {
-          setBiometricChecking(true);
-          biometricService
-            .authenticate('Verify identity to continue')
-            .then(({ success }) => {
-              setBiometricChecking(false);
-              if (success) setBiometricUnlocked(true);
             });
         } else {
           lastActivityRef.current = Date.now();
@@ -139,7 +143,7 @@ function AppContent() {
       appState.current = nextState;
     });
     return () => subscription?.remove();
-  }, [appLock, autoLockMinutes]);
+  }, [appLock, autoLockMinutes, hasBiometric]);
 
   const initializeApp = async () => {
     const { deviceId: id } = await deviceService.ensureDeviceIdentity();
@@ -164,6 +168,13 @@ function AppContent() {
       return;
     }
 
+    // No biometric: show PIN gate directly (don't call authenticate — it would auto-allow)
+    if (!hasBiometric) {
+      setBiometricChecking(false);
+      return; // BiometricGate will show PIN
+    }
+
+    // Has biometric: try it first; on fail, BiometricGate shows with "Use PIN instead"
     const { success } = await biometricService.authenticate(
       'Verify identity to open QSafe',
     );
@@ -191,6 +202,7 @@ function AppContent() {
     setAppLockConfig(config);
     setAppLock(true);
     setShowAppLockPrompt(false);
+    if (opts?.pinHash) setBiometricUnlocked(true); // unlock after PIN set (first time or migration)
   };
 
   const handleAppLockPromptSkip = async () => {
@@ -269,12 +281,13 @@ function AppContent() {
     }
   };
 
-  const handleQrScan = async (data) => {
+  const handleQrScan = async (data, options) => {
     try {
       const parsed = qrParser.parseOtpauth(data);
       if (!parsed) return;
 
       const { issuer, label, secret } = parsed;
+      const folder = options?.folder || 'Personal';
 
       const existingAccount = accounts.find(
         (acc) => acc.issuer === issuer && acc.label === label,
@@ -292,6 +305,7 @@ function AppContent() {
         issuer,
         label,
         secret: String(secret).trim().replace(/\s/g, ''),
+        folder,
       };
 
       await addAccount(account);
@@ -421,6 +435,7 @@ function AppContent() {
             visible={showScanner}
             onClose={() => setShowScanner(false)}
             onScan={handleQrScan}
+            folders={folders}
           />
 
           <SettingsModal
@@ -443,6 +458,19 @@ function AppContent() {
                 setExportImportMode(mode);
               }
             }}
+            onFoldersPress={() => { setShowSettings(false); setShowFolders(true); }}
+          />
+
+          <FoldersModal
+            visible={showFolders}
+            onClose={() => setShowFolders(false)}
+            folders={folders}
+            accounts={accounts}
+            addFolder={addFolder}
+            renameFolder={renameFolder}
+            removeFolder={removeFolder}
+            updateAccount={updateAccount}
+            refreshFolders={refreshFolders}
           />
 
           <AutoLockModal
@@ -456,13 +484,6 @@ function AppContent() {
             visible={showProfile}
             user={user}
             onClose={() => setShowProfile(false)}
-          />
-
-          <AppLockPromptModal
-            visible={showAppLockPrompt}
-            hasBiometric={hasBiometric}
-            onEnable={handleAppLockPromptEnable}
-            onSkip={handleAppLockPromptSkip}
           />
 
           <ExportImportModal
@@ -489,6 +510,15 @@ function AppContent() {
               hasBiometric={hasBiometric}
             />
           )}
+
+          {/* App lock setup: first time or migration (old users with biometric only) - shows on top of lock */}
+          <AppLockPromptModal
+            visible={showAppLockPrompt}
+            hasBiometric={hasBiometric}
+            isMigration={!!(appLockConfig?.enabled && !appLockConfig?.pinHash)}
+            onEnable={handleAppLockPromptEnable}
+            onSkip={handleAppLockPromptSkip}
+          />
 
           {/* MFA approve/deny: show even when app locked (on top of lock screen) */}
           <MfaModal

@@ -23,7 +23,7 @@ const THEME_OPTIONS = [
   { id: 'system', icon: 'cellphone', label: 'System' },
 ];
 
-export const SettingsModal = ({ visible, onClose, user, appLock, onAppLockChange, onExportImport, appLockConfig, onPinSetup, onAutoLockChange, autoLockMinutes, onProfilePress, hasBiometric, onCheckMfa }) => {
+export const SettingsModal = ({ visible, onClose, user, appLock, onAppLockChange, onExportImport, appLockConfig, onPinSetup, onAutoLockChange, autoLockMinutes, onProfilePress, hasBiometric, onCheckMfa, onFoldersPress }) => {
   const { theme, preference, setThemePreference } = useTheme();
   const [showPinSetup, setShowPinSetup] = useState(false);
 
@@ -33,13 +33,24 @@ export const SettingsModal = ({ visible, onClose, user, appLock, onAppLockChange
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <ScrollView style={[styles.scroll, { backgroundColor: theme.colors.bgElevated }]} contentContainerStyle={styles.content}>
           <View style={styles.header}>
-            <Text style={[styles.title, { color: theme.colors.text }]}>Settings</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={12}>
-              <Text style={[styles.close, { color: theme.colors.textMuted }]}>×</Text>
+            <View style={styles.headerLeft}>
+              <View style={[styles.headerIconWrap, { backgroundColor: theme.colors.surface }]}>
+                <MaterialCommunityIcons name="cog" size={26} color={theme.colors.accent} />
+              </View>
+              <View>
+                <Text style={[styles.title, { color: theme.colors.text }]}>Settings</Text>
+                <Text style={[styles.headerSubtitle, { color: theme.colors.textMuted }]}>Preferences & security</Text>
+              </View>
+            </View>
+            <TouchableOpacity onPress={onClose} hitSlop={12} style={[styles.closeButton, { backgroundColor: theme.colors.surface }]}>
+              <MaterialCommunityIcons name="close" size={22} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
-          <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Profile</Text>
+          <View style={[styles.sectionHeader, styles.sectionFirst, { borderColor: theme.colors.border }]}>
+            <MaterialCommunityIcons name="account-outline" size={18} color={theme.colors.accent} />
+            <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Profile</Text>
+          </View>
           {user?.email && (
             <View style={[styles.optionRow, { backgroundColor: theme.colors.surface }]}>
               <MaterialCommunityIcons name="email-outline" size={24} color={theme.colors.textMuted} />
@@ -55,7 +66,10 @@ export const SettingsModal = ({ visible, onClose, user, appLock, onAppLockChange
             <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.textMuted} />
           </TouchableOpacity>
 
-          <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Theme</Text>
+          <View style={[styles.sectionHeader, { borderColor: theme.colors.border }]}>
+            <MaterialCommunityIcons name="palette-outline" size={18} color={theme.colors.accent} />
+            <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Theme</Text>
+          </View>
           <View style={styles.optionsRow}>
             {THEME_OPTIONS.map((opt) => {
               const isSelected = preference === opt.id;
@@ -84,7 +98,10 @@ export const SettingsModal = ({ visible, onClose, user, appLock, onAppLockChange
 
           {appLock !== undefined && (
             <>
-              <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>App Lock</Text>
+              <View style={[styles.sectionHeader, { borderColor: theme.colors.border }]}>
+                <MaterialCommunityIcons name="shield-lock-outline" size={18} color={theme.colors.accent} />
+                <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>App Lock</Text>
+              </View>
               <View style={[styles.optionRow, { backgroundColor: theme.colors.surface }]}>
                 <MaterialCommunityIcons name="fingerprint" size={24} color={theme.colors.textSecondary} />
                 <Text style={[styles.optionRowText, { color: theme.colors.text }]}>
@@ -140,7 +157,25 @@ export const SettingsModal = ({ visible, onClose, user, appLock, onAppLockChange
             </View>
           )}
 
-          <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Backup & Recovery</Text>
+          <View style={[styles.sectionHeader, { borderColor: theme.colors.border }]}>
+            <MaterialCommunityIcons name="folder-multiple" size={18} color={theme.colors.accent} />
+            <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Folders</Text>
+          </View>
+          {onFoldersPress && (
+            <TouchableOpacity
+              style={[styles.optionRow, { backgroundColor: theme.colors.surface }]}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onFoldersPress(); }}
+            >
+              <MaterialCommunityIcons name="folder-edit" size={24} color={theme.colors.accent} />
+              <Text style={[styles.optionRowText, { color: theme.colors.text }]}>Manage folders</Text>
+              <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.textMuted} />
+            </TouchableOpacity>
+          )}
+
+          <View style={[styles.sectionHeader, { borderColor: theme.colors.border }]}>
+            <MaterialCommunityIcons name="backup-restore" size={18} color={theme.colors.accent} />
+            <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Backup & Recovery</Text>
+          </View>
           <TouchableOpacity
             style={[styles.optionRow, { backgroundColor: theme.colors.surface }]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onExportImport?.('export'); }}
@@ -158,7 +193,10 @@ export const SettingsModal = ({ visible, onClose, user, appLock, onAppLockChange
             <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.textMuted} />
           </TouchableOpacity>
 
-          <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Activity</Text>
+          <View style={[styles.sectionHeader, { borderColor: theme.colors.border }]}>
+            <MaterialCommunityIcons name="history" size={18} color={theme.colors.accent} />
+            <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Activity</Text>
+          </View>
           {onCheckMfa && (
             <TouchableOpacity
               style={[styles.optionRow, { backgroundColor: theme.colors.surface }]}
@@ -212,18 +250,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: themeDark.spacing.md,
+  },
+  headerIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   title: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
   },
-  close: {
-    fontSize: 28,
-    fontWeight: '300',
+  headerSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  closeButton: {
+    padding: themeDark.spacing.sm,
+    borderRadius: themeDark.radii.sm,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: themeDark.spacing.lg,
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+  },
+  sectionFirst: {
+    marginTop: 0,
   },
   sectionLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 12,
+    fontSize: 13,
+    fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },

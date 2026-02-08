@@ -6,7 +6,6 @@ import {
   Modal,
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   Alert,
@@ -18,6 +17,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
+import { Input, PasswordInput } from './ui';
 import { authApi } from '../services/api';
 import { validatePassword } from '../utils/validation';
 import { themeDark } from '../constants/themes';
@@ -67,9 +67,17 @@ export const ProfileModal = ({ visible, user, onClose, onPasswordChanged }) => {
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={[styles.content, { backgroundColor: theme.colors.bgElevated }]}>
           <View style={styles.header}>
-            <Text style={[styles.title, { color: theme.colors.text }]}>Profile</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={12}>
-              <Text style={[styles.close, { color: theme.colors.textMuted }]}>×</Text>
+            <View style={styles.headerLeft}>
+              <View style={[styles.headerIconWrap, { backgroundColor: theme.colors.surface }]}>
+                <MaterialCommunityIcons name="account-circle-outline" size={28} color={theme.colors.accent} />
+              </View>
+              <View>
+                <Text style={[styles.title, { color: theme.colors.text }]}>Profile</Text>
+                <Text style={[styles.headerSubtitle, { color: theme.colors.textMuted }]}>Manage your account</Text>
+              </View>
+            </View>
+            <TouchableOpacity onPress={onClose} hitSlop={12} style={[styles.closeButton, { backgroundColor: theme.colors.surface }]}>
+              <MaterialCommunityIcons name="close" size={22} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -83,39 +91,34 @@ export const ProfileModal = ({ visible, user, onClose, onPasswordChanged }) => {
               contentContainerStyle={styles.scrollContent}
               style={styles.scrollView}
             >
-              <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Email</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Account</Text>
               <View style={[styles.emailRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
                 <MaterialCommunityIcons name="email-outline" size={20} color={theme.colors.textMuted} />
                 <Text style={[styles.emailText, { color: theme.colors.text }]}>{user?.email || '—'}</Text>
               </View>
 
-              <Text style={[styles.label, styles.labelSection, { color: theme.colors.textSecondary }]}>Change password</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
-                placeholder="Current password"
-                placeholderTextColor={theme.colors.textMuted}
+              <Text style={[styles.sectionTitle, styles.labelSection, { color: theme.colors.text }]}>Change password</Text>
+              <Text style={[styles.sectionDesc, { color: theme.colors.textMuted }]}>
+                Enter your current password, then choose a new one.
+              </Text>
+              <PasswordInput
+                label="Current password"
+                placeholder="Enter your current password"
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
-                secureTextEntry
-                autoCapitalize="none"
               />
-              <TextInput
-                style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
-                placeholder="New password (min 8 chars)"
-                placeholderTextColor={theme.colors.textMuted}
+              <PasswordInput
+                label="New password"
+                placeholder="Min 8 chars, upper, lower, number, symbol"
                 value={newPassword}
                 onChangeText={setNewPassword}
-                secureTextEntry
-                autoCapitalize="none"
+                hint="Use a strong password you don't use elsewhere"
               />
-              <TextInput
-                style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
-                placeholder="Confirm new password"
-                placeholderTextColor={theme.colors.textMuted}
+              <PasswordInput
+                label="Confirm new password"
+                placeholder="Re-enter your new password"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
-                secureTextEntry
-                autoCapitalize="none"
               />
               <TouchableOpacity
                 style={[styles.button, { backgroundColor: theme.colors.accent }]}
@@ -156,18 +159,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: themeDark.spacing.xl,
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: themeDark.spacing.md,
+  },
+  headerIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
   },
-  close: {
-    fontSize: 28,
-    fontWeight: '300',
+  headerSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
+  closeButton: {
+    padding: themeDark.spacing.sm,
+    borderRadius: themeDark.radii.sm,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
     marginBottom: themeDark.spacing.sm,
+  },
+  sectionDesc: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: themeDark.spacing.md,
   },
   labelSection: {
     marginTop: themeDark.spacing.xl,

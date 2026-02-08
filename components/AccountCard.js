@@ -108,16 +108,24 @@ export const AccountCard = ({ account, code, secondsRemaining = 0, onRemove, onT
                 }}
                 activeOpacity={0.8}
                 style={styles.codeRow}
+                accessible
+                accessibilityLabel="Tap to copy code"
+                accessibilityHint="Copies the 6-digit code to clipboard"
               >
                 <View style={styles.codeSpacerLeft} />
-                <Text style={[styles.code, { color: theme.colors.success }]}>
-                  {code && String(code).length === 6
-                    ? `${String(code).slice(0, 3)} ${String(code).slice(3, 6)}`
-                    : code || '— — — — — —'}
-                </Text>
+                <View>
+                  <Text style={[styles.code, { color: theme.colors.success }]}>
+                    {code && String(code).length === 6
+                      ? `${String(code).slice(0, 3)} ${String(code).slice(3, 6)}`
+                      : code || '— — — — — —'}
+                  </Text>
+                  {code && String(code).length === 6 && (
+                    <Text style={[styles.copyHint, { color: theme.colors.textMuted }]}>Tap to copy</Text>
+                  )}
+                </View>
                 <View style={styles.codeSpacerRight}>
                   {code && String(code).length === 6 && (
-                    <MaterialCommunityIcons name="content-copy" size={20} color={theme.colors.textMuted} />
+                    <MaterialCommunityIcons name="content-copy" size={20} color={theme.colors.accent} />
                   )}
                 </View>
               </TouchableOpacity>
@@ -222,6 +230,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 10,
     ...themeDark.typography.mono,
+  },
+  copyHint: {
+    fontSize: 11,
+    marginTop: 4,
+    fontWeight: '500',
   },
   countdownWrap: {
     flexDirection: 'row',

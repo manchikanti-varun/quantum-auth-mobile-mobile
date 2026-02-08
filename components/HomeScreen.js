@@ -39,8 +39,12 @@ export const HomeScreen = ({
 }) => {
   const { theme } = useTheme();
   const { horizontalPadding, contentMaxWidth, safeBottom } = useLayout();
-  const { folders: foldersFromHook } = useFolders();
-  const folders = foldersProp && foldersProp.length > 0 ? foldersProp : foldersFromHook;
+  const { folders: foldersFromHook, refreshFolders } = useFolders();
+  const folders = useMemo(() => {
+    const base = foldersProp && foldersProp.length > 0 ? foldersProp : foldersFromHook;
+    const accountFolders = [...new Set(accounts.map((a) => a.folder || 'Personal'))];
+    return [...new Set([...base, ...accountFolders])];
+  }, [foldersProp, foldersFromHook, accounts]);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('issuer');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
@@ -80,6 +84,15 @@ export const HomeScreen = ({
     return map;
   }, [filteredAccounts]);
 
+  const folderCounts = useMemo(() => {
+    const counts = {};
+    accounts.forEach((acc) => {
+      const f = acc.folder || 'Personal';
+      counts[f] = (counts[f] || 0) + 1;
+    });
+    return counts;
+  }, [accounts]);
+
   const toggleFolderCollapse = (f) => {
     setCollapsedFolders((prev) => ({ ...prev, [f]: !prev[f] }));
   };
@@ -98,7 +111,7 @@ export const HomeScreen = ({
           Quantum-Safe Authentication
         </Text>
         <Text style={[styles.authPromptTagline, { color: theme.colors.textMuted }]}>
-          Post-quantum cryptography · TOTP · Push MFA
+          Sign in to manage your 2FA codes and approve logins
         </Text>
         <TouchableOpacity
           style={styles.authPromptButtonWrapper}
@@ -111,7 +124,8 @@ export const HomeScreen = ({
             end={{ x: 1, y: 1 }}
             style={styles.authPromptButton}
           >
-            <Text style={styles.authPromptButtonText}>Get Started</Text>
+            <MaterialCommunityIcons name="login" size={22} color={themeDark.colors.bg} />
+            <Text style={styles.authPromptButtonText}>Sign in</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -188,15 +202,25 @@ export const HomeScreen = ({
               <MaterialCommunityIcons name="star" size={16} color={showFavoritesOnly ? theme.colors.bg : theme.colors.textMuted} />
               <Text style={[styles.filterChipText, { color: showFavoritesOnly ? theme.colors.bg : theme.colors.textSecondary }]}>Favorites</Text>
             </TouchableOpacity>
-            {folders.map((f) => (
-              <TouchableOpacity
-                key={f}
-                style={[styles.filterChip, folderFilter === f && { backgroundColor: theme.colors.surface, borderColor: theme.colors.accent, borderWidth: 1 }]}
-                onPress={() => setFolderFilter(folderFilter === f ? 'all' : f)}
-              >
-                <Text style={[styles.filterChipText, { color: folderFilter === f ? theme.colors.accent : theme.colors.textSecondary }]}>{f}</Text>
-              </TouchableOpacity>
-            ))}
+            {folders.map((f) => {
+              const count = folderCounts[f] ?? 0;
+              return (
+                <TouchableOpacity
+                  key={f}
+                  style={[styles.filterChip, folderFilter === f && { backgroundColor: theme.colors.surface, borderColor: theme.colors.accent, borderWidth: 1 }]}
+                  onPress={() => setFolderFilter(folderFilter === f ? 'all' : f)}
+                >
+                  <MaterialCommunityIcons
+                    name="folder-outline"
+                    size={14}
+                    color={folderFilter === f ? theme.colors.accent : theme.colors.textMuted}
+                    style={styles.folderChipIcon}
+                  />
+                  <Text style={[styles.filterChipText, { color: folderFilter === f ? theme.colors.accent : theme.colors.textSecondary }]}>{f}</Text>
+                  <Text style={[styles.filterChipCount, { color: folderFilter === f ? theme.colors.accent : theme.colors.textMuted }]}>{count}</Text>
+                </TouchableOpacity>
+              );
+            })}
             {['order', 'issuer', 'label', 'lastUsed'].map((opt) => (
               <TouchableOpacity
                 key={opt}
@@ -215,14 +239,14 @@ export const HomeScreen = ({
       {accounts.length === 0 ? (
         <View style={styles.emptyState}>
           <View style={[styles.emptyIconWrap, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-            <MaterialCommunityIcons name="qrcode-scan" size={32} color={theme.colors.accent} />
+            <MaterialCommunityIcons name="qrcode-scan" size={36} color={theme.colors.accent} />
           </View>
           <Text style={[styles.emptyStateTitle, { color: theme.colors.text }]}>No accounts yet</Text>
           <Text style={[styles.emptyStateText, { color: theme.colors.textMuted }]}>
-            Tap the QR button below to scan a code{'\n'}and add your first account
+            Tap the + button below to scan a QR code{'\n'}or enter a setup key manually
           </Text>
           <Text style={[styles.emptyStateHint, { color: theme.colors.textMuted }]}>
-            Accounts are stored on this device. Add them on each device you use.
+            Add accounts from Google, GitHub, or any service that supports 2FA
           </Text>
         </View>
       ) : (
@@ -290,8 +314,9 @@ export const HomeScreen = ({
         visible={!!editingAccount}
         account={editingAccount}
         folders={folders}
-        onClose={() => setEditingAccount(null)}
-        onSave={(id, updates) => { updateAccount?.(id, updates); setEditingAccount(null); }}
+        accounts={accounts}
+        onClose={() => { setEditingAccount(null); refreshFolders?.(); }}
+        onSave={(id, updates) => { updateAccount?.(id, updates); setEditingAccount(null); refreshFolders?.(); }}
       />
     </ScrollView>
   );
@@ -400,6 +425,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
+  folderChipIcon: {
+    marginRight: 2,
+  },
+  filterChipCount: {
+    fontSize: 12,
+    marginLeft: 2,
+  },
   searchIcon: {
     marginRight: themeDark.spacing.sm,
   },
@@ -482,11 +514,14 @@ const styles = StyleSheet.create({
     }),
   },
   authPromptButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: themeDark.spacing.sm,
     paddingHorizontal: themeDark.spacing.xxl,
     paddingVertical: themeDark.spacing.lg,
     borderRadius: themeDark.radii.lg,
     minWidth: 200,
-    alignItems: 'center',
   },
   authPromptButtonText: {
     color: themeDark.colors.bg,

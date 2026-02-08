@@ -8,7 +8,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  TextInput,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -20,11 +19,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions, scanFromURLAsync } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Input } from './ui';
 import { themeDark } from '../constants/themes';
 
 const useNativeScanner = CameraView?.isModernBarcodeScannerAvailable === true;
 
-export const ScannerModal = ({ visible, onClose, onScan }) => {
+export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = [] }) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [mode, setMode] = useState('scan');
@@ -32,17 +33,19 @@ export const ScannerModal = ({ visible, onClose, onScan }) => {
   const [manualSecret, setManualSecret] = useState('');
   const [manualAccount, setManualAccount] = useState('');
   const [manualIssuer, setManualIssuer] = useState('Google');
+  const [manualFolder, setManualFolder] = useState('Personal');
   const [scanningPhoto, setScanningPhoto] = useState(false);
+  const folders = Array.isArray(foldersProp) && foldersProp.length > 0 ? foldersProp : ['Personal', 'Work', 'Banking'];
   const scanSubscriptionRef = useRef(null);
   const scannedRef = useRef(false);
   scannedRef.current = scanned;
 
-  const handleScanResult = (data) => {
+  const handleScanResult = (data, options) => {
     const str = typeof data === 'string' ? data.trim() : (data ? String(data).trim() : '');
     if (!str || scannedRef.current) return;
     scannedRef.current = true;
     setScanned(true);
-    onScan(str);
+    onScan(str, options);
     setTimeout(() => {
       scannedRef.current = false;
       setScanned(false);
@@ -161,10 +164,11 @@ export const ScannerModal = ({ visible, onClose, onScan }) => {
     const isFullLink = raw.toLowerCase().startsWith('otpauth://');
 
     if (isFullLink) {
-      onScan(raw);
+      onScan(raw, { folder: manualFolder });
       setManualSecret('');
       setManualAccount('');
       setManualIssuer('Google');
+      setManualFolder('Personal');
       setMode('scan');
       onClose();
       return;
@@ -175,10 +179,11 @@ export const ScannerModal = ({ visible, onClose, onScan }) => {
     const issuer = manualIssuer.trim() || 'Unknown';
     const label = manualAccount.trim() || issuer;
     const otpauth = `otpauth://totp/${encodeURIComponent(issuer + ':' + label)}?secret=${encodeURIComponent(secret)}&issuer=${encodeURIComponent(issuer)}`;
-    onScan(otpauth);
+    onScan(otpauth, { folder: manualFolder });
     setManualSecret('');
     setManualAccount('');
     setManualIssuer('Google');
+    setManualFolder('Personal');
     setMode('scan');
     onClose();
   };
@@ -223,36 +228,53 @@ export const ScannerModal = ({ visible, onClose, onScan }) => {
                 keyboardShouldPersistTaps="handled"
               >
                 <Text style={styles.manualHint}>
-                  Paste the setup key (e.g. "vzxx mt5x w7xp 2u5z...") OR paste the full link if you have it (otpauth://...). Spaces OK.
+                  Paste the setup key from your service (e.g. "vzxx mt5x w7xp 2u5z...") or paste a full otpauth:// link. Spaces are fine.
                 </Text>
-                <TextInput
-                  style={[styles.input, styles.inputLarge]}
-                  placeholder="Setup key or full otpauth:// link"
-                  placeholderTextColor={themeDark.colors.textMuted}
+                <Input
+                  label="Setup key or otpauth link"
+                  icon="key-variant"
+                  placeholder="Paste here..."
                   value={manualSecret}
                   onChangeText={setManualSecret}
                   autoCapitalize="none"
-                  autoCorrect={false}
                   multiline
+                  numberOfLines={3}
+                  hint="Usually shown when you can't scan a QR code"
                 />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Your email (e.g. you@gmail.com)"
-                  placeholderTextColor={themeDark.colors.textMuted}
+                <Input
+                  label="Your email or username"
+                  icon="account-outline"
+                  placeholder="e.g. you@gmail.com"
                   value={manualAccount}
                   onChangeText={setManualAccount}
                   autoCapitalize="none"
-                  autoCorrect={false}
                 />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Issuer (e.g. Google)"
-                  placeholderTextColor={themeDark.colors.textMuted}
+                <Input
+                  label="Service name"
+                  icon="web"
+                  placeholder="e.g. Google, GitHub"
                   value={manualIssuer}
                   onChangeText={setManualIssuer}
                   autoCapitalize="none"
-                  autoCorrect={false}
+                  hint="The company or app name"
                 />
+                <Text style={[styles.folderLabel, { color: themeDark.colors.textSecondary }]}>Folder</Text>
+                <View style={styles.folderChipsRow}>
+                  {folders.map((f) => (
+                    <TouchableOpacity
+                      key={f}
+                      style={[
+                        styles.folderChip,
+                        { backgroundColor: manualFolder === f ? themeDark.colors.accent : themeDark.colors.bgElevated, borderColor: themeDark.colors.border },
+                      ]}
+                      onPress={() => setManualFolder(f)}
+                    >
+                      <Text style={[styles.folderChipText, { color: manualFolder === f ? themeDark.colors.bg : themeDark.colors.textSecondary }]}>
+                        {f}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
                 <TouchableOpacity
                   style={styles.buttonWrapper}
                   onPress={handleManualSubmit}
@@ -541,5 +563,26 @@ const styles = StyleSheet.create({
   },
   inputLarge: {
     minHeight: 80,
+  },
+  folderLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: themeDark.spacing.sm,
+  },
+  folderChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: themeDark.spacing.sm,
+    marginBottom: themeDark.spacing.lg,
+  },
+  folderChip: {
+    paddingVertical: themeDark.spacing.sm,
+    paddingHorizontal: themeDark.spacing.md,
+    borderRadius: themeDark.radii.md,
+    borderWidth: 1,
+  },
+  folderChipText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

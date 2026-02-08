@@ -1,7 +1,8 @@
 /**
- * AppLockPromptModal – "Set up app lock?" after first login. Enable or Skip.
+ * AppLockPromptModal – First-time setup: always set PIN first (even with biometric).
+ * PIN is required as fallback when biometric fails or isn't available.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -18,16 +19,17 @@ import { themeDark } from '../constants/themes';
 export const AppLockPromptModal = ({
   visible,
   hasBiometric,
+  isMigration = false,
   onEnable,
   onSkip,
 }) => {
-  const [showPinSetup, setShowPinSetup] = useState(false);
+  const [showPinSetup, setShowPinSetup] = useState(isMigration);
 
-  const handleEnable = async () => {
-    if (hasBiometric) {
-      onEnable?.({ enabled: true });
-      return;
-    }
+  useEffect(() => {
+    if (visible && isMigration) setShowPinSetup(true);
+  }, [visible, isMigration]);
+
+  const handleSetPin = () => {
     setShowPinSetup(true);
   };
 
@@ -48,40 +50,51 @@ export const AppLockPromptModal = ({
           <AppLogo size="md" />
           {showPinSetup ? (
             <>
-              <Text style={styles.title}>Set PIN</Text>
+              <Text style={styles.title}>
+                {isMigration ? 'Set PIN to continue' : 'Set your PIN'}
+              </Text>
               <Text style={styles.subtitle}>
-                No biometric on this device. Set a 6-digit PIN to lock the app.
+                {isMigration
+                  ? 'Please set a 6-digit PIN as backup. You can then use fingerprint or face, with PIN when needed.'
+                  : hasBiometric
+                    ? 'Set a 6-digit PIN. You\'ll use it as a backup when fingerprint or face isn\'t available.'
+                    : 'Set a 6-digit PIN to lock the app when you\'re not using it.'}
               </Text>
               <PinPad
                 title="Set PIN (6 digits)"
                 mode="setup"
                 minLength={6}
                 onComplete={handlePinComplete}
-                onCancel={() => setShowPinSetup(false)}
+                onCancel={isMigration ? undefined : () => setShowPinSetup(false)}
               />
             </>
           ) : (
             <>
               <Text style={styles.title}>Set up app lock?</Text>
               <Text style={styles.subtitle}>
-                Lock QSafe when you're not using it. Next time you open the app, you'll unlock first.
+                Lock QSafe when you're not using it. You'll need to unlock next time you open the app.
+                {hasBiometric
+                  ? ' Set a PIN first — you can then use fingerprint or face, with PIN as backup.'
+                  : ' Set a PIN to secure your codes.'}
               </Text>
               <View style={styles.buttons}>
                 <TouchableOpacity
                   style={[styles.button, styles.buttonPrimary]}
-                  onPress={handleEnable}
+                  onPress={handleSetPin}
                   activeOpacity={0.85}
                 >
-                  <MaterialCommunityIcons name="shield-check" size={22} color={themeDark.colors.bg} />
-                  <Text style={[styles.buttonText, { color: themeDark.colors.bg }]}>Enable</Text>
+                  <MaterialCommunityIcons name="numeric" size={22} color={themeDark.colors.bg} />
+                  <Text style={[styles.buttonText, { color: themeDark.colors.bg }]}>Set PIN</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.button, styles.buttonSecondary]}
-                  onPress={onSkip}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.buttonText, { color: themeDark.colors.textSecondary }]}>Skip for now</Text>
-                </TouchableOpacity>
+                {!isMigration && (
+                  <TouchableOpacity
+                    style={[styles.button, styles.buttonSecondary]}
+                    onPress={onSkip}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.buttonText, { color: themeDark.colors.textSecondary }]}>Skip for now</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </>
           )}

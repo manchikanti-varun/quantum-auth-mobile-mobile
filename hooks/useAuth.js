@@ -1,7 +1,7 @@
 /**
  * Auth hook – login, register, logout, MFA polling, backup OTP. Manages token & user.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 import { authApi, deviceApi, setOnUnauthorized } from '../services/api';
 import { validateRegister, validateLogin } from '../utils/validation';
@@ -14,6 +14,7 @@ export const useAuth = (deviceId, onSuccess) => {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null); // { email, displayName }
   const [pendingMfa, setPendingMfa] = useState(null); // { challengeId, deviceId } when waiting for approve/deny
+  const approvedHandledRef = useRef(false);
 
   const clearAuth = async () => {
     setToken(null);
@@ -36,6 +37,8 @@ export const useAuth = (deviceId, onSuccess) => {
         const res = await authApi.getLoginStatus(pendingMfa.challengeId, pendingMfa.deviceId);
         const status = res.data?.status;
         if (status === 'approved') {
+          if (approvedHandledRef.current) return;
+          approvedHandledRef.current = true;
           const data = res.data;
           setToken(data.token);
           await storage.saveToken(data.token);
@@ -43,7 +46,7 @@ export const useAuth = (deviceId, onSuccess) => {
           setUser(data.email ? { email: data.email, displayName: data.displayName ?? null } : null);
           setPendingMfa(null);
           onSuccess?.();
-          registerDevice(data.uid, pendingMfa.deviceId, pendingMfa.rememberDevice ?? true);
+          await registerDevice(data.uid, pendingMfa.deviceId, pendingMfa.rememberDevice ?? true);
           return;
         }
         if (status === 'denied' || status === 'expired') {
@@ -119,6 +122,7 @@ export const useAuth = (deviceId, onSuccess) => {
       setPendingMfa(null);
       const response = await authApi.login(email, password, deviceId);
       if (response.data.requiresMfa && response.data.challengeId) {
+        approvedHandledRef.current = false;
         setPendingMfa({ challengeId: response.data.challengeId, deviceId, rememberDevice });
         setLoading(false);
         return;

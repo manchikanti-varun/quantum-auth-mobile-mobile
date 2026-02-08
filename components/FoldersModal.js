@@ -1,0 +1,357 @@
+/**
+ * FoldersModal – Manage folders: view, add, rename, delete. Update accounts when renaming/removing.
+ */
+import React, { useState, useEffect } from 'react';
+import {
+  Modal,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert,
+} from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { useTheme } from '../context/ThemeContext';
+import { DEFAULT_FOLDERS } from '../constants/config';
+import { themeDark } from '../constants/themes';
+
+export const FoldersModal = ({
+  visible,
+  onClose,
+  folders,
+  accounts,
+  addFolder,
+  renameFolder,
+  removeFolder,
+  updateAccount,
+  refreshFolders,
+}) => {
+  const { theme } = useTheme();
+  const [newFolderName, setNewFolderName] = useState('');
+  const [editingFolder, setEditingFolder] = useState(null);
+  const [editName, setEditName] = useState('');
+
+  useEffect(() => {
+    if (visible) refreshFolders?.();
+  }, [visible]);
+
+  const getAccountCount = (folderName) =>
+    accounts.filter((a) => (a.folder || 'Personal') === folderName).length;
+
+  const handleAddFolder = () => {
+    const name = newFolderName.trim();
+    if (!name) return;
+    if (folders.includes(name)) {
+      Alert.alert('Exists', `Folder "${name}" already exists.`);
+      return;
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    addFolder(name);
+    setNewFolderName('');
+  };
+
+  const handleStartRename = (folder) => {
+    if (DEFAULT_FOLDERS.includes(folder)) return;
+    setEditingFolder(folder);
+    setEditName(folder);
+  };
+
+  const handleSaveRename = () => {
+    const name = editName.trim();
+    if (!name || name === editingFolder) {
+      setEditingFolder(null);
+      return;
+    }
+    if (folders.includes(name) && name !== editingFolder) {
+      Alert.alert('Exists', `Folder "${name}" already exists.`);
+      return;
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    renameFolder(editingFolder, name);
+    accounts.forEach((acc) => {
+      if ((acc.folder || 'Personal') === editingFolder) {
+        updateAccount?.(acc.id, { folder: name });
+      }
+    });
+    setEditingFolder(null);
+    setEditName('');
+  };
+
+  const handleRemoveFolder = (folderName) => {
+    if (DEFAULT_FOLDERS.includes(folderName)) return;
+    const count = getAccountCount(folderName);
+    if (count === 0) {
+      removeFolder(folderName);
+      refreshFolders?.();
+      return;
+    }
+    const otherFolders = folders.filter((f) => f !== folderName);
+    if (otherFolders.length === 0) {
+      Alert.alert('Cannot remove', 'Move accounts to another folder first.');
+      return;
+    }
+    Alert.alert(
+      `Remove "${folderName}"?`,
+      `${count} account(s) will be moved to Personal. Continue?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            accounts.forEach((acc) => {
+              if ((acc.folder || 'Personal') === folderName) {
+                updateAccount?.(acc.id, { folder: 'Personal' });
+              }
+            });
+            removeFolder(folderName);
+            refreshFolders?.();
+          },
+        },
+      ]
+    );
+  };
+
+  if (!visible) return null;
+
+  return (
+    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
+      <View style={styles.overlay}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
+        <View style={[styles.content, { backgroundColor: theme.colors.bgElevated }]}>
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <View style={[styles.headerIconWrap, { backgroundColor: theme.colors.surface }]}>
+                <MaterialCommunityIcons name="folder-multiple" size={24} color={theme.colors.accent} />
+              </View>
+              <View>
+                <Text style={[styles.title, { color: theme.colors.text }]}>Manage folders</Text>
+                <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>
+                  Organize your accounts
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity onPress={onClose} hitSlop={12} style={[styles.closeBtn, { backgroundColor: theme.colors.surface }]}>
+              <MaterialCommunityIcons name="close" size={22} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.addSection, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Add folder</Text>
+            <View style={styles.addRow}>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.colors.bgElevated, borderColor: theme.colors.border, color: theme.colors.text }]}
+                placeholder="Folder name..."
+                placeholderTextColor={theme.colors.textMuted}
+                value={newFolderName}
+                onChangeText={setNewFolderName}
+                onSubmitEditing={handleAddFolder}
+              />
+              <TouchableOpacity
+                style={[styles.addBtn, { backgroundColor: theme.colors.accent }]}
+                onPress={handleAddFolder}
+              >
+                <Text style={styles.addBtnText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <Text style={[styles.sectionLabel, styles.listLabel, { color: theme.colors.textSecondary }]}>
+            All folders
+          </Text>
+          <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
+            {folders.map((f) => (
+              <View
+                key={f}
+                style={[styles.folderRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+              >
+                {editingFolder === f ? (
+                  <View style={styles.editRow}>
+                    <TextInput
+                      style={[styles.editInput, { backgroundColor: theme.colors.bgElevated, borderColor: theme.colors.border, color: theme.colors.text }]}
+                      value={editName}
+                      onChangeText={setEditName}
+                      autoFocus
+                    />
+                    <TouchableOpacity style={[styles.iconBtn, { backgroundColor: theme.colors.success }]} onPress={handleSaveRename}>
+                      <MaterialCommunityIcons name="check" size={20} color="#fff" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.iconBtn, { backgroundColor: theme.colors.surface }]} onPress={() => { setEditingFolder(null); setEditName(''); }}>
+                      <MaterialCommunityIcons name="close" size={20} color={theme.colors.textMuted} />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <>
+                    <View style={styles.folderInfo}>
+                      <MaterialCommunityIcons
+                        name={DEFAULT_FOLDERS.includes(f) ? 'folder' : 'folder-outline'}
+                        size={22}
+                        color={theme.colors.accent}
+                      />
+                      <Text style={[styles.folderName, { color: theme.colors.text }]}>{f}</Text>
+                      <View style={[styles.countBadge, { backgroundColor: theme.colors.bgCard }]}>
+                        <Text style={[styles.countText, { color: theme.colors.textMuted }]}>
+                          {getAccountCount(f)}
+                        </Text>
+                      </View>
+                    </View>
+                    {!DEFAULT_FOLDERS.includes(f) && (
+                      <View style={styles.rowActions}>
+                        <TouchableOpacity onPress={() => handleStartRename(f)} style={styles.iconBtn} hitSlop={8}>
+                          <MaterialCommunityIcons name="pencil" size={20} color={theme.colors.textMuted} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleRemoveFolder(f)} style={styles.iconBtn} hitSlop={8}>
+                          <MaterialCommunityIcons name="delete-outline" size={20} color={theme.colors.error} />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  content: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+    maxHeight: '85%',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: themeDark.spacing.xl,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: themeDark.spacing.md,
+  },
+  headerIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  subtitle: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  closeBtn: {
+    padding: themeDark.spacing.sm,
+    borderRadius: themeDark.radii.sm,
+  },
+  addSection: {
+    padding: themeDark.spacing.md,
+    borderRadius: themeDark.radii.md,
+    borderWidth: 1,
+    marginBottom: themeDark.spacing.lg,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: themeDark.spacing.sm,
+  },
+  listLabel: {
+    marginBottom: themeDark.spacing.sm,
+  },
+  addRow: {
+    flexDirection: 'row',
+    gap: themeDark.spacing.sm,
+  },
+  input: {
+    flex: 1,
+    paddingHorizontal: themeDark.spacing.md,
+    paddingVertical: themeDark.spacing.sm,
+    borderRadius: themeDark.radii.md,
+    borderWidth: 1,
+    fontSize: 16,
+  },
+  addBtn: {
+    paddingHorizontal: themeDark.spacing.lg,
+    paddingVertical: themeDark.spacing.sm,
+    borderRadius: themeDark.radii.md,
+    justifyContent: 'center',
+  },
+  addBtnText: {
+    color: themeDark.colors.bg,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  list: {
+    maxHeight: 320,
+  },
+  folderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: themeDark.spacing.md,
+    borderRadius: themeDark.radii.md,
+    borderWidth: 1,
+    marginBottom: themeDark.spacing.sm,
+  },
+  folderInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: themeDark.spacing.sm,
+    flex: 1,
+  },
+  folderName: {
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+  },
+  countBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  countText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  rowActions: {
+    flexDirection: 'row',
+    gap: themeDark.spacing.xs,
+  },
+  iconBtn: {
+    padding: themeDark.spacing.sm,
+    borderRadius: themeDark.radii.sm,
+  },
+  editRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: themeDark.spacing.sm,
+    flex: 1,
+  },
+  editInput: {
+    flex: 1,
+    paddingHorizontal: themeDark.spacing.md,
+    paddingVertical: themeDark.spacing.sm,
+    borderRadius: themeDark.radii.md,
+    borderWidth: 1,
+    fontSize: 16,
+  },
+});

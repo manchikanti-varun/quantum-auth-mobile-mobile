@@ -65,7 +65,7 @@ export const useAccounts = () => {
 
   const addAccount = async (account) => {
     const maxOrder = accounts.reduce((m, a) => Math.max(m, a.order ?? 0), -1);
-    const withMeta = { ...account, favorite: false, folder: 'Personal', notes: '', lastUsed: Date.now(), order: maxOrder + 1 };
+    const withMeta = { ...account, favorite: false, folder: account.folder ?? 'Personal', notes: account.notes ?? '', lastUsed: Date.now(), order: maxOrder + 1 };
     const next = [...accounts, withMeta];
     setAccounts(next);
     try {

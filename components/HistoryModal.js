@@ -25,14 +25,6 @@ const formatDate = (iso) => {
   }
 };
 
-const maskIp = (ip) => {
-  if (!ip || typeof ip !== 'string') return '—';
-  const parts = ip.trim().split('.');
-  if (parts.length === 4) return `${parts[0]}.***.***.${parts[3]}`;
-  if (ip.includes(':')) return '***'; // IPv6
-  return '***';
-};
-
 export const HistoryModal = ({ visible, mode, deviceId, onClose }) => {
   const { theme } = useTheme();
   const [items, setItems] = useState([]);
@@ -90,18 +82,52 @@ export const HistoryModal = ({ visible, mode, deviceId, onClose }) => {
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={[styles.content, { backgroundColor: theme.colors.bgElevated }]}>
           <View style={styles.header}>
-            <Text style={[styles.title, { color: theme.colors.text }]}>{title}</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={12}>
-              <MaterialCommunityIcons name="close" size={24} color={theme.colors.textMuted} />
+            <View style={styles.headerLeft}>
+              <View style={[styles.headerIconWrap, { backgroundColor: theme.colors.surface }]}>
+                <MaterialCommunityIcons
+                  name={mode === 'loginHistory' ? 'history' : 'shield-check'}
+                  size={24}
+                  color={theme.colors.accent}
+                />
+              </View>
+              <View>
+                <Text style={[styles.title, { color: theme.colors.text }]}>{title}</Text>
+                <Text style={[styles.headerSubtitle, { color: theme.colors.textMuted }]}>
+                  {mode === 'loginHistory' ? 'Sessions on your devices' : 'Approve/deny requests'}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity onPress={onClose} hitSlop={12} style={[styles.closeButton, { backgroundColor: theme.colors.surface }]}>
+              <MaterialCommunityIcons name="close" size={22} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
           {loading ? (
-            <ActivityIndicator size="large" color={theme.colors.accent} style={styles.spinner} />
+            <View style={styles.centerContent}>
+              <ActivityIndicator size="large" color={theme.colors.accent} />
+              <Text style={[styles.loadingText, { color: theme.colors.textMuted }]}>Loading...</Text>
+            </View>
           ) : error ? (
-            <Text style={[styles.error, { color: theme.colors.error }]}>{error}</Text>
+            <View style={styles.centerContent}>
+              <MaterialCommunityIcons name="alert-circle-outline" size={48} color={theme.colors.error} />
+              <Text style={[styles.error, { color: theme.colors.error }]}>{error}</Text>
+            </View>
           ) : items.length === 0 ? (
-            <Text style={[styles.empty, { color: theme.colors.textMuted }]}>No history yet</Text>
+            <View style={styles.emptyState}>
+              <View style={[styles.emptyIconWrap, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                <MaterialCommunityIcons
+                  name={mode === 'loginHistory' ? 'cellphone-link-off' : 'shield-off-outline'}
+                  size={40}
+                  color={theme.colors.textMuted}
+                />
+              </View>
+              <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>No history yet</Text>
+              <Text style={[styles.emptyText, { color: theme.colors.textMuted }]}>
+                {mode === 'loginHistory'
+                  ? 'Login sessions will appear here when you sign in on new devices.'
+                  : 'Approve or deny requests will show up here.'}
+              </Text>
+            </View>
           ) : (
             <ScrollView style={styles.list}>
               {items.map((item, i) => (
@@ -115,9 +141,6 @@ export const HistoryModal = ({ visible, mode, deviceId, onClose }) => {
                     <Text style={[styles.rowPrimary, { color: theme.colors.text }]}>
                       {mode === 'loginHistory' ? (item.method || 'login') : item.decision}
                     </Text>
-                    <Text style={[styles.rowSecondary, { color: theme.colors.textMuted }]}>
-                      {item.ip ? `· ${maskIp(item.ip)}` : '· —'}
-                    </Text>
                     <Text style={[styles.rowDate, { color: theme.colors.textMuted }]}>{formatDate(item.timestamp)}</Text>
                   </View>
                   {mode === 'loginHistory' && canDeleteEntry(item) && (
@@ -126,11 +149,13 @@ export const HistoryModal = ({ visible, mode, deviceId, onClose }) => {
                       disabled={deletingId === item.id}
                       hitSlop={12}
                       style={styles.deleteBtn}
+                      accessible
+                      accessibilityLabel="Revoke device and sign out"
                     >
                       {deletingId === item.id ? (
                         <ActivityIndicator size="small" color={theme.colors.error} />
                       ) : (
-                        <MaterialCommunityIcons name="delete-outline" size={22} color={theme.colors.error} />
+                        <MaterialCommunityIcons name="logout" size={22} color={theme.colors.error} />
                       )}
                     </TouchableOpacity>
                   )}
@@ -163,20 +188,67 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: themeDark.spacing.lg,
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: themeDark.spacing.md,
+  },
+  headerIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   title: {
     fontSize: 20,
     fontWeight: '700',
   },
-  spinner: {
-    marginVertical: 40,
+  headerSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  closeButton: {
+    padding: themeDark.spacing.sm,
+    borderRadius: themeDark.radii.sm,
+  },
+  centerContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    gap: themeDark.spacing.md,
+  },
+  loadingText: {
+    fontSize: 14,
   },
   error: {
     textAlign: 'center',
-    padding: 20,
+    fontSize: 15,
+    paddingHorizontal: 24,
   },
-  empty: {
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+  },
+  emptyIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    marginBottom: themeDark.spacing.lg,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: themeDark.spacing.sm,
+  },
+  emptyText: {
     textAlign: 'center',
-    padding: 20,
+    fontSize: 14,
+    lineHeight: 20,
   },
   list: {
     maxHeight: 400,
@@ -201,10 +273,6 @@ const styles = StyleSheet.create({
   rowPrimary: {
     fontSize: 15,
     fontWeight: '600',
-  },
-  rowSecondary: {
-    fontSize: 13,
-    marginTop: 2,
   },
   rowDate: {
     fontSize: 11,

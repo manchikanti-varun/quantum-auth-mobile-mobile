@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AppLogo } from './AppLogo';
+import { Input, PasswordInput } from './ui';
 import { useLayout } from '../hooks/useLayout';
 import { useTheme } from '../context/ThemeContext';
 import { themeDark } from '../constants/themes';
@@ -125,13 +126,16 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                 <View style={styles.waitingBlock}>
                   {!showOtpInput ? (
                     <>
+                      <View style={[styles.waitingIconWrap, { backgroundColor: theme.colors.surface }]}>
+                        <MaterialCommunityIcons name="cellphone-check" size={40} color={theme.colors.accent} />
+                      </View>
                       <ActivityIndicator size="large" color={theme.colors.accent} style={styles.waitingSpinner} />
-                      <Text style={styles.waitingTitle}>Waiting for approval</Text>
-                      <Text style={styles.waitingSubtitle}>
-                        Open QSafe on your other device and tap Approve or Deny. This usually takes a few seconds.
+                      <Text style={[styles.waitingTitle, { color: theme.colors.text }]}>Waiting for approval</Text>
+                      <Text style={[styles.waitingSubtitle, { color: theme.colors.textMuted }]}>
+                        Open QSafe on your other device and tap Approve or Deny
                       </Text>
                       <Text style={[styles.waitingHint, { color: theme.colors.textMuted }]}>
-                        Can't approve on other device? Use TOTP from your backup authenticator:
+                        Don't have your other device? Use a backup code:
                       </Text>
                       <TouchableOpacity
                         style={[styles.useOtpButton, { borderColor: theme.colors.accent }]}
@@ -150,9 +154,12 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                     </>
                   ) : (
                     <>
-                      <Text style={styles.waitingTitle}>Enter OTP code</Text>
-                      <Text style={styles.waitingSubtitle}>
-                        Enter the 6-digit code from your backup authenticator (QR added at registration).
+                      <View style={[styles.waitingIconWrap, { backgroundColor: theme.colors.surface }]}>
+                        <MaterialCommunityIcons name="numeric" size={32} color={theme.colors.accent} />
+                      </View>
+                      <Text style={[styles.waitingTitle, { color: theme.colors.text }]}>Enter backup code</Text>
+                      <Text style={[styles.waitingSubtitle, { color: theme.colors.textMuted }]}>
+                        Enter the 6-digit code from your backup authenticator app
                       </Text>
                       <TextInput
                         style={[styles.otpInput, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
@@ -188,44 +195,34 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
               ) : (
                 <View style={styles.form}>
                     {mode === 'register' && (
-                      <>
-                        <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Display name</Text>
-                        <TextInput
-                          style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
-                          placeholder="Your name"
-                          placeholderTextColor={theme.colors.textMuted}
-                          autoCapitalize="words"
-                          value={displayName}
-                          onChangeText={setDisplayName}
-                        />
-                      </>
+                      <Input
+                        label="Display name"
+                        icon="account-outline"
+                        placeholder="e.g. John"
+                        value={displayName}
+                        onChangeText={setDisplayName}
+                        autoCapitalize="words"
+                        containerStyle={styles.inputFirst}
+                      />
                     )}
 
-                    <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Email</Text>
-                    <TextInput
-                      style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
+                    <Input
+                      label="Email"
+                      icon="email-outline"
                       placeholder="you@example.com"
-                      placeholderTextColor={theme.colors.textMuted}
-                      autoCapitalize="none"
-                      keyboardType="email-address"
                       value={email}
                       onChangeText={setEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
                     />
 
-                    <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Password</Text>
-                    <TextInput
-                      style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
-                      placeholder={mode === 'register' ? 'Min 8 chars, upper, lower, number, symbol' : '••••••••'}
-                      placeholderTextColor={theme.colors.textMuted}
-                      secureTextEntry
+                    <PasswordInput
+                      label="Password"
+                      placeholder={mode === 'login' ? 'Enter your password' : 'Create a strong password'}
                       value={password}
                       onChangeText={setPassword}
+                      hint={mode === 'register' ? PASSWORD_REQUIREMENTS : undefined}
                     />
-                    {mode === 'register' && (
-                      <Text style={[styles.passwordHint, { color: theme.colors.textMuted }]}>
-                        {PASSWORD_REQUIREMENTS}
-                      </Text>
-                    )}
 
                     <TouchableOpacity
                       style={[styles.rememberRow, { borderColor: theme.colors.border }]}
@@ -237,9 +234,14 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                         size={24}
                         color={rememberDevice ? theme.colors.accent : theme.colors.textMuted}
                       />
-                      <Text style={[styles.rememberText, { color: theme.colors.textSecondary }]}>
-                        Remember this device
-                      </Text>
+                      <View style={styles.rememberTextWrap}>
+                        <Text style={[styles.rememberText, { color: theme.colors.textSecondary }]}>
+                          Keep me signed in
+                        </Text>
+                        <Text style={[styles.rememberHint, { color: theme.colors.textMuted }]}>
+                          Don't ask for password on this device
+                        </Text>
+                      </View>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -357,9 +359,17 @@ const styles = StyleSheet.create({
     marginTop: themeDark.spacing.lg,
     paddingVertical: themeDark.spacing.sm,
   },
+  rememberTextWrap: {
+    flex: 1,
+  },
   rememberText: {
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '600',
+  },
+  rememberHint: {
+    fontSize: 12,
+    marginTop: 2,
+    opacity: 0.9,
   },
   dividerRow: {
     flexDirection: 'row',
@@ -389,17 +399,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  inputFirst: {
+    marginTop: themeDark.spacing.sm,
+  },
   label: {
     fontSize: 14,
     marginBottom: themeDark.spacing.sm,
     marginTop: themeDark.spacing.md,
     fontWeight: '500',
-  },
-  passwordHint: {
-    fontSize: 11,
-    marginTop: 6,
-    marginBottom: 4,
-    lineHeight: 16,
   },
   input: {
     borderRadius: themeDark.radii.md,
@@ -423,6 +430,14 @@ const styles = StyleSheet.create({
   waitingBlock: {
     alignItems: 'center',
     paddingVertical: themeDark.spacing.xl,
+  },
+  waitingIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: themeDark.spacing.md,
   },
   waitingSpinner: {
     marginBottom: themeDark.spacing.lg,

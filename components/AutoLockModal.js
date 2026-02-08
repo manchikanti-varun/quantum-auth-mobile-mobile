@@ -13,6 +13,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { AUTO_LOCK_OPTIONS } from '../constants/config';
+import { themeDark } from '../constants/themes';
 
 export const AutoLockModal = ({ visible, currentMinutes, onSelect, onClose }) => {
   const { theme } = useTheme();
@@ -23,15 +24,26 @@ export const AutoLockModal = ({ visible, currentMinutes, onSelect, onClose }) =>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={[styles.content, { backgroundColor: theme.colors.bgElevated }]}>
           <View style={styles.header}>
-            <Text style={[styles.title, { color: theme.colors.text }]}>Auto-lock</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={12}>
-              <Text style={[styles.close, { color: theme.colors.textMuted }]}>×</Text>
+            <View style={styles.headerLeft}>
+              <MaterialCommunityIcons name="clock-outline" size={24} color={theme.colors.accent} />
+              <View>
+                <Text style={[styles.title, { color: theme.colors.text }]}>Auto-lock</Text>
+                <Text style={[styles.headerSubtitle, { color: theme.colors.textMuted }]}>Lock app after inactivity</Text>
+              </View>
+            </View>
+            <TouchableOpacity onPress={onClose} hitSlop={12} style={[styles.closeButton, { backgroundColor: theme.colors.surface }]}>
+              <MaterialCommunityIcons name="close" size={22} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
+          <Text style={[styles.pickerHint, { color: theme.colors.textMuted }]}>Choose when to lock the app</Text>
           {AUTO_LOCK_OPTIONS.map((opt) => (
             <TouchableOpacity
               key={opt.value}
-              style={[styles.option, { backgroundColor: theme.colors.surface }]}
+              style={[
+                styles.option,
+                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                currentMinutes === opt.value && { borderColor: theme.colors.accent, borderWidth: 2 },
+              ]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 onSelect?.(opt.value);
@@ -40,7 +52,7 @@ export const AutoLockModal = ({ visible, currentMinutes, onSelect, onClose }) =>
             >
               <Text style={[styles.optionText, { color: theme.colors.text }]}>{opt.label}</Text>
               {currentMinutes === opt.value && (
-                <MaterialCommunityIcons name="check" size={24} color={theme.colors.accent} />
+                <MaterialCommunityIcons name="check-circle" size={24} color={theme.colors.accent} />
               )}
             </TouchableOpacity>
           ))}
@@ -68,13 +80,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: themeDark.spacing.md,
+  },
   title: {
     fontSize: 20,
     fontWeight: '700',
   },
-  close: {
-    fontSize: 28,
-    fontWeight: '300',
+  headerSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  closeButton: {
+    padding: themeDark.spacing.sm,
+    borderRadius: themeDark.radii.sm,
+  },
+  pickerHint: {
+    fontSize: 14,
+    marginBottom: themeDark.spacing.md,
   },
   option: {
     flexDirection: 'row',
@@ -83,6 +108,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
+    borderWidth: 1,
   },
   optionText: {
     fontSize: 16,

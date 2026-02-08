@@ -8,11 +8,13 @@ import { DEFAULT_FOLDERS } from '../constants/config';
 export const useFolders = () => {
   const [customFolders, setCustomFolders] = useState([]);
 
+  const loadCustomFolders = async () => {
+    const list = await storage.getCustomFolders();
+    setCustomFolders(Array.isArray(list) ? list : []);
+  };
+
   useEffect(() => {
-    (async () => {
-      const list = await storage.getCustomFolders();
-      setCustomFolders(Array.isArray(list) ? list : []);
-    })();
+    loadCustomFolders();
   }, []);
 
   const allFolders = [...DEFAULT_FOLDERS, ...customFolders.filter((f) => !DEFAULT_FOLDERS.includes(f))];
@@ -43,5 +45,5 @@ export const useFolders = () => {
     await storage.saveCustomFolders(next);
   };
 
-  return { folders: allFolders, customFolders, addFolder, renameFolder, removeFolder };
+  return { folders: allFolders, customFolders, addFolder, renameFolder, removeFolder, refreshFolders: loadCustomFolders };
 };

@@ -21,14 +21,6 @@ import { useLayout } from '../hooks/useLayout';
 import { useTheme } from '../context/ThemeContext';
 import { mfaApi } from '../services/api';
 
-const maskIp = (ip) => {
-  if (!ip || typeof ip !== 'string') return '—';
-  const parts = ip.trim().split('.');
-  if (parts.length === 4) return `${parts[0]}.***.***.${parts[3]}`;
-  if (ip.includes(':')) return '***';
-  return '***';
-};
-
 export const MfaModal = ({
   visible,
   challenge,
@@ -89,15 +81,9 @@ export const MfaModal = ({
             A new device is trying to sign in to your account. Tap Approve to allow or Deny to block.
           </Text>
 
-          {(ctx.ip || ctx.timestamp || challenge.createdAt || challenge.expiresAt) && (
+          {((ctx.timestamp || challenge.createdAt) || challenge.expiresAt) && (
             <View style={[styles.infoCard, { backgroundColor: theme.colors.bgCard, borderColor: theme.colors.border }]}>
               <View style={styles.infoRow}>
-                {ctx.ip && (
-                  <View style={styles.infoItem}>
-                    <MaterialCommunityIcons name="map-marker" size={18} color={theme.colors.textMuted} />
-                    <Text style={[styles.infoValue, { color: theme.colors.text }]}>{maskIp(ctx.ip)}</Text>
-                  </View>
-                )}
                 {(ctx.timestamp || challenge.createdAt) && (
                   <View style={styles.infoItem}>
                     <MaterialCommunityIcons name="clock-outline" size={18} color={theme.colors.textMuted} />
