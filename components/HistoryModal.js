@@ -156,7 +156,7 @@ export const HistoryModal = ({ visible, mode, deviceId, onClose }) => {
                       {deletingId === item.id ? (
                         <ActivityIndicator size="small" color={theme.colors.error} />
                       ) : (
-                        <MaterialCommunityIcons name="logout" size={22} color={theme.colors.error} />
+                        <MaterialCommunityIcons name="delete-outline" size={22} color={theme.colors.error} />
                       )}
                     </TouchableOpacity>
                   )}
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   headerIconWrap: {
     width: 44,
     height: 44,
-    borderRadius: radii.full,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   emptyIconWrap: {
     width: 80,
     height: 80,
-    borderRadius: radii.full,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,

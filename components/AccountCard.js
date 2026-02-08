@@ -2,13 +2,12 @@
  * TOTP account card. Displays issuer, code, countdown; long-press to copy.
  * @module components/AccountCard
  */
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   Platform,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
@@ -16,30 +15,27 @@ import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
+import { ConfirmDialog } from './ui';
 import { getIssuerIcon, getIssuerColor } from '../utils/issuerIcons';
 import { spacing, radii } from '../constants/designTokens';
 
-export const AccountCard = ({ account, code, secondsRemaining = 0, onRemove, onToggleFavorite, isFavorite, onCopy, onEdit }) => {
+export const AccountCard = ({ account, code, secondsRemaining = 0, onRemove, onToggleFavorite, isFavorite, onCopy, onEdit, onMoveUp, onMoveDown, canMoveUp, canMoveDown }) => {
   const { theme } = useTheme();
   const { showToast } = useToast();
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const iconName = account.customIcon || getIssuerIcon(account.issuer);
   const brandColors = getIssuerColor(account.issuer);
   const iconBg = brandColors?.bg || theme.colors.surface;
   const iconColor = brandColors?.icon || theme.colors.accent;
 
-  const handleRemove = () => {
-    Alert.alert(
-      'Remove account',
-      `Remove ${account.issuer}: ${account.label}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Remove', style: 'destructive', onPress: () => onRemove?.(account.id) },
-      ],
-    );
+  const handleRemovePress = () => setShowRemoveConfirm(true);
+  const handleRemoveConfirm = () => {
+    onRemove?.(account.id);
+    setShowRemoveConfirm(false);
   };
 
   return (
-    <View style={[styles.cardWrapper, Platform.select({ ios: theme.shadow.cardSoft, android: { elevation: 6 } })]}>
+    <View style={[styles.cardWrapper, Platform.select({ ios: theme.shadow?.cardSoft, android: { elevation: 6 } })]}>
       <View style={[styles.card, { backgroundColor: theme.colors.bgCard, borderWidth: 1, borderColor: theme.colors.border }]}>
         <View style={styles.cardInner}>
           <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
@@ -55,6 +51,30 @@ export const AccountCard = ({ account, code, secondsRemaining = 0, onRemove, onT
             <View style={styles.infoRow}>
               <Text style={[styles.issuer, { color: theme.colors.text }]}>{account.issuer}</Text>
               <View style={styles.infoActions}>
+                {(onMoveUp || onMoveDown) && (
+                  <View style={styles.reorderButtons}>
+                    {onMoveUp && (
+                      <TouchableOpacity
+                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onMoveUp(); }}
+                        hitSlop={6}
+                        style={[styles.reorderBtn, !canMoveUp && styles.reorderBtnDisabled]}
+                        disabled={!canMoveUp}
+                      >
+                        <MaterialCommunityIcons name="chevron-up" size={20} color={canMoveUp ? theme.colors.accent : theme.colors.textMuted} />
+                      </TouchableOpacity>
+                    )}
+                    {onMoveDown && (
+                      <TouchableOpacity
+                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onMoveDown(); }}
+                        hitSlop={6}
+                        style={[styles.reorderBtn, !canMoveDown && styles.reorderBtnDisabled]}
+                        disabled={!canMoveDown}
+                      >
+                        <MaterialCommunityIcons name="chevron-down" size={20} color={canMoveDown ? theme.colors.accent : theme.colors.textMuted} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
                 {onToggleFavorite && (
                   <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onToggleFavorite(account.id); }} hitSlop={10}>
                     <MaterialCommunityIcons name={isFavorite ? 'star' : 'star-outline'} size={22} color={isFavorite ? theme.colors.warning : theme.colors.textMuted} />
@@ -66,8 +86,8 @@ export const AccountCard = ({ account, code, secondsRemaining = 0, onRemove, onT
                   </TouchableOpacity>
                 )}
                 {onRemove && (
-                  <TouchableOpacity style={styles.smallButton} onPress={handleRemove} hitSlop={8}>
-                    <MaterialCommunityIcons name="trash-can-outline" size={18} color={theme.colors.textMuted} />
+                  <TouchableOpacity style={styles.smallButton} onPress={handleRemovePress} hitSlop={8}>
+                    <MaterialCommunityIcons name="delete-outline" size={22} color={theme.colors.error} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -109,6 +129,16 @@ export const AccountCard = ({ account, code, secondsRemaining = 0, onRemove, onT
           </View>
         </TouchableOpacity>
       </View>
+      <ConfirmDialog
+        visible={showRemoveConfirm}
+        title="Remove account"
+        message={`Remove ${account.issuer}: ${account.label}?`}
+        confirmText="Remove"
+        cancelText="Cancel"
+        destructive
+        onConfirm={handleRemoveConfirm}
+        onCancel={() => setShowRemoveConfirm(false)}
+      />
     </View>
   );
 };
@@ -129,7 +159,7 @@ const styles = StyleSheet.create({
   iconWrap: {
     width: 52,
     height: 52,
-    borderRadius: radii.md,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
@@ -156,6 +186,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+  },
+  reorderButtons: {
+    flexDirection: 'column',
+    marginRight: 2,
+  },
+  reorderBtn: {
+    padding: 2,
+  },
+  reorderBtnDisabled: {
+    opacity: 0.4,
   },
   smallButton: {
     padding: 4,

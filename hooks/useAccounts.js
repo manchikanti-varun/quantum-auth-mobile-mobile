@@ -106,6 +106,17 @@ export const useAccounts = (token, uid) => {
     await storage.saveAccounts(next, uid);
   };
 
+  const updateAccountsBatch = async (updatesList) => {
+    if (!Array.isArray(updatesList) || updatesList.length === 0) return;
+    const byId = new Map(updatesList.map((u) => [u.id, u.updates]));
+    const next = accounts.map((a) => {
+      const u = byId.get(a.id);
+      return u ? { ...a, ...u } : a;
+    });
+    setAccounts(next);
+    await storage.saveAccounts(next, uid);
+  };
+
   const setLastUsed = async (accountId) => {
     const next = accounts.map((a) => (a.id === accountId ? { ...a, lastUsed: Date.now() } : a));
     setAccounts(next);
@@ -127,6 +138,7 @@ export const useAccounts = (token, uid) => {
     removeAccount,
     toggleFavorite,
     updateAccount,
+    updateAccountsBatch,
     setLastUsed,
     reorderAccounts,
     reloadAccounts: loadAccounts,

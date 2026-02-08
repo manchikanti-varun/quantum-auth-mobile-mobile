@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   logoBox: {
     width: 44,
     height: 44,
-    borderRadius: radii.md,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   iconWrap: {
     width: 112,
     height: 112,
-    borderRadius: radii.xxl,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xl,

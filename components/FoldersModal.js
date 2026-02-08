@@ -20,7 +20,6 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
-import { DEFAULT_FOLDERS } from '../constants/config';
 import { spacing, radii } from '../constants/designTokens';
 
 export const FoldersModal = ({
@@ -59,7 +58,6 @@ export const FoldersModal = ({
   };
 
   const handleStartRename = (folder) => {
-    if (DEFAULT_FOLDERS.includes(folder)) return;
     setEditingFolder(folder);
     setEditName(folder);
   };
@@ -86,7 +84,6 @@ export const FoldersModal = ({
   };
 
   const handleRemoveFolder = (folderName) => {
-    if (DEFAULT_FOLDERS.includes(folderName)) return;
     const count = getAccountCount(folderName);
     if (count === 0) {
       removeFolder(folderName);
@@ -98,9 +95,10 @@ export const FoldersModal = ({
       Alert.alert('Cannot remove', 'Move accounts to another folder first.');
       return;
     }
+    const moveTo = otherFolders[0];
     Alert.alert(
       `Remove "${folderName}"?`,
-      `${count} account(s) will be moved to Personal. Continue?`,
+      `${count} account(s) will be moved to ${moveTo}. Continue?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -110,7 +108,7 @@ export const FoldersModal = ({
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             accounts.forEach((acc) => {
               if ((acc.folder || 'Personal') === folderName) {
-                updateAccount?.(acc.id, { folder: 'Personal' });
+                updateAccount?.(acc.id, { folder: moveTo });
               }
             });
             removeFolder(folderName);
@@ -199,7 +197,7 @@ export const FoldersModal = ({
                   <>
                     <View style={styles.folderInfo}>
                       <MaterialCommunityIcons
-                        name={DEFAULT_FOLDERS.includes(f) ? 'folder' : 'folder-outline'}
+                        name="folder-outline"
                         size={22}
                         color={theme.colors.accent}
                       />
@@ -210,16 +208,14 @@ export const FoldersModal = ({
                         </Text>
                       </View>
                     </View>
-                    {!DEFAULT_FOLDERS.includes(f) && (
-                      <View style={styles.rowActions}>
+                    <View style={styles.rowActions}>
                         <TouchableOpacity onPress={() => handleStartRename(f)} style={styles.iconBtn} hitSlop={8}>
                           <MaterialCommunityIcons name="pencil" size={20} color={theme.colors.textMuted} />
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => handleRemoveFolder(f)} style={styles.iconBtn} hitSlop={8}>
-                          <MaterialCommunityIcons name="delete-outline" size={20} color={theme.colors.error} />
+                          <MaterialCommunityIcons name="delete-outline" size={22} color={theme.colors.error} />
                         </TouchableOpacity>
                       </View>
-                    )}
                   </>
                 )}
               </View>
@@ -262,7 +258,7 @@ const styles = StyleSheet.create({
   headerIconWrap: {
     width: 44,
     height: 44,
-    borderRadius: radii.full,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -275,8 +271,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeBtn: {
-    padding: spacing.sm,
-    borderRadius: radii.sm,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   addSection: {
     padding: spacing.md,

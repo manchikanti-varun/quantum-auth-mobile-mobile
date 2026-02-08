@@ -1,10 +1,16 @@
 /**
  * Parses otpauth:// URIs from QR codes or pasted strings.
  * Extracts secret, issuer, and account label for TOTP setup.
+ * Pass onAlert(title, message) in options to use themed dialogs instead of native Alert.
  * @module services/qrParser
  */
 
 import { Alert } from 'react-native';
+
+function showAlert(title, message, onAlert) {
+  const fn = onAlert || ((t, m) => Alert.alert(t, m));
+  fn(title, message);
+}
 
 function safeDecode(str) {
   try {
@@ -28,22 +34,24 @@ function parseQueryString(search) {
 }
 
 export const qrParser = {
-  parseOtpauth(data) {
+  parseOtpauth(data, options = {}) {
+    const { onAlert } = options;
+    const alert = (title, message) => showAlert(title, message, onAlert);
     try {
       const raw = (typeof data === 'string' ? data : String(data || ''))
         .replace(/\r\n|\r|\n/g, '')
         .trim();
       if (!raw) {
-        Alert.alert('Invalid QR', 'No data received. Try again or use manual entry.');
+        alert('Invalid QR', 'No data received. Try again or use manual entry.');
         return null;
       }
       const lower = raw.toLowerCase();
       if (!lower.startsWith('otpauth://')) {
-        Alert.alert('Invalid QR', 'This QR is not a 2FA setup code. Use manual entry for Google.');
+        alert('Invalid QR', 'This QR is not a 2FA setup code. Use manual entry for Google.');
         return null;
       }
       if (!lower.includes('totp')) {
-        Alert.alert('Unsupported', 'Only TOTP (time-based) codes are supported.');
+        alert('Unsupported', 'Only TOTP (time-based) codes are supported.');
         return null;
       }
 
@@ -55,7 +63,7 @@ export const qrParser = {
         const url = new URL(raw);
         const type = (url.hostname || '').toLowerCase();
         if (type !== 'totp') {
-          Alert.alert('Unsupported', 'Only TOTP (time-based) codes are supported.');
+          alert('Unsupported', 'Only TOTP (time-based) codes are supported.');
           return null;
         }
         const pathPart = url.pathname.slice(1).replace(/^\/+/, '');
@@ -66,7 +74,7 @@ export const qrParser = {
       } catch (_) {
         const match = raw.match(/^otpauth:\/\/totp\/([^?]+)(?:\?(.+))?$/i);
         if (!match) {
-          Alert.alert('Error', 'Could not parse QR. Use manual entry and paste the key or full link.');
+          alert('Error', 'Could not parse QR. Use manual entry and paste the key or full link.');
           return null;
         }
         label = safeDecode(match[1].replace(/^\/+/, ''));
@@ -78,13 +86,13 @@ export const qrParser = {
 
       const secretClean = String(secret || '').trim().replace(/\s/g, '');
       if (!secretClean || secretClean.length < 16) {
-        Alert.alert('Invalid QR', 'TOTP secret missing or too short. Use manual entry.');
+        alert('Invalid QR', 'TOTP secret missing or too short. Use manual entry.');
         return null;
       }
 
       return { issuer, label, secret: secretClean };
     } catch (e) {
-      Alert.alert('Error', 'Could not process QR. Try manual entry.');
+      alert('Error', 'Could not process QR. Try manual entry.');
       return null;
     }
   },

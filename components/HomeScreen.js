@@ -2,7 +2,7 @@
  * Main screen. Greeting, account list, search, filters, collapsible folders.
  * @module components/HomeScreen
  */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,13 +16,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AccountCard } from './AccountCard';
 import { AccountEditModal } from './AccountEditModal';
+import { ConfirmDialog } from './ui';
 import { AppLogo } from './AppLogo';
 import { useLayout } from '../hooks/useLayout';
 import { useTheme } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 import { useFolders } from '../hooks/useFolders';
 import { themeDark } from '../constants/themes';
 import { spacing, radii } from '../constants/designTokens';
-
 export const HomeScreen = ({
   token,
   user,
@@ -36,12 +37,19 @@ export const HomeScreen = ({
   onSettingsPress,
   onToggleFavorite,
   updateAccount,
+  updateAccountsBatch,
   setLastUsed,
+  reorderAccounts,
   folders: foldersProp,
+  addFolder,
+  removeFolder,
+  refreshFolders: refreshFoldersProp,
 }) => {
   const { theme } = useTheme();
+  const { showToast } = useToast();
   const { horizontalPadding, contentMaxWidth, safeBottom } = useLayout();
-  const { folders: foldersFromHook, refreshFolders } = useFolders();
+  const { folders: foldersFromHook, refreshFolders: refreshFoldersFromHook } = useFolders(token, user?.uid);
+  const refreshFolders = refreshFoldersProp || refreshFoldersFromHook;
   const folders = useMemo(() => {
     const base = foldersProp && foldersProp.length > 0 ? foldersProp : foldersFromHook;
     const accountFolders = [...new Set(accounts.map((a) => a.folder || 'Personal'))];
@@ -53,6 +61,18 @@ export const HomeScreen = ({
   const [folderFilter, setFolderFilter] = useState('all');
   const [editingAccount, setEditingAccount] = useState(null);
   const [collapsedFolders, setCollapsedFolders] = useState({});
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [pendingOrder, setPendingOrder] = useState(null);
+  const [folderDeleteConfirm, setFolderDeleteConfirm] = useState(null);
+
+  const fullSortedByOrder = useMemo(
+    () => [...accounts].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+    [accounts]
+  );
+
+  const effectiveOrder = pendingOrder ?? fullSortedByOrder;
+
   const filteredAccounts = useMemo(() => {
     let list = accounts;
     if (showFavoritesOnly) list = list.filter((a) => a.favorite);
@@ -67,14 +87,18 @@ export const HomeScreen = ({
       );
     }
     const sorted = [...list].sort((a, b) => {
-      if (sortBy === 'order') return (a.order ?? 0) - (b.order ?? 0);
+      if (sortBy === 'order') {
+        const orderA = effectiveOrder.findIndex((x) => x.id === a.id);
+        const orderB = effectiveOrder.findIndex((x) => x.id === b.id);
+        return (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB);
+      }
       if (sortBy === 'issuer') return (a.issuer || '').localeCompare(b.issuer || '');
       if (sortBy === 'label') return (a.label || '').localeCompare(b.label || '');
       if (sortBy === 'lastUsed') return (b.lastUsed || 0) - (a.lastUsed || 0);
       return 0;
     });
     return sorted;
-  }, [accounts, searchQuery, sortBy, showFavoritesOnly, folderFilter]);
+  }, [accounts, searchQuery, sortBy, showFavoritesOnly, folderFilter, effectiveOrder]);
 
   const accountsByFolder = useMemo(() => {
     const map = {};
@@ -86,6 +110,15 @@ export const HomeScreen = ({
     return map;
   }, [filteredAccounts]);
 
+  const folderEntriesSorted = useMemo(() => {
+    const entries = Object.entries(accountsByFolder);
+    return [...entries].sort(([fa], [fb]) => {
+      const ia = folders.indexOf(fa);
+      const ib = folders.indexOf(fb);
+      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    });
+  }, [accountsByFolder, folders]);
+
   const folderCounts = useMemo(() => {
     const counts = {};
     accounts.forEach((acc) => {
@@ -95,9 +128,45 @@ export const HomeScreen = ({
     return counts;
   }, [accounts]);
 
+  const handleMoveAccount = (accountId, direction) => {
+    if (!reorderAccounts) return;
+    const idx = effectiveOrder.findIndex((a) => a.id === accountId);
+    if (idx < 0) return;
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= effectiveOrder.length) return;
+    const next = [...effectiveOrder];
+    [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
+    setPendingOrder(next);
+  };
+
+  const handleSaveOrder = () => {
+    if (pendingOrder && reorderAccounts) {
+      reorderAccounts(pendingOrder);
+      setPendingOrder(null);
+      showToast?.('Order saved');
+    }
+  };
+
+  const getReorderProps = (acc) => {
+    if (sortBy !== 'order' || !reorderAccounts) return {};
+    const idx = effectiveOrder.findIndex((a) => a.id === acc.id);
+    if (idx < 0) return {};
+    return {
+      onMoveUp: () => handleMoveAccount(acc.id, 'up'),
+      onMoveDown: () => handleMoveAccount(acc.id, 'down'),
+      canMoveUp: idx > 0,
+      canMoveDown: idx < effectiveOrder.length - 1,
+    };
+  };
+
+  useEffect(() => {
+    if (sortBy !== 'order') setPendingOrder(null);
+  }, [sortBy]);
+
   const toggleFolderCollapse = (f) => {
     setCollapsedFolders((prev) => ({ ...prev, [f]: !prev[f] }));
   };
+
   const paddingBottom = 120 + safeBottom;
 
   if (!token) {
@@ -157,11 +226,11 @@ export const HomeScreen = ({
       ]}
       showsVerticalScrollIndicator={false}
     >
-      <View style={[styles.header, { backgroundColor: theme.colors.bgCard, borderWidth: 1, borderColor: theme.colors.border }, Platform.OS === 'ios' && theme.shadow?.cardSoft, Platform.OS === 'android' && { elevation: 4 }]}>
+      <View style={[styles.header, { backgroundColor: theme.colors.bgCard }]}>
         <View style={styles.headerLeft}>
-          <LinearGradient colors={theme.gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatar}>
-            <Text style={[styles.avatarText, { color: theme.colors.onAccent }]}>{initials}</Text>
-          </LinearGradient>
+          <View style={[styles.avatar, { backgroundColor: theme.colors.surface }]}>
+            <Text style={[styles.avatarText, { color: theme.colors.accent }]}>{initials}</Text>
+          </View>
           <View style={styles.headerTextWrap}>
             <Text style={[styles.greeting, { color: theme.colors.textMuted }]}>Welcome back</Text>
             <Text style={[styles.headerTitle, { color: theme.colors.text }]} numberOfLines={2} ellipsizeMode="tail">{displayName}</Text>
@@ -190,7 +259,7 @@ export const HomeScreen = ({
         </View>
       </View>
 
-      {accounts.length > 0 && (
+      {token && (
         <>
           <View style={[styles.searchWrap, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }]}>
             <MaterialCommunityIcons name="magnify" size={22} color={theme.colors.textMuted} style={styles.searchIcon} />
@@ -207,74 +276,157 @@ export const HomeScreen = ({
               </TouchableOpacity>
             )}
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
-            <View style={[styles.filtersRow, { backgroundColor: 'transparent' }]}>
+          <View style={styles.filtersWrap}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll} contentContainerStyle={styles.filtersScrollContent}>
               <TouchableOpacity
-                style={[styles.filterChip, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }, showFavoritesOnly && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }]}
+                style={[styles.filterChip, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }, showFavoritesOnly && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }]}
                 onPress={() => setShowFavoritesOnly(!showFavoritesOnly)}
               >
-                <MaterialCommunityIcons name="star" size={16} color={showFavoritesOnly ? theme.colors.onAccent : theme.colors.textMuted} />
+                <MaterialCommunityIcons name="star" size={15} color={showFavoritesOnly ? theme.colors.onAccent : theme.colors.textMuted} />
                 <Text style={[styles.filterChipText, { color: showFavoritesOnly ? theme.colors.onAccent : theme.colors.textSecondary }]}>Favorites</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterChip, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }, folderFilter === 'all' && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }]}
+                onPress={() => { setFolderFilter('all'); }}
+              >
+                <MaterialCommunityIcons name="format-list-bulleted" size={15} color={folderFilter === 'all' ? theme.colors.onAccent : theme.colors.textMuted} />
+                <Text style={[styles.filterChipText, { color: folderFilter === 'all' ? theme.colors.onAccent : theme.colors.textSecondary }]}>All</Text>
               </TouchableOpacity>
               {folders.map((f) => {
                 const count = folderCounts[f] ?? 0;
                 const isActive = folderFilter === f;
+                const isCustomFolder = true;
+                const handleFolderLongPress = () => {
+                  if (!isCustomFolder || !removeFolder) return;
+                  const moveCount = count;
+                  if (moveCount === 0) {
+                    removeFolder(f);
+                    if (folderFilter === f) setFolderFilter('all');
+                    refreshFolders?.();
+                    return;
+                  }
+                  const otherFolders = folders.filter((x) => x !== f);
+                  if (otherFolders.length === 0) {
+                    showToast?.('Move accounts to another folder first');
+                    return;
+                  }
+                  const moveTo = otherFolders[0];
+                  setFolderDeleteConfirm({ folder: f, moveTo, count: moveCount });
+                };
                 return (
                   <TouchableOpacity
                     key={f}
-                    style={[styles.filterChip, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }, isActive && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }]}
+                    style={[styles.filterChip, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }, isActive && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }]}
                     onPress={() => setFolderFilter(isActive ? 'all' : f)}
+                    onLongPress={handleFolderLongPress}
                   >
-                    <MaterialCommunityIcons name="folder-outline" size={14} color={isActive ? theme.colors.onAccent : theme.colors.textMuted} />
+                    <MaterialCommunityIcons name="folder-outline" size={15} color={isActive ? theme.colors.onAccent : theme.colors.textMuted} />
                     <Text style={[styles.filterChipText, { color: isActive ? theme.colors.onAccent : theme.colors.textSecondary }]}>{f}</Text>
                     <Text style={[styles.filterChipCount, { color: isActive ? theme.colors.onAccent : theme.colors.textMuted }]}>{count}</Text>
                   </TouchableOpacity>
                 );
               })}
-              {['order', 'issuer', 'label', 'lastUsed'].map((opt) => {
-                const isActive = sortBy === opt;
+              {addFolder && (
+                <TouchableOpacity
+                  style={[styles.filterChip, styles.createChip, { backgroundColor: theme.colors.surface, borderColor: theme.colors.accent }]}
+                  onPress={() => setShowCreateFolder(true)}
+                >
+                  <MaterialCommunityIcons name="plus" size={16} color={theme.colors.accent} />
+                  <Text style={[styles.filterChipText, { color: theme.colors.accent }]}>Create</Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
+            {showCreateFolder && addFolder && (
+              <View style={[styles.createFolderRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                <TextInput
+                  style={[styles.createFolderInput, { backgroundColor: theme.colors.bgElevated, borderColor: theme.colors.border, color: theme.colors.text }]}
+                  placeholder="Folder name..."
+                  placeholderTextColor={theme.colors.textMuted}
+                  value={newFolderName}
+                  onChangeText={setNewFolderName}
+                  autoFocus
+                  onSubmitEditing={() => {
+                    const name = newFolderName.trim();
+                    if (name && !folders.includes(name)) {
+                      addFolder(name);
+                      setFolderFilter(name);
+                      setNewFolderName('');
+                      setShowCreateFolder(false);
+                    }
+                  }}
+                />
+                <TouchableOpacity
+                  style={[styles.createFolderBtn, { backgroundColor: theme.colors.accent }]}
+                  onPress={() => {
+                    const name = newFolderName.trim();
+                    if (name && !folders.includes(name)) {
+                      addFolder(name);
+                      setFolderFilter(name);
+                      setNewFolderName('');
+                      setShowCreateFolder(false);
+                    } else if (name && folders.includes(name)) {
+                      showToast?.(`Folder "${name}" already exists`);
+                    }
+                  }}
+                >
+                  <Text style={[styles.createFolderBtnText, { color: theme.colors.onAccent }]}>Add</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.createFolderBtn, { backgroundColor: theme.colors.surface }]}
+                  onPress={() => { setShowCreateFolder(false); setNewFolderName(''); }}
+                >
+                  <MaterialCommunityIcons name="close" size={20} color={theme.colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+            )}
+            <Text style={[styles.filterSectionLabel, { color: theme.colors.textMuted }]}>Sort by</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll} contentContainerStyle={styles.filtersScrollContent}>
+              {[
+                { key: 'order', label: 'Custom', icon: 'format-list-numbered' },
+                { key: 'issuer', label: 'Issuer', icon: 'sort-alphabetical-variant' },
+                { key: 'label', label: 'Label', icon: 'tag-outline' },
+                { key: 'lastUsed', label: 'Recent', icon: 'clock-outline' },
+              ].map(({ key, label, icon }) => {
+                const isActive = sortBy === key;
                 return (
                   <TouchableOpacity
-                    key={opt}
-                    style={[styles.filterChip, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }, isActive && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }]}
-                    onPress={() => setSortBy(opt)}
+                    key={key}
+                    style={[styles.filterChip, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }, isActive && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }]}
+                    onPress={() => setSortBy(key)}
                   >
-                    <Text style={[styles.filterChipText, { color: isActive ? theme.colors.onAccent : theme.colors.textSecondary }]}>
-                      {opt === 'lastUsed' ? 'Recent' : opt === 'order' ? 'Custom' : opt.charAt(0).toUpperCase() + opt.slice(1)}
-                    </Text>
+                    <MaterialCommunityIcons name={icon} size={14} color={isActive ? theme.colors.onAccent : theme.colors.textMuted} />
+                    <Text style={[styles.filterChipText, { color: isActive ? theme.colors.onAccent : theme.colors.textSecondary }]}>{label}</Text>
                   </TouchableOpacity>
                 );
               })}
-            </View>
-          </ScrollView>
+            </ScrollView>
+            {sortBy === 'order' && pendingOrder && reorderAccounts && (
+              <TouchableOpacity
+                style={[styles.saveOrderBtn, { backgroundColor: theme.colors.accent }]}
+                onPress={handleSaveOrder}
+                activeOpacity={0.8}
+              >
+                <MaterialCommunityIcons name="content-save" size={18} color={theme.colors.onAccent} />
+                <Text style={[styles.saveOrderBtnText, { color: theme.colors.onAccent }]}>Save order</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </>
       )}
 
       {accounts.length === 0 ? (
         <View style={styles.emptyState}>
-          <View style={[styles.emptyIconWrap, { backgroundColor: theme.colors.bgCard, borderWidth: 2, borderColor: theme.colors.border }]}>
-            <MaterialCommunityIcons name="shield-plus-outline" size={52} color={theme.colors.accent} />
-          </View>
-          <Text style={[styles.emptyStateTitle, { color: theme.colors.text }]}>Add your first account</Text>
-          <Text style={[styles.emptyStateText, { color: theme.colors.textSecondary }]}>
-            Tap the + button below to scan a QR code from your service’s security settings
+          <MaterialCommunityIcons name="shield-plus-outline" size={40} color={theme.colors.textMuted} style={styles.emptyIcon} />
+          <Text style={[styles.emptyStateText, { color: theme.colors.textMuted }]}>
+            Tap the scanner to add your first account
           </Text>
-          <Text style={[styles.emptyStateHint, { color: theme.colors.textMuted }]}>
-            Works with Google, GitHub, Microsoft, and any app that supports 2FA
-          </Text>
-          <View style={[styles.emptyTips, { backgroundColor: theme.colors.surface }]}>
-            <MaterialCommunityIcons name="lightbulb-on-outline" size={20} color={theme.colors.accent} />
-            <Text style={[styles.emptyTipText, { color: theme.colors.textSecondary }]}>
-              Look for “Two-factor authentication” or “2FA” in your account settings
-            </Text>
-          </View>
         </View>
       ) : (
         <View style={styles.accountsList}>
           {filteredAccounts.length === 0 ? (
             <Text style={[styles.searchEmpty, { color: theme.colors.textMuted }]}>No accounts match "{searchQuery}"</Text>
-          ) : folderFilter === 'all' && Object.keys(accountsByFolder).length > 1 ? (
-            Object.entries(accountsByFolder).map(([folderName, accs]) => {
+          ) : folderFilter === 'all' && folderEntriesSorted.length > 1 ? (
+            folderEntriesSorted.map(([folderName, accs]) => {
               const isCollapsed = collapsedFolders[folderName];
               return (
                 <View key={folderName} style={styles.folderGroup}>
@@ -301,6 +453,7 @@ export const HomeScreen = ({
                         isFavorite={!!acc.favorite}
                         onCopy={() => setLastUsed?.(acc.id)}
                         onEdit={updateAccount ? (a) => setEditingAccount(a) : undefined}
+                        {...getReorderProps(acc)}
                       />
                     );
                   })}
@@ -321,6 +474,7 @@ export const HomeScreen = ({
                   isFavorite={!!acc.favorite}
                   onCopy={() => setLastUsed?.(acc.id)}
                   onEdit={updateAccount ? (a) => setEditingAccount(a) : undefined}
+                  {...getReorderProps(acc)}
                 />
               );
             })
@@ -333,9 +487,32 @@ export const HomeScreen = ({
         account={editingAccount}
         folders={folders}
         accounts={accounts}
+        addFolder={addFolder}
         onClose={() => { setEditingAccount(null); refreshFolders?.(); }}
         onSave={(id, updates) => { updateAccount?.(id, updates); setEditingAccount(null); refreshFolders?.(); }}
       />
+
+      {folderDeleteConfirm && (
+        <ConfirmDialog
+          visible
+          title={`Delete "${folderDeleteConfirm.folder}"?`}
+          message={`${folderDeleteConfirm.count} account(s) will be moved to ${folderDeleteConfirm.moveTo}. Continue?`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          destructive
+          onConfirm={async () => {
+            const toMove = accounts.filter((acc) => (acc.folder || 'Personal') === folderDeleteConfirm.folder);
+            if (toMove.length > 0) {
+              await updateAccountsBatch?.(toMove.map((acc) => ({ id: acc.id, updates: { folder: folderDeleteConfirm.moveTo } })));
+            }
+            removeFolder(folderDeleteConfirm.folder);
+            if (folderFilter === folderDeleteConfirm.folder) setFolderFilter('all');
+            refreshFolders?.();
+            setFolderDeleteConfirm(null);
+          }}
+          onCancel={() => setFolderDeleteConfirm(null)}
+        />
+      )}
     </ScrollView>
   );
 };
@@ -368,7 +545,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 52,
     height: 52,
-    borderRadius: radii.md,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
@@ -400,53 +577,24 @@ const styles = StyleSheet.create({
   iconButton: {
     width: 44,
     height: 44,
-    borderRadius: radii.md,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: spacing.lg,
-  },
-  emptyIconWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: radii.xxl,
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xl,
+    paddingVertical: 48,
+    paddingHorizontal: spacing.lg,
   },
-  emptyStateTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: spacing.sm,
-    textAlign: 'center',
+  emptyIcon: {
+    marginBottom: spacing.md,
+    opacity: 0.6,
   },
   emptyStateText: {
-    fontSize: 16,
+    fontSize: 15,
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: spacing.sm,
-  },
-  emptyStateHint: {
-    fontSize: 14,
-    textAlign: 'center',
-    opacity: 0.85,
-  },
-  emptyTips: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.lg,
-    borderRadius: radii.md,
-    marginTop: spacing.xl,
-    maxWidth: 320,
-  },
-  emptyTipText: {
-    flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
   },
   searchWrap: {
     flexDirection: 'row',
@@ -456,14 +604,23 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     minHeight: 52,
   },
-  filtersScroll: {
+  filtersWrap: {
     marginBottom: spacing.lg,
-    marginHorizontal: -2,
   },
-  filtersRow: {
+  filtersScroll: {
+    marginBottom: spacing.sm,
+  },
+  filtersScrollContent: {
     flexDirection: 'row',
     gap: spacing.sm,
     paddingVertical: 4,
+  },
+  filterSectionLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: spacing.xs,
   },
   filterChip: {
     flexDirection: 'row',
@@ -472,6 +629,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: radii.full,
+    borderWidth: 1,
   },
   filterChipText: {
     fontSize: 13,
@@ -483,6 +641,50 @@ const styles = StyleSheet.create({
   filterChipCount: {
     fontSize: 12,
     marginLeft: 2,
+  },
+  createChip: {
+    borderStyle: 'dashed',
+  },
+  saveOrderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
+    marginTop: spacing.sm,
+  },
+  saveOrderBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  createFolderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.sm,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    marginTop: spacing.sm,
+  },
+  createFolderInput: {
+    flex: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    fontSize: 16,
+  },
+  createFolderBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
+    justifyContent: 'center',
+  },
+  createFolderBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   searchIcon: {
     marginRight: spacing.sm,
@@ -534,7 +736,7 @@ const styles = StyleSheet.create({
   logoRing: {
     width: 100,
     height: 100,
-    borderRadius: radii.xxl,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xl,

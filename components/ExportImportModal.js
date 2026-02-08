@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   headerIconWrap: {
     width: 44,
     height: 44,
-    borderRadius: radii.full,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },

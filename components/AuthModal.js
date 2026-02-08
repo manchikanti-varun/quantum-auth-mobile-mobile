@@ -191,9 +191,9 @@ export const AuthModal = ({ visible, onClose, onLogin, onRegister, loading, pend
                 <TouchableOpacity
                   onPress={onClose}
                   style={[styles.closeButton, { backgroundColor: theme.colors.surface }]}
-                  hitSlop={16}
+                  hitSlop={8}
                 >
-                  <MaterialCommunityIcons name="close" size={20} color={theme.colors.textMuted} />
+                  <MaterialCommunityIcons name="close" size={22} color={theme.colors.textSecondary} />
                 </TouchableOpacity>
               )}
             </View>
@@ -570,8 +570,11 @@ const styles = StyleSheet.create({
     ...typography.h1,
   },
   closeButton: {
-    padding: spacing.sm,
-    borderRadius: radii.sm,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   welcomeText: {
     ...typography.bodySm,

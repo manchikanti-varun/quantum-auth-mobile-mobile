@@ -18,15 +18,16 @@ export const AppLogo = ({ size = 'md', style }) => {
 };
 
 const sizes = {
-  sm: { container: { width: 40, height: 40 }, image: { width: 40, height: 40 } },
-  md: { container: { width: 64, height: 64 }, image: { width: 64, height: 64 } },
-  lg: { container: { width: 96, height: 96 }, image: { width: 96, height: 96 } },
+  sm: { container: { width: 40, height: 40, borderRadius: 10 }, image: { width: 40, height: 40 } },
+  md: { container: { width: 64, height: 64, borderRadius: 14 }, image: { width: 64, height: 64 } },
+  lg: { container: { width: 96, height: 96, borderRadius: 20 }, image: { width: 96, height: 96 } },
 };
 
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   image: {
     width: 64,

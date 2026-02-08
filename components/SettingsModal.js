@@ -30,7 +30,6 @@ import { authApi, deviceApi } from '../services/api';
 import { validatePassword } from '../utils/validation';
 import { PASSWORD_REQUIREMENTS } from '../utils/validation';
 import { spacing, radii } from '../constants/designTokens';
-import { DEFAULT_FOLDERS } from '../constants/config';
 import { AUTO_LOCK_OPTIONS, SESSION_TIMEOUT_OPTIONS } from '../constants/config';
 
 const THEME_OPTIONS = [
@@ -69,10 +68,13 @@ export const SettingsModal = ({
   addFolder,
   renameFolder,
   removeFolder,
+  reorderFolders,
   updateAccount,
+  updateAccountsBatch,
   refreshFolders,
   deviceId,
   onPreferencesChange,
+  onLogout,
 }) => {
   const { theme, preference, setThemePreference } = useTheme();
   const { safeBottom } = useLayout();
@@ -84,7 +86,7 @@ export const SettingsModal = ({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pwLoading, setPwLoading] = useState(false);
 
-  const folders = Array.isArray(foldersProp) && foldersProp.length > 0 ? foldersProp : ['Personal', 'Work', 'Banking'];
+  const folders = Array.isArray(foldersProp) && foldersProp.length > 0 ? foldersProp : ['Personal'];
   const [newFolderName, setNewFolderName] = useState('');
   const [editingFolder, setEditingFolder] = useState(null);
   const [editName, setEditName] = useState('');
@@ -161,12 +163,11 @@ export const SettingsModal = ({
   };
 
   const handleStartRename = (folder) => {
-    if (DEFAULT_FOLDERS.includes(folder)) return;
     setEditingFolder(folder);
     setEditName(folder);
   };
 
-  const handleSaveRename = () => {
+  const handleSaveRename = async () => {
     const name = editName.trim();
     if (!name || name === editingFolder) {
       setEditingFolder(null);
@@ -178,17 +179,15 @@ export const SettingsModal = ({
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     renameFolder?.(editingFolder, name);
-    accounts.forEach((acc) => {
-      if ((acc.folder || 'Personal') === editingFolder) {
-        updateAccount?.(acc.id, { folder: name });
-      }
-    });
+    const toRename = accounts.filter((acc) => (acc.folder || 'Personal') === editingFolder);
+    if (toRename.length > 0) {
+      await updateAccountsBatch?.(toRename.map((acc) => ({ id: acc.id, updates: { folder: name } })));
+    }
     setEditingFolder(null);
     setEditName('');
   };
 
   const handleRemoveFolder = (folderName) => {
-    if (DEFAULT_FOLDERS.includes(folderName)) return;
     const count = getAccountCount(folderName);
     if (count === 0) {
       removeFolder?.(folderName);
@@ -200,21 +199,21 @@ export const SettingsModal = ({
       Alert.alert('Cannot remove', 'Move accounts to another folder first.');
       return;
     }
+    const moveTo = otherFolders[0];
     Alert.alert(
       `Remove "${folderName}"?`,
-      `${count} account(s) will be moved to Personal. Continue?`,
+      `${count} account(s) will be moved to ${moveTo}. Continue?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Remove',
           style: 'destructive',
-          onPress: () => {
+          onPress: async () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            accounts.forEach((acc) => {
-              if ((acc.folder || 'Personal') === folderName) {
-                updateAccount?.(acc.id, { folder: 'Personal' });
-              }
-            });
+            const toMove = accounts.filter((acc) => (acc.folder || 'Personal') === folderName);
+            if (toMove.length > 0) {
+              await updateAccountsBatch?.(toMove.map((acc) => ({ id: acc.id, updates: { folder: moveTo } })));
+            }
             removeFolder?.(folderName);
             refreshFolders?.();
           },
@@ -330,23 +329,26 @@ export const SettingsModal = ({
       </Section>
 
       <Section title="Appearance">
-        {THEME_OPTIONS.map((opt) => {
-          const isSelected = preference === opt.id;
-          return (
-            <TouchableOpacity
-              key={opt.id}
-              style={[s.row, { backgroundColor: theme.colors.surface, borderColor: isSelected ? theme.colors.accent : theme.colors.border }, isSelected && { borderWidth: 2 }]}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setThemePreference(opt.id); }}
-              activeOpacity={0.7}
-            >
-              <MaterialCommunityIcons name={opt.icon} size={22} color={isSelected ? theme.colors.accent : theme.colors.textMuted} style={s.rowIcon} />
-              <View style={s.rowBody}>
-                <Text style={[s.rowLabel, { color: theme.colors.text }]}>{opt.label}</Text>
-              </View>
-              {isSelected && <MaterialCommunityIcons name="check-circle" size={24} color={theme.colors.accent} />}
-            </TouchableOpacity>
-          );
-        })}
+        <View style={s.themeRow}>
+          {THEME_OPTIONS.map((opt) => {
+            const isSelected = preference === opt.id;
+            return (
+              <TouchableOpacity
+                key={opt.id}
+                style={[
+                  s.themeBtn,
+                  { backgroundColor: theme.colors.surface, borderColor: isSelected ? theme.colors.accent : theme.colors.border },
+                  isSelected && { borderWidth: 2 },
+                ]}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setThemePreference(opt.id); }}
+                activeOpacity={0.7}
+              >
+                <MaterialCommunityIcons name={opt.icon} size={24} color={isSelected ? theme.colors.accent : theme.colors.textMuted} />
+                <Text style={[s.themeBtnLabel, { color: isSelected ? theme.colors.text : theme.colors.textMuted }]}>{opt.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </Section>
 
       {appLock !== undefined && (
@@ -578,7 +580,7 @@ export const SettingsModal = ({
             </View>
           </View>
           <Text style={[s.sectionTitle, { color: theme.colors.textMuted }]}>Your folders</Text>
-          {folders.map((f) => (
+          {folders.map((f, idx) => (
             <View key={f} style={[s.row, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
               {editingFolder === f ? (
                 <View style={s.editRow}>
@@ -597,23 +599,51 @@ export const SettingsModal = ({
                 </View>
               ) : (
                 <>
-                  <MaterialCommunityIcons name={DEFAULT_FOLDERS.includes(f) ? 'folder' : 'folder-outline'} size={22} color={theme.colors.accent} style={s.rowIcon} />
+                  <View style={s.rowReorder}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (idx > 0) {
+                          const next = [...folders];
+                          [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+                          reorderFolders?.(next);
+                        }
+                      }}
+                      hitSlop={8}
+                      disabled={idx === 0}
+                      style={{ opacity: idx === 0 ? 0.3 : 1 }}
+                    >
+                      <MaterialCommunityIcons name="chevron-up" size={22} color={theme.colors.textMuted} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (idx < folders.length - 1) {
+                          const next = [...folders];
+                          [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+                          reorderFolders?.(next);
+                        }
+                      }}
+                      hitSlop={8}
+                      disabled={idx === folders.length - 1}
+                      style={{ opacity: idx === folders.length - 1 ? 0.3 : 1 }}
+                    >
+                      <MaterialCommunityIcons name="chevron-down" size={22} color={theme.colors.textMuted} />
+                    </TouchableOpacity>
+                  </View>
+                  <MaterialCommunityIcons name="folder-outline" size={22} color={theme.colors.accent} style={s.rowIcon} />
                   <View style={[s.rowBody, { flex: 1 }]}>
                     <Text style={[s.rowLabel, { color: theme.colors.text, flex: 1 }]} numberOfLines={1}>{f}</Text>
                     <View style={[s.badge, { backgroundColor: theme.colors.bgCard }]}>
                       <Text style={[s.badgeText, { color: theme.colors.textMuted }]}>{getAccountCount(f)}</Text>
                     </View>
                   </View>
-                  {!DEFAULT_FOLDERS.includes(f) && (
-                    <View style={s.rowActions}>
+                  <View style={s.rowActions}>
                       <TouchableOpacity onPress={() => handleStartRename(f)} hitSlop={8}>
                         <MaterialCommunityIcons name="pencil" size={20} color={theme.colors.textMuted} />
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => handleRemoveFolder(f)} hitSlop={8}>
-                        <MaterialCommunityIcons name="delete-outline" size={20} color={theme.colors.error} />
+                        <MaterialCommunityIcons name="delete-outline" size={22} color={theme.colors.error} />
                       </TouchableOpacity>
                     </View>
-                  )}
                 </>
               )}
             </View>
@@ -643,7 +673,7 @@ export const SettingsModal = ({
         <View style={[s.hintRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
           <MaterialCommunityIcons name="information-outline" size={20} color={theme.colors.accent} />
           <Text style={[s.hintText, { color: theme.colors.textSecondary }]}>
-            Each device has a unique ID. Device 1 receives login approval requests.
+            Device 1 (Primary) receives login approval requests when you sign in on a new device.
           </Text>
         </View>
         {devicesLoading ? (
@@ -653,6 +683,30 @@ export const SettingsModal = ({
         ) : (
           devices.map((d) => {
             const isCurrent = d.deviceId === deviceId;
+            const isPrimary = d.deviceNumber === 1;
+            const canDelete = !isPrimary && !isCurrent;
+            const handleRevoke = () => {
+              Alert.alert(
+                'Logout from device',
+                'You want to logout from this device?',
+                [
+                  { text: 'No', style: 'cancel' },
+                  {
+                    text: 'Yes',
+                    style: 'destructive',
+                    onPress: async () => {
+                      try {
+                        await deviceApi.revoke(d.deviceId);
+                        setDevices((prev) => prev.filter((dev) => dev.deviceId !== d.deviceId));
+                        if (isCurrent) onLogout?.();
+                      } catch (e) {
+                        Alert.alert('Error', e?.response?.data?.message || 'Failed to revoke device');
+                      }
+                    },
+                  },
+                ]
+              );
+            };
             return (
               <View
                 key={d.deviceId}
@@ -668,18 +722,33 @@ export const SettingsModal = ({
                   <Text style={[s.rowLabel, { color: theme.colors.text }]}>
                     Device {d.deviceNumber} {isCurrent && '(this device)'}
                   </Text>
-                  <Text style={[s.hintText, { color: theme.colors.textSecondary, marginTop: 2, fontSize: 12 }]} numberOfLines={1}>
-                    {d.deviceId}
-                  </Text>
+                  {(d.createdAt || d.lastSeenAt) && (
+                    <Text style={[s.hintText, { color: theme.colors.textMuted, fontSize: 12, marginTop: 2 }]}>
+                      {new Date(d.createdAt || d.lastSeenAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                    </Text>
+                  )}
                   {d.platform && (
                     <Text style={[s.hintText, { color: theme.colors.textMuted, fontSize: 11 }]}>{d.platform}</Text>
                   )}
                 </View>
-                {d.deviceNumber === 1 && (
-                  <View style={[s.badge, { backgroundColor: theme.colors.accent + '30' }]}>
-                    <Text style={[s.badgeText, { color: theme.colors.accent }]}>Primary</Text>
-                  </View>
-                )}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                  {d.deviceNumber === 1 && (
+                    <View style={[s.badge, { backgroundColor: theme.colors.accent + '30' }]}>
+                      <Text style={[s.badgeText, { color: theme.colors.accent }]}>Primary</Text>
+                    </View>
+                  )}
+                  {canDelete && (
+                    <TouchableOpacity
+                      onPress={handleRevoke}
+                      hitSlop={10}
+                      style={[s.iconBtn, { backgroundColor: theme.colors.surface }]}
+                      accessible
+                      accessibilityLabel="Logout from device"
+                    >
+                      <MaterialCommunityIcons name="delete-outline" size={22} color={theme.colors.error} />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             );
           })
@@ -797,7 +866,7 @@ const s = StyleSheet.create({
   headerIcon: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -836,6 +905,24 @@ const s = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: spacing.sm,
   },
+  themeRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  themeBtn: {
+    flex: 1,
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    padding: spacing.sm,
+  },
+  themeBtnLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: spacing.xs,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -846,6 +933,10 @@ const s = StyleSheet.create({
   },
   rowIcon: {
     marginRight: spacing.md,
+  },
+  rowReorder: {
+    flexDirection: 'column',
+    marginRight: spacing.sm,
   },
   rowBody: {
     flex: 1,

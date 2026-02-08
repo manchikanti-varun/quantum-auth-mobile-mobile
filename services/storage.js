@@ -5,7 +5,7 @@
  * @module services/storage
  */
 import * as SecureStore from 'expo-secure-store';
-import { ACCOUNTS_KEY, ACCOUNTS_KEY_PREFIX, CUSTOM_FOLDERS_KEY, CUSTOM_FOLDERS_KEY_PREFIX, DEVICE_KEY, PQC_KEYPAIR_KEY, AUTH_TOKEN_KEY, PREFERENCES_KEY, APP_LOCK_KEY, AUTO_LOCK_KEY, INTRO_SEEN_KEY, SESSION_TIMEOUT_KEY, LAST_ACTIVITY_KEY } from '../constants/config';
+import { ACCOUNTS_KEY, ACCOUNTS_KEY_PREFIX, CUSTOM_FOLDERS_KEY, CUSTOM_FOLDERS_KEY_PREFIX, FOLDER_ORDER_KEY_PREFIX, DEVICE_KEY, PQC_KEYPAIR_KEY, AUTH_TOKEN_KEY, PREFERENCES_KEY, APP_LOCK_KEY, AUTO_LOCK_KEY, INTRO_SEEN_KEY, SESSION_TIMEOUT_KEY, LAST_ACTIVITY_KEY } from '../constants/config';
 
 export const storage = {
   async getToken() {
@@ -167,6 +167,30 @@ export const storage = {
     const key = this._foldersKey(uid);
     if (folders && Array.isArray(folders)) {
       await SecureStore.setItemAsync(key, JSON.stringify(folders));
+    } else {
+      await SecureStore.deleteItemAsync(key);
+    }
+  },
+
+  _folderOrderKey(uid) {
+    return uid ? `${FOLDER_ORDER_KEY_PREFIX}${uid}` : `${FOLDER_ORDER_KEY_PREFIX}local`;
+  },
+
+  async getFolderOrder(uid) {
+    const key = this._folderOrderKey(uid);
+    try {
+      const raw = await SecureStore.getItemAsync(key);
+      if (raw) return JSON.parse(raw);
+      return null;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async saveFolderOrder(order, uid) {
+    const key = this._folderOrderKey(uid);
+    if (order && Array.isArray(order)) {
+      await SecureStore.setItemAsync(key, JSON.stringify(order));
     } else {
       await SecureStore.deleteItemAsync(key);
     }

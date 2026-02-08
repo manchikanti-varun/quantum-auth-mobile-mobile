@@ -7,11 +7,11 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AppLogo } from './AppLogo';
 import { PinPad } from './PinPad';
@@ -69,37 +69,48 @@ export const BiometricGate = ({ onUnlock, onPinUnlock, loading, hasPinFallback, 
             <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
               {loading ? 'Verifying...' : 'Tap to unlock with biometric'}
             </Text>
-            <TouchableOpacity
-              style={[styles.buttonWrapper, Platform.OS === 'ios' && theme.shadow?.glowSubtle]}
+            <Pressable
+              style={({ pressed }) => [
+                styles.buttonWrapper,
+                {
+                  backgroundColor: pressed ? '#2563eb' : '#FFFFFF',
+                  borderWidth: 1,
+                  borderColor: pressed ? '#2563eb' : '#E5E7EB',
+                },
+                Platform.OS === 'ios' && theme.shadow?.glowSubtle,
+              ]}
               onPress={handleUnlockPress}
               disabled={loading}
-              activeOpacity={0.85}
             >
-              <LinearGradient
-                colors={theme.gradients.accent}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.button}
-              >
-                {loading ? (
-                  <ActivityIndicator color={theme.colors.onAccent} />
+              {({ pressed }) =>
+                loading ? (
+                  <View style={styles.button}>
+                    <ActivityIndicator color="#000000" />
+                  </View>
                 ) : (
+                  <View style={styles.button}>
+                    <MaterialCommunityIcons name="fingerprint" size={24} color={pressed ? '#FFFFFF' : '#000000'} />
+                    <Text style={[styles.buttonText, { color: pressed ? '#FFFFFF' : '#000000' }]}>Unlock</Text>
+                  </View>
+                )
+              }
+            </Pressable>
+            {hasPinFallback && (
+              <Pressable
+                onPress={() => setShowPinPad(true)}
+                style={({ pressed }) => [
+                  styles.buttonWrapper,
+                  styles.secondaryButton,
+                  { backgroundColor: pressed ? '#2563eb' : '#FFFFFF', borderColor: pressed ? '#2563eb' : '#E5E7EB' },
+                ]}
+              >
+                {({ pressed }) => (
                   <>
-                    <MaterialCommunityIcons name="fingerprint" size={24} color={theme.colors.onAccent} />
-                    <Text style={[styles.buttonText, { color: theme.colors.onAccent }]}>Unlock</Text>
+                    <MaterialCommunityIcons name="numeric" size={24} color={pressed ? '#FFFFFF' : '#000000'} />
+                    <Text style={[styles.buttonText, { color: pressed ? '#FFFFFF' : '#000000' }]}>Use PIN instead</Text>
                   </>
                 )}
-              </LinearGradient>
-            </TouchableOpacity>
-            {hasPinFallback && (
-              <TouchableOpacity
-                onPress={() => setShowPinPad(true)}
-                style={[styles.usePinButton, { borderColor: theme.colors.border }]}
-                activeOpacity={0.8}
-              >
-                <MaterialCommunityIcons name="numeric" size={20} color={theme.colors.accent} />
-                <Text style={[styles.usePinText, { color: theme.colors.accent }]}>Use PIN instead</Text>
-              </TouchableOpacity>
+              </Pressable>
             )}
           </>
         )}
@@ -121,7 +132,7 @@ const styles = StyleSheet.create({
   iconWrap: {
     width: 96,
     height: 96,
-    borderRadius: radii.xxl,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xl,
@@ -152,6 +163,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Platform.select({ android: { elevation: 4 } }),
   },
+  secondaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xl,
+    borderWidth: 1,
+    marginTop: spacing.lg,
+  },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -162,22 +182,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '700',
-  },
-  usePinButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: spacing.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    borderRadius: radii.md,
-    borderWidth: 2,
-    width: '100%',
-  },
-  usePinText: {
-    fontSize: 15,
-    fontWeight: '600',
   },
   useBiometric: {
     flexDirection: 'row',

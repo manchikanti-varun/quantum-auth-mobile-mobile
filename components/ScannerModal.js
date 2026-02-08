@@ -13,8 +13,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
   StatusBar,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions, scanFromURLAsync } from 'expo-camera';
@@ -26,21 +26,43 @@ import { useTheme } from '../context/ThemeContext';
 import { themeDark } from '../constants/themes';
 import { spacing, radii } from '../constants/designTokens';
 
-const useNativeScanner = CameraView?.isModernBarcodeScannerAvailable === true;
-
 export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = [] }) => {
   const { theme } = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [mode, setMode] = useState('scan');
-  const [launchingScanner, setLaunchingScanner] = useState(false);
   const [manualSecret, setManualSecret] = useState('');
   const [manualAccount, setManualAccount] = useState('');
   const [manualIssuer, setManualIssuer] = useState('Google');
   const [manualFolder, setManualFolder] = useState('Personal');
   const [scanningPhoto, setScanningPhoto] = useState(false);
-  const folders = Array.isArray(foldersProp) && foldersProp.length > 0 ? foldersProp : ['Personal', 'Work', 'Banking'];
-  const scanSubscriptionRef = useRef(null);
+  const [alertInfo, setAlertInfo] = useState({ visible: false, title: '', message: '' });
+  const folders = Array.isArray(foldersProp) && foldersProp.length > 0 ? foldersProp : ['Personal'];
+  const cornerAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(cornerAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
+        Animated.timing(cornerAnim, { toValue: 0, duration: 1200, useNativeDriver: true }),
+      ])
+    );
+    if (visible && permission?.granted && mode === 'scan') loop.start();
+    return () => loop.stop();
+  }, [visible, permission?.granted, mode]);
+
+  const cornerInset = cornerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 10],
+  });
+  const cornerInsetNeg = cornerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -10],
+  });
+
+  const showAlert = (title, message) => {
+    setAlertInfo({ visible: true, title, message });
+  };
   const scannedRef = useRef(false);
   scannedRef.current = scanned;
 
@@ -68,17 +90,13 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
   const pickImageAndScan = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert(
-        'Photo access needed',
-        'Allow access to photos to scan a QR code from an image.',
-        [{ text: 'OK' }],
-      );
+      showAlert('Photo access needed', 'Allow access to photos to scan a QR code from an image.');
       return;
     }
     setScanningPhoto(true);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions?.Images ?? ['images'],
+        mediaTypes: ['images'],
         allowsEditing: false,
         quality: 1,
       });
@@ -92,11 +110,7 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
         scanResults = await scanFromURLAsync(uri, ['qr']);
       } catch (scanErr) {
         setScanningPhoto(false);
-        Alert.alert(
-          'Could not read QR code',
-          'Try a clearer image or use Manual entry to paste the setup key from your service\'s security settings.',
-          [{ text: 'OK' }],
-        );
+        showAlert('Could not read QR code', 'Try a clearer image or use Manual entry to paste the setup key from your service\'s security settings.');
         return;
       }
       const otpauth = scanResults?.find((r) => (r?.data || '').toLowerCase().startsWith('otpauth://'))?.data
@@ -105,60 +119,13 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
         handleScanResult(otpauth.trim());
         onClose();
       } else {
-        Alert.alert(
-          'No 2FA code found',
-          'This image doesn\'t contain a 2FA setup QR. Use a screenshot of the Google 2FA QR, or use Manual entry and paste the key.',
-          [{ text: 'OK' }],
-        );
+        showAlert('No 2FA code found', 'This image doesn\'t contain a 2FA setup QR. Use a screenshot of the Google 2FA QR, or use Manual entry and paste the key.');
       }
     } catch (e) {
-      Alert.alert(
-        'Error',
-        'Something went wrong. Use Manual entry and paste the setup key from Google instead.',
-        [{ text: 'OK' }],
-      );
+      showAlert('Error', 'Something went wrong. Use Manual entry and paste the setup key from Google instead.');
     }
     setScanningPhoto(false);
   };
-
-  const openNativeScanner = async () => {
-    if (!CameraView?.launchScanner || !CameraView?.onModernBarcodeScanned) return;
-    setLaunchingScanner(true);
-    try {
-      scanSubscriptionRef.current = CameraView.onModernBarcodeScanned((event) => {
-        const raw = event?.data ?? event?.nativeEvent?.data;
-        const data = typeof raw === 'string' ? raw.trim() : (raw ? String(raw).trim() : '');
-        if (!data) return;
-        if (scanSubscriptionRef.current) {
-          scanSubscriptionRef.current.remove();
-          scanSubscriptionRef.current = null;
-        }
-        setLaunchingScanner(false);
-        handleScanResult(data);
-        if (Platform.OS === 'ios' && CameraView.dismissScanner) {
-          CameraView.dismissScanner();
-        }
-        onClose();
-      });
-      await CameraView.launchScanner({ barcodeTypes: ['qr'] });
-    } catch (e) {
-      setLaunchingScanner(false);
-      if (scanSubscriptionRef.current) {
-        scanSubscriptionRef.current.remove();
-        scanSubscriptionRef.current = null;
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (!visible) {
-      if (scanSubscriptionRef.current) {
-        scanSubscriptionRef.current.remove();
-        scanSubscriptionRef.current = null;
-      }
-      setLaunchingScanner(false);
-    }
-  }, [visible]);
 
   const onBarcodeScannedStable = useRef((result) => handleBarcodeScanned(result)).current;
 
@@ -203,6 +170,7 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
   };
 
   return (
+    <>
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={[styles.container, { backgroundColor: theme.colors.bg }]}>
         <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -212,10 +180,10 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
             </Text>
             <TouchableOpacity
               onPress={() => (mode === 'manual' ? resetManual() : onClose())}
-              style={styles.closeButton}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              style={[styles.closeButton, { backgroundColor: theme.colors.surface }]}
+              hitSlop={8}
             >
-              <Text style={[styles.close, { color: theme.colors.textMuted }]}>×</Text>
+              <MaterialCommunityIcons name="close" size={22} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -321,53 +289,6 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
                 </LinearGradient>
               </TouchableOpacity>
             </View>
-          ) : useNativeScanner ? (
-            <View style={styles.placeholder}>
-              <Text style={[styles.placeholderText, { color: theme.colors.textSecondary }]}>
-                Scan the QR code with your camera or from a photo.
-              </Text>
-              <TouchableOpacity
-                style={styles.buttonWrapper}
-                onPress={pickImageAndScan}
-                disabled={scanningPhoto}
-                activeOpacity={0.85}
-              >
-                <LinearGradient
-                  colors={theme.gradients.accent}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.button}
-                >
-                  {scanningPhoto ? (
-                    <ActivityIndicator color={theme.colors.onAccent} size="small" />
-                  ) : (
-                    <Text style={[styles.buttonText, { color: theme.colors.onAccent }]}>Scan from photo</Text>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-              <Text style={[styles.orText, { color: theme.colors.textMuted }]}>or</Text>
-              <TouchableOpacity
-                style={[styles.buttonWrapperOutline, { borderColor: theme.colors.accent }]}
-                onPress={openNativeScanner}
-                disabled={launchingScanner}
-                activeOpacity={0.85}
-              >
-                {launchingScanner ? (
-                  <ActivityIndicator color={theme.colors.accent} size="small" />
-                ) : (
-                  <Text style={[styles.buttonTextOutline, { color: theme.colors.accent }]}>Scan with camera</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.manualLink, { position: 'relative', marginTop: spacing.lg }]}
-                onPress={() => setMode('manual')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.manualLinkText, { color: theme.colors.accent }]}>
-                  Enter key manually
-                </Text>
-              </TouchableOpacity>
-            </View>
           ) : (
             <View style={styles.scannerContainer}>
               <CameraView
@@ -376,37 +297,64 @@ export const ScannerModal = ({ visible, onClose, onScan, folders: foldersProp = 
                 onBarcodeScanned={onBarcodeScannedStable}
               />
               <View style={styles.overlay} pointerEvents="none">
-                <View style={[styles.frameOuter, { borderColor: theme.colors.accentGlow }]}>
-                  <View style={[styles.frame, { borderColor: theme.colors.accent }]} />
+                <View style={styles.cornerFrame}>
+                  <Animated.View style={[styles.corner, styles.cornerTL, { borderColor: theme.colors.accent, transform: [{ translateX: cornerInset }, { translateY: cornerInset }] }]} />
+                  <Animated.View style={[styles.corner, styles.cornerTR, { borderColor: theme.colors.accent, transform: [{ translateX: cornerInsetNeg }, { translateY: cornerInset }] }]} />
+                  <Animated.View style={[styles.corner, styles.cornerBL, { borderColor: theme.colors.accent, transform: [{ translateX: cornerInset }, { translateY: cornerInsetNeg }] }]} />
+                  <Animated.View style={[styles.corner, styles.cornerBR, { borderColor: theme.colors.accent, transform: [{ translateX: cornerInsetNeg }, { translateY: cornerInsetNeg }] }]} />
                 </View>
                 <Text style={[styles.hint, { color: theme.colors.textMuted }]}>Align QR code within frame</Text>
               </View>
               <View style={styles.scanActions}>
-                <TouchableOpacity
-                  style={[styles.scanFromPhotoButton, { borderColor: theme.colors.accent }]}
-                  onPress={pickImageAndScan}
-                  disabled={scanningPhoto}
-                  activeOpacity={0.85}
-                >
-                  {scanningPhoto ? (
-                    <ActivityIndicator color={theme.colors.accent} size="small" />
-                  ) : (
-                    <Text style={[styles.scanFromPhotoText, { color: theme.colors.accent }]}>Scan from photo</Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.manualLink}
-                  onPress={() => setMode('manual')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.manualLinkText, { color: theme.colors.accent }]}>Enter key manually</Text>
-                </TouchableOpacity>
+                <Text style={[styles.unableToScanLabel, { color: theme.colors.textMuted }]}>Unable to scan?</Text>
+                <View style={styles.scanActionButtons}>
+                  <TouchableOpacity
+                    style={[styles.scanActionBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                    onPress={pickImageAndScan}
+                    disabled={scanningPhoto}
+                    activeOpacity={0.85}
+                  >
+                    {scanningPhoto ? (
+                      <ActivityIndicator color={theme.colors.accent} size="small" />
+                    ) : (
+                      <>
+                        <MaterialCommunityIcons name="image-outline" size={20} color={theme.colors.accent} />
+                        <Text style={[styles.scanActionBtnText, { color: theme.colors.text }]}>Scan from photo</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.scanActionBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                    onPress={() => setMode('manual')}
+                    activeOpacity={0.85}
+                  >
+                    <MaterialCommunityIcons name="keyboard-outline" size={20} color={theme.colors.accent} />
+                    <Text style={[styles.scanActionBtnText, { color: theme.colors.text }]}>Enter key manually</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           )}
         </SafeAreaView>
       </View>
     </Modal>
+
+    <Modal visible={alertInfo.visible} animationType="fade" transparent onRequestClose={() => setAlertInfo({ visible: false, title: '', message: '' })}>
+      <View style={[styles.alertOverlay, { backgroundColor: theme.colors.overlay }]}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setAlertInfo({ visible: false, title: '', message: '' })} />
+        <View style={[styles.alertDialog, { backgroundColor: theme.colors.bgCard, borderColor: theme.colors.border }]}>
+          <Text style={[styles.alertTitle, { color: theme.colors.text }]}>{alertInfo.title}</Text>
+          <Text style={[styles.alertMessage, { color: theme.colors.textSecondary }]}>{alertInfo.message}</Text>
+          <TouchableOpacity
+            style={[styles.alertOk, { backgroundColor: theme.colors.accent }]}
+            onPress={() => setAlertInfo({ visible: false, title: '', message: '' })}
+          >
+            <Text style={[styles.alertOkText, { color: theme.colors.onAccent }]}>OK</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  </>
   );
 };
 
@@ -428,11 +376,11 @@ const styles = StyleSheet.create({
     ...themeDark.typography.h2,
   },
   closeButton: {
-    padding: spacing.xs,
-  },
-  close: {
-    fontSize: 28,
-    fontWeight: '300',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   placeholder: {
     flex: 1,
@@ -483,17 +431,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  frameOuter: {
-    padding: 4,
-    borderRadius: 24,
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-  },
-  frame: {
+  cornerFrame: {
     width: 240,
     height: 240,
-    borderWidth: 2,
-    borderRadius: 20,
+    position: 'relative',
+  },
+  corner: {
+    position: 'absolute',
+    width: 36,
+    height: 36,
+  },
+  cornerTL: {
+    top: 0,
+    left: 0,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+  },
+  cornerTR: {
+    top: 0,
+    right: 0,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
+    borderLeftWidth: 0,
+    borderBottomWidth: 0,
+  },
+  cornerBL: {
+    bottom: 0,
+    left: 0,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
+    borderRightWidth: 0,
+    borderTopWidth: 0,
+  },
+  cornerBR: {
+    bottom: 0,
+    right: 0,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
   },
   hint: {
     ...themeDark.typography.caption,
@@ -503,27 +481,35 @@ const styles = StyleSheet.create({
   scanActions: {
     position: 'absolute',
     bottom: spacing.xl,
-    left: 0,
-    right: 0,
+    left: spacing.lg,
+    right: spacing.lg,
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
-  scanFromPhotoButton: {
+  unableToScanLabel: {
+    fontSize: 13,
+    marginBottom: spacing.xs,
+  },
+  scanActionButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    width: '100%',
+    justifyContent: 'center',
+  },
+  scanActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.md,
     borderRadius: radii.md,
-    borderWidth: 2,
+    borderWidth: 1,
   },
-  scanFromPhotoText: {
-    fontSize: 15,
+  scanActionBtnText: {
+    fontSize: 14,
     fontWeight: '600',
-  },
-  manualLink: {
-    alignSelf: 'center',
-  },
-  manualLinkText: {
-    fontSize: 15,
-    textDecorationLine: 'underline',
   },
   flex1: { flex: 1 },
   manualScroll: { flex: 1 },
@@ -566,6 +552,39 @@ const styles = StyleSheet.create({
   },
   folderChipText: {
     fontSize: 14,
+    fontWeight: '600',
+  },
+  alertOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  alertDialog: {
+    width: '100%',
+    maxWidth: 320,
+    borderRadius: radii.lg,
+    padding: spacing.xl,
+    borderWidth: 1,
+  },
+  alertTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: spacing.md,
+  },
+  alertMessage: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: spacing.lg,
+  },
+  alertOk: {
+    paddingVertical: spacing.md,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  alertOkText: {
+    fontSize: 16,
     fontWeight: '600',
   },
 });

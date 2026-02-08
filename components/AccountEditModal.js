@@ -18,13 +18,15 @@ import { useFolders } from '../hooks/useFolders';
 import { ICON_PICKER_OPTIONS } from '../utils/issuerIcons';
 import { spacing, radii } from '../constants/designTokens';
 
-export const AccountEditModal = ({ visible, account, folders: foldersProp, accounts = [], onClose, onSave }) => {
+export const AccountEditModal = ({ visible, account, folders: foldersProp, accounts = [], addFolder: addFolderProp, onClose, onSave }) => {
   const { theme } = useTheme();
-  const { folders: foldersFromHook, addFolder } = useFolders();
+  const { folders: foldersFromHook, addFolder: addFolderFromHook } = useFolders();
   const baseFolders = foldersProp?.length > 0 ? foldersProp : foldersFromHook;
+  const addFolder = addFolderProp || addFolderFromHook;
   const folders = React.useMemo(() => {
-    if (!account?.folder || baseFolders.includes(account.folder)) return baseFolders;
-    return [account.folder, ...baseFolders];
+    const list = baseFolders?.length > 0 ? baseFolders : ['Personal'];
+    if (!account?.folder || list.includes(account.folder)) return list;
+    return [account.folder, ...list];
   }, [baseFolders, account?.folder]);
   const folderCounts = React.useMemo(() => {
     const counts = {};
@@ -70,8 +72,8 @@ export const AccountEditModal = ({ visible, account, folders: foldersProp, accou
         <View style={[styles.content, { backgroundColor: theme.colors.bgElevated }]}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: theme.colors.text }]}>Edit {account.issuer}</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={12}>
-              <MaterialCommunityIcons name="close" size={24} color={theme.colors.textMuted} />
+            <TouchableOpacity onPress={onClose} hitSlop={8} style={[styles.closeButton, { backgroundColor: theme.colors.surface }]}>
+              <MaterialCommunityIcons name="close" size={22} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -169,6 +171,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.xl,
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     fontSize: 20,

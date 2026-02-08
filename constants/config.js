@@ -17,11 +17,12 @@ export const THEME_PREFERENCE_KEY = 'QSAFE_THEME_PREFERENCE';
 export const PREFERENCES_KEY = 'QSAFE_PREFERENCES';
 export const APP_LOCK_KEY = 'QSAFE_APP_LOCK';
 export const CUSTOM_FOLDERS_KEY = 'QSAFE_CUSTOM_FOLDERS';
+export const FOLDER_ORDER_KEY_PREFIX = 'QSAFE_FOLDER_ORDER_';
 export const AUTO_LOCK_KEY = 'QSAFE_AUTO_LOCK_MINUTES';
 export const INTRO_SEEN_KEY = 'QSAFE_INTRO_SEEN';
 export const SESSION_TIMEOUT_KEY = 'QSAFE_SESSION_TIMEOUT_DAYS';
 export const LAST_ACTIVITY_KEY = 'QSAFE_LAST_ACTIVITY';
-export const DEFAULT_FOLDERS = ['Personal', 'Work', 'Banking'];
+export const DEFAULT_FOLDERS = [];
 export const AUTO_LOCK_OPTIONS = [
   { value: 0, label: 'Never', icon: 'clock-outline' },
   { value: 1, label: '1 minute', icon: 'timer-sand' },

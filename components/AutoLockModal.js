@@ -94,8 +94,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeButton: {
-    padding: spacing.sm,
-    borderRadius: radii.sm,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pickerHint: {
     fontSize: 14,

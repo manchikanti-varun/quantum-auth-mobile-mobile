@@ -5,7 +5,8 @@
  * @module App
  */
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Alert, AppState, Linking } from 'react-native';
+import { View, StyleSheet, AppState, Linking } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { v4 as uuidv4 } from 'uuid';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -32,6 +33,7 @@ import { FloatingActionButton } from './components/FloatingActionButton';
 import { BiometricGate } from './components/BiometricGate';
 import { AppLockPromptModal } from './components/AppLockPromptModal';
 import { IntroModal } from './components/IntroModal';
+import { AlertDialog } from './components/ui';
 import { storage } from './services/storage';
 import { verifyPin } from './utils/pinHash';
 
@@ -54,8 +56,12 @@ function AppContent() {
   const [showAppLockPrompt, setShowAppLockPrompt] = useState(false);
   const [showIntro, setShowIntro] = useState(null);
   const [sessionTimeoutDays, setSessionTimeoutDays] = useState(90);
+  const [alert, setAlert] = useState({ visible: false, title: '', message: '' });
   const { theme, isDark } = useTheme();
   const { showToast } = useToast();
+
+  const showAlert = (title, message) => setAlert({ visible: true, title, message });
+  const dismissAlert = () => setAlert((p) => ({ ...p, visible: false }));
 
   useEffect(() => {
     (async () => {
@@ -69,8 +75,8 @@ function AppContent() {
   });
 
   const [mfaResolving, setMfaResolving] = useState(null); // 'approve' | 'deny' | null
-  const { accounts, totpCodes, totpAdjacent, totpSecondsRemaining, addAccount, removeAccount, toggleFavorite, updateAccount, setLastUsed, reloadAccounts } = useAccounts(token, user?.uid);
-  const { folders, addFolder, renameFolder, removeFolder, refreshFolders } = useFolders(token, user?.uid);
+  const { accounts, totpCodes, totpAdjacent, totpSecondsRemaining, addAccount, removeAccount, toggleFavorite, updateAccount, updateAccountsBatch, setLastUsed, reorderAccounts, reloadAccounts } = useAccounts(token, user?.uid);
+  const { folders, addFolder, renameFolder, removeFolder, reorderFolders, refreshFolders } = useFolders(token, user?.uid);
   const { pendingChallenge, resolveChallenge, checkForPendingChallenges } = useMfa(deviceId, token);
 
   const appState = useRef(AppState.currentState);
@@ -194,7 +200,7 @@ function AppContent() {
 
   const handleAppLockChange = async (enabled) => {
     if (enabled && !hasBiometric && !appLockConfig?.pinHash) {
-      Alert.alert('PIN required', 'Set a 6-digit PIN to enable app lock on this device.', [{ text: 'OK' }]);
+      showAlert('PIN required', 'Set a 6-digit PIN to enable app lock on this device.');
       return;
     }
     setAppLock(enabled);
@@ -269,7 +275,7 @@ function AppContent() {
     const config = await storage.getAppLock();
     const valid = await verifyPin(pin, config?.pinHash);
     if (valid) setBiometricUnlocked(true);
-    else Alert.alert('Incorrect PIN', 'Please try again.');
+    else showAlert('Incorrect PIN', 'Please try again.');
   };
 
   const handleLogin = async (email, password, rememberDevice = true) => {
@@ -286,17 +292,20 @@ function AppContent() {
 
   const handleQrScan = async (data, options) => {
     try {
-      const parsed = qrParser.parseOtpauth(data);
+      const parsed = qrParser.parseOtpauth(data, { onAlert: showAlert });
       if (!parsed) return;
 
       const { issuer, label, secret } = parsed;
       const folder = options?.folder || 'Personal';
 
+      const secretNorm = String(secret).trim().replace(/\s/g, '');
       const existingAccount = accounts.find(
-        (acc) => acc.issuer === issuer && acc.label === label,
+        (acc) =>
+          (acc.issuer === issuer && acc.label === label) ||
+          (acc.secret && String(acc.secret).replace(/\s/g, '') === secretNorm),
       );
       if (existingAccount) {
-        showToast('Already added');
+        showAlert('Account already exists', `"${issuer}: ${label}" is already in your account list.`);
         return;
       }
 
@@ -313,9 +322,9 @@ function AppContent() {
       showToast(`${label} added`);
     } catch (e) {
       if (e?.message?.includes('SecureStore') || e?.message?.includes('2048')) {
-        Alert.alert('Storage full', 'Could not save. Please remove an account or clear app data, then try again.');
+        showAlert('Storage full', 'Could not save. Please remove an account or clear app data, then try again.');
       } else {
-        Alert.alert('Could not add account', 'Try manual entry and paste the setup key from your service\'s security settings.');
+        showAlert('Could not add account', 'Try manual entry and paste the setup key from your service\'s security settings.');
       }
     }
   };
@@ -412,21 +421,21 @@ function AppContent() {
             onSettingsPress={() => setShowSettings(true)}
             onToggleFavorite={toggleFavorite}
             updateAccount={updateAccount}
+            updateAccountsBatch={updateAccountsBatch}
             setLastUsed={(id) => {
               setLastUsed(id);
               recordLastActivity?.();
             }}
+            reorderAccounts={reorderAccounts}
+            folders={folders}
+            addFolder={addFolder}
+            removeFolder={removeFolder}
+            refreshFolders={refreshFolders}
           />
 
           {token && (
             <FloatingActionButton
-              onPress={async () => {
-                const { success } = await biometricService.authenticate(
-                  'Verify identity to add accounts',
-                );
-                if (success) setShowScanner(true);
-                else Alert.alert('Verification required', 'Please verify your identity to add accounts.');
-              }}
+              onPress={() => setShowScanner(true)}
             />
           )}
           </>
@@ -455,6 +464,7 @@ function AppContent() {
             onClose={() => setShowSettings(false)}
             user={user}
             deviceId={deviceId}
+            onLogout={logout}
             onPreferencesChange={refreshUser}
             appLock={appLock}
             onAppLockChange={handleAppLockChange}
@@ -481,7 +491,9 @@ function AppContent() {
             addFolder={addFolder}
             renameFolder={renameFolder}
             removeFolder={removeFolder}
+            reorderFolders={reorderFolders}
             updateAccount={updateAccount}
+            updateAccountsBatch={updateAccountsBatch}
             refreshFolders={refreshFolders}
           />
 
@@ -527,6 +539,13 @@ function AppContent() {
             onDenySuspicious={handleMfaDenySuspicious}
             resolving={mfaResolving}
           />
+
+          <AlertDialog
+            visible={alert.visible}
+            title={alert.title}
+            message={alert.message}
+            onOk={dismissAlert}
+          />
         </SafeAreaView>
       </LinearGradient>
     </>
@@ -535,13 +554,15 @@ function AppContent() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <ToastProvider>
-          <AppContent />
-        </ToastProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <AppContent />
+          </ToastProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

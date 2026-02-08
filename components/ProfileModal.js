@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   headerIconWrap: {
     width: 48,
     height: 48,
-    borderRadius: radii.full,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -181,8 +181,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeButton: {
-    padding: spacing.sm,
-    borderRadius: radii.sm,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sectionTitle: {
     fontSize: 18,
