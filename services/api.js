@@ -14,9 +14,14 @@ const api = axios.create({
 
 let authToken = null;
 let onUnauthorized = null;
+let deviceId = null;
 
 export const setAuthToken = (token) => {
   authToken = token;
+};
+
+export const setDeviceId = (id) => {
+  deviceId = id;
 };
 
 export const setOnUnauthorized = (callback) => {
@@ -27,6 +32,9 @@ api.interceptors.request.use((config) => {
   if (authToken) {
     config.headers.Authorization = `Bearer ${authToken}`;
   }
+  if (deviceId) {
+    config.headers['X-Device-Id'] = deviceId;
+  }
   return config;
 });
 
@@ -35,7 +43,7 @@ api.interceptors.response.use(
   (err) => {
     if (err?.response?.status === 401 && err?.config?.headers?.Authorization) {
       authToken = null;
-      onUnauthorized?.();
+      onUnauthorized?.(err);
     }
     return Promise.reject(err);
   },
@@ -80,7 +88,7 @@ export const authApi = {
 export const deviceApi = {
   list: () => api.get('/api/devices'),
   register: (data) => api.post('/api/devices/register', data),
-  revoke: (deviceId) => api.post('/api/devices/revoke', { deviceId }),
+  revoke: (targetDeviceId) => api.post('/api/devices/revoke', { deviceId: targetDeviceId, currentDeviceId: deviceId }),
 };
 
 export const mfaApi = {

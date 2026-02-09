@@ -7,13 +7,17 @@ import { storage } from '../services/storage';
 import { deviceService } from '../services/device';
 import { getExpoPushTokenAsync } from '../services/pushNotifications';
 
-export const useAuth = (deviceId, onSuccess) => {
+const SESSION_CHECK_INTERVAL_MS = 60 * 1000; // 1 min – so revoked device reflects within ~1 min
+
+export const useAuth = (deviceId, onSuccess, onRevoked) => {
   const { showAlert } = useAlert();
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [pendingMfa, setPendingMfa] = useState(null);
   const approvedHandledRef = useRef(false);
+  const onRevokedRef = useRef(onRevoked);
+  onRevokedRef.current = onRevoked;
 
   const clearAuth = async () => {
     setToken(null);
@@ -24,7 +28,14 @@ export const useAuth = (deviceId, onSuccess) => {
   };
 
   useEffect(() => {
-    setOnUnauthorized(clearAuth);
+    setOnUnauthorized(async (err) => {
+      await clearAuth();
+      const msg = err?.response?.data?.message || '';
+      if (typeof msg === 'string' && msg.toLowerCase().includes('revoked')) {
+        onRevokedRef.current?.();
+      }
+    });
+    return () => setOnUnauthorized(null);
   }, []);
 
   useEffect(() => {
@@ -114,6 +125,15 @@ export const useAuth = (deviceId, onSuccess) => {
       }
     })();
   }, []);
+
+  // Periodic session check so a revoked device (e.g. logged out from device 1) reflects within ~1 min
+  useEffect(() => {
+    if (!token || !deviceId) return;
+    const interval = setInterval(() => {
+      authApi.getMe().catch(() => {});
+    }, SESSION_CHECK_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [token, deviceId]);
 
   const updateApiToken = (newToken) => {
     const { setAuthToken } = require('../services/api');

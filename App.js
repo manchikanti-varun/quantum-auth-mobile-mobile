@@ -34,6 +34,7 @@ import { AppLockPromptModal } from './components/AppLockPromptModal';
 import { IntroModal } from './components/IntroModal';
 import { storage } from './services/storage';
 import { verifyPin } from './utils/pinHash';
+import { setDeviceId as setApiDeviceId } from './services/api';
 
 function AppContent() {
   usePreventScreenCapture();
@@ -65,9 +66,18 @@ function AppContent() {
     })();
   }, []);
 
-  const { token, user, loading, login, register, logout, pendingMfa, cancelPendingMfa, loginWithOtp, refreshUser, recordLastActivity } = useAuth(deviceId, () => {
-    setShowAuth(false);
-  });
+  const { token, user, loading, login, register, logout, pendingMfa, cancelPendingMfa, loginWithOtp, refreshUser, recordLastActivity } = useAuth(
+    deviceId,
+    () => setShowAuth(false),
+    () => {
+      setShowAuth(true);
+      showToast('You were signed out on another device.');
+    },
+  );
+
+  useEffect(() => {
+    if (deviceId) setApiDeviceId(deviceId);
+  }, [deviceId]);
 
   const [mfaResolving, setMfaResolving] = useState(null); // 'approve' | 'deny' | null
   const { accounts, totpCodes, totpAdjacent, totpSecondsRemaining, addAccount, removeAccount, toggleFavorite, updateAccount, updateAccountsBatch, setLastUsed, reorderAccounts, reloadAccounts } = useAccounts(token, user?.uid);
@@ -117,7 +127,10 @@ function AppContent() {
         appState.current.match(/inactive|background/) &&
         nextState === 'active'
       ) {
-        if (token) recordLastActivity?.();
+        if (token) {
+          recordLastActivity?.();
+          refreshUser?.(); // Check if device was revoked; 401 triggers logout
+        }
         if (!appLock) {
           setBiometricUnlocked(true);
           return;
