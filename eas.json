@@ -20,7 +20,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://quantum-auth-mobile-backend-production-c4a5.up.railway.app"
+        "EXPO_PUBLIC_API_URL": "https://quantum-auth-mobile-backend-production-f31d.up.railway.app"
       }
     }
   },

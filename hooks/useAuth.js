@@ -90,37 +90,42 @@ export const useAuth = (deviceId, onSuccess, onRevoked) => {
     (async () => {
       try {
         const saved = await storage.getToken();
-        if (saved) {
-          const timeoutDays = await storage.getSessionTimeoutDays();
-          let lastActivity = await storage.getLastActivity();
-          const now = Date.now();
-          if (lastActivity === 0) {
-            await storage.saveLastActivity(now);
-            lastActivity = now;
-          }
-          const msPerDay = 24 * 60 * 60 * 1000;
-          if (timeoutDays > 0 && (now - lastActivity) > timeoutDays * msPerDay) {
-            await clearAuth();
-            setLoading(false);
-            return;
-          }
-          setToken(saved);
-          const { setAuthToken } = await import('../services/api');
-          setAuthToken(saved);
-          try {
-            const res = await authApi.getMe();
-            if (res.data?.email) {
-              setUser({
-                uid: res.data.uid,
-                email: res.data.email,
-                displayName: res.data.displayName ?? null,
-                preferences: res.data.preferences ?? { allowMultipleDevices: true },
-              });
-            }
-          } catch (e) {}
+        if (!saved) {
+          return;
         }
-      } catch (e) {}
-      finally {
+        const timeoutDays = await storage.getSessionTimeoutDays();
+        let lastActivity = await storage.getLastActivity();
+        const now = Date.now();
+        if (lastActivity === 0) {
+          await storage.saveLastActivity(now);
+          lastActivity = now;
+        }
+        const msPerDay = 24 * 60 * 60 * 1000;
+        if (timeoutDays > 0 && (now - lastActivity) > timeoutDays * msPerDay) {
+          await clearAuth();
+          return;
+        }
+        const { setAuthToken } = await import('../services/api');
+        setAuthToken(saved);
+        try {
+          const res = await authApi.getMe();
+          if (res.data?.email) {
+            setToken(saved);
+            setUser({
+              uid: res.data.uid,
+              email: res.data.email,
+              displayName: res.data.displayName ?? null,
+              preferences: res.data.preferences ?? { allowMultipleDevices: true },
+            });
+          } else {
+            await clearAuth();
+          }
+        } catch (e) {
+          await clearAuth();
+        }
+      } catch (e) {
+        await clearAuth();
+      } finally {
         setLoading(false);
       }
     })();

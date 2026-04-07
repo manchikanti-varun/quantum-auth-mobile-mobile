@@ -11,6 +11,7 @@ import {
   StyleSheet,
   Platform,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -27,6 +28,7 @@ import { spacing, radii } from '../constants/designTokens';
 export const HomeScreen = ({
   token,
   user,
+  authLoading = false,
   accounts,
   totpCodes,
   totpAdjacent = {},
@@ -169,7 +171,15 @@ export const HomeScreen = ({
 
   const paddingBottom = 120 + safeBottom;
 
-  if (!token) {
+  if (authLoading) {
+    return (
+      <View style={[styles.authPrompt, { paddingHorizontal: horizontalPadding, justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={theme.colors.accent} />
+      </View>
+    );
+  }
+
+  if (!token || !user) {
     return (
       <View style={[styles.authPrompt, { paddingHorizontal: horizontalPadding }]}>
         <View style={[styles.logoRing, { backgroundColor: theme.colors.bgCard, borderWidth: 2, borderColor: theme.colors.accentGlow || 'rgba(56, 189, 248, 0.3)' }]}>

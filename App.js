@@ -402,51 +402,57 @@ function AppContent() {
         style={styles.container}
       >
         <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-          {!appLock || biometricUnlocked ? (
-            <>
-          {showIntro && !token && (
+          {showIntro === true ? (
             <IntroModal
-              visible={showIntro}
+              visible
               onComplete={async () => {
                 await storage.setIntroSeen();
                 setShowIntro(false);
-                setShowAuth(true);
+                if (!token) setShowAuth(true);
               }}
             />
-          )}
-          {!(showIntro && !token) && (
-          <>
-          <HomeScreen
-            token={token}
-            user={user}
-            accounts={accounts}
-            totpCodes={totpCodes}
-            totpAdjacent={totpAdjacent}
-            totpSecondsRemaining={totpSecondsRemaining}
-            onLogout={logout}
-            onScanPress={() => setShowAuth(true)}
-            onRemoveAccount={removeAccount}
-            onSettingsPress={() => setShowSettings(true)}
-            onToggleFavorite={toggleFavorite}
-            updateAccount={updateAccount}
-            updateAccountsBatch={updateAccountsBatch}
-            setLastUsed={(id) => {
-              setLastUsed(id);
-              recordLastActivity?.();
-            }}
-            reorderAccounts={reorderAccounts}
-            folders={folders}
-            addFolder={addFolder}
-            removeFolder={removeFolder}
-            refreshFolders={refreshFolders}
-          />
+          ) : !appLock || biometricUnlocked ? (
+            <>
+              <HomeScreen
+                token={token}
+                user={user}
+                authLoading={loading}
+                accounts={accounts}
+                totpCodes={totpCodes}
+                totpAdjacent={totpAdjacent}
+                totpSecondsRemaining={totpSecondsRemaining}
+                onLogout={logout}
+                onScanPress={() => setShowAuth(true)}
+                onRemoveAccount={removeAccount}
+                onSettingsPress={() => setShowSettings(true)}
+                onToggleFavorite={toggleFavorite}
+                updateAccount={updateAccount}
+                updateAccountsBatch={updateAccountsBatch}
+                setLastUsed={(id) => {
+                  setLastUsed(id);
+                  recordLastActivity?.();
+                }}
+                reorderAccounts={reorderAccounts}
+                folders={folders}
+                addFolder={addFolder}
+                removeFolder={removeFolder}
+                refreshFolders={refreshFolders}
+              />
 
-          {token && (
-            <FloatingActionButton
-              onPress={() => setShowScanner(true)}
+              {token && user && (
+                <FloatingActionButton
+                  onPress={() => setShowScanner(true)}
+                />
+              )}
+            </>
+          ) : (
+            <BiometricGate
+              onUnlock={handleUnlock}
+              onPinUnlock={handlePinUnlock}
+              loading={biometricChecking}
+              hasPinFallback={!!appLockConfig?.pinHash}
+              hasBiometric={hasBiometric}
             />
-          )}
-          </>
           )}
 
           <AuthModal
@@ -519,16 +525,6 @@ function AppContent() {
             deviceId={deviceId}
             onClose={() => setHistoryMode(null)}
           />
-            </>
-          ) : (
-            <BiometricGate
-              onUnlock={handleUnlock}
-              onPinUnlock={handlePinUnlock}
-              loading={biometricChecking}
-              hasPinFallback={!!appLockConfig?.pinHash}
-              hasBiometric={hasBiometric}
-            />
-          )}
 
           <AppLockPromptModal
             visible={showAppLockPrompt}

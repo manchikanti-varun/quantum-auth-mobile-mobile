@@ -1,6 +1,6 @@
 /** API URL, SecureStore keys, auto-lock and session options. */
 
-const API_URL = 'https://quantum-auth-mobile-backend-production-c4a5.up.railway.app';
+const API_URL = 'https://quantum-auth-mobile-backend-production-f31d.up.railway.app';
 export const API_BASE_URL = (process.env.EXPO_PUBLIC_API_URL || API_URL).trim();
 export const ACCOUNTS_KEY = 'QSAFE_TOTP_ACCOUNTS';
 export const ACCOUNTS_KEY_PREFIX = 'QSAFE_ACCOUNTS_';
